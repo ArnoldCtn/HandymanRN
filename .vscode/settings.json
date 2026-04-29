@@ -1,0 +1,4 @@
+{
+    "python-envs.defaultEnvManager": "ms-python.python:pipenv",
+    "python.defaultInterpreterPath": "C:\\Users\\ArnoldCtn\\.virtualenvs\\backend-81P7jbCI\\Scripts\\python.exe"
+}

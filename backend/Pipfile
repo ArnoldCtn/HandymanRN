@@ -1,0 +1,17 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+django-ratelimit = "*"
+django-two-factor-auth = "*"
+django-axes = "*"
+django-otp = "*"
+qrcode = {extras = ["pil"], version = "*"}
+pyotp = "*"
+
+[dev-packages]
+
+[requires]
+python_version = "3.14"
