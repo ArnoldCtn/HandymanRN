@@ -1,5 +1,6 @@
 # handymen/serializers.py
 import json
+import base64
 from rest_framework import serializers
 from django.utils import timezone
 from datetime import timedelta
@@ -7,6 +8,43 @@ from .models import Handyman
 from services.models import Service
 from locations.models import Location
 from services.serializers import ServiceSerializer
+from django.core.files.base import ContentFile
+
+
+class Base64ImageField(serializers.ImageField):
+    """Custom field to handle base64 image uploads"""
+    
+    def to_internal_value(self, data):
+        print(f'[HandymanBase64ImageField] Received data type: {type(data)}')
+        print(f'[HandymanBase64ImageField] Data preview: {str(data)[:100]}...')
+        
+        # Handle base64 string
+        if isinstance(data, str) and data.startswith('data:image/'):
+            print('[HandymanBase64ImageField] Processing base64 image...')
+            try:
+                # Extract the base64 data
+                format, imgstr = data.split(';base64,') 
+                ext = format.split('/')[-1]
+                
+                print(f'[HandymanBase64ImageField] Image format: {format}, extension: {ext}')
+                
+                # Decode base64
+                img_data = base64.b64decode(imgstr)
+                print(f'[HandymanBase64ImageField] Decoded {len(img_data)} bytes')
+                
+                # Create a ContentFile from base64
+                filename = f'handyman_{timezone.now().strftime("%Y%m%d_%H%M%S")}.{ext}'
+                image_file = ContentFile(img_data, name=filename)
+                
+                print(f'[HandymanBase64ImageField] Created file: {filename}')
+                return super().to_internal_value(image_file)
+                
+            except Exception as e:
+                print(f'[HandymanBase64ImageField] Error processing base64: {e}')
+                raise serializers.ValidationError(f'Invalid base64 image data: {e}')
+        
+        # Handle regular file upload
+        return super().to_internal_value(data)
 
 
 class FlexibleJSONField(serializers.JSONField):
@@ -113,10 +151,7 @@ class HandymanUpdateSerializer(serializers.ModelSerializer):
     #     queryset=Location.objects.all(), required=False, allow_null=True
     # )
     location = serializers.CharField(required=False, allow_null=True, allow_blank=True)
-
-
-    # ✅ FlexibleJSONField handles string→dict conversion
-    # ✅ NO to_internal_value override — that caused double-parsing conflicts
+    thumbnail = Base64ImageField(required=False, allow_null=True)
     availability = FlexibleJSONField(required=False)
 
     class Meta:
@@ -125,7 +160,6 @@ class HandymanUpdateSerializer(serializers.ModelSerializer):
                   'thumbnail', 'services', 'location', 'is_available', 'password']
         extra_kwargs = {
             'password':     {'write_only': True, 'required': False},
-            'thumbnail':    {'required': False},
             'username':     {'required': False},
             'email':        {'required': False},
             'phone':        {'required': False},
@@ -134,6 +168,9 @@ class HandymanUpdateSerializer(serializers.ModelSerializer):
         }
 
     def update(self, instance, validated_data):
+        print(f'[HandymanUpdateSerializer] Updating handyman: {instance.username}')
+        print(f'[HandymanUpdateSerializer] Validated data keys: {list(validated_data.keys())}')
+        
         password = validated_data.pop('password', None)
         services = validated_data.pop('services', None)
         location_value = validated_data.pop('location', None)
@@ -148,17 +185,21 @@ class HandymanUpdateSerializer(serializers.ModelSerializer):
                     # Try as name (case insensitive)
                     loc = Location.objects.get(location__iexact=str(location_value))
                 instance.location = loc
+                print(f'[HandymanUpdateSerializer] Set location: {loc}')
             except Location.DoesNotExist:
-                # If not found, keep current location or ignore
-                pass
+                print(f'[HandymanUpdateSerializer] Location not found: {location_value}')
 
         for attr, value in validated_data.items():
+            print(f'[HandymanUpdateSerializer] Setting {attr}: {type(value)}')
             setattr(instance, attr, value)
 
         if password:
+            print('[HandymanUpdateSerializer] Setting new password')
             instance.set_password(password)
         if services is not None:
+            print(f'[HandymanUpdateSerializer] Setting {len(services)} services')
             instance.services.set(services)
 
         instance.save()
+        print(f'[HandymanUpdateSerializer] Handyman saved successfully')
         return instance
