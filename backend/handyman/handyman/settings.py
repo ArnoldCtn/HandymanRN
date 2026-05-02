@@ -11,12 +11,15 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
 from datetime import timedelta
+import json
 from pathlib import Path
 
 import os
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# Correct path: firebase-service-account.json should be in the same folder as settings.py
+FIREBASE_SERVICE_ACCOUNT_PATH = BASE_DIR / 'handyman/firebase-service-account.json'
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
@@ -59,6 +62,8 @@ CORS_ALLOW_ALL_ORIGINS = True
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne',
+    'channels',
     'axes',
     'corsheaders',
     'rest_framework',
@@ -75,7 +80,18 @@ INSTALLED_APPS = [
     'users',
     'locations',
     'handymen',
+    'chats',
+    'payments',
+    'notifications.apps.NotificationsConfig',
 ]
+
+ASGI_APPLICATION = 'handyman.asgi.application'
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer"  # Use Redis in production
+    },
+}
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
@@ -115,13 +131,13 @@ TEMPLATES = [
 
 # Daphne
 
-WSGI_APPLICATION = 'handyman.wsgi.application'
+# WSGI_APPLICATION = 'handyman.wsgi.application'
 
-CHANNEL_LAYERS = {
-    "default": {
-        "BACKEND": "channels.layers.InMemoryChannelLayer"
-    }
-}
+# CHANNEL_LAYERS = {
+#     "default": {
+#         "BACKEND": "channels.layers.InMemoryChannelLayer"
+#     }
+# }
 
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
@@ -137,6 +153,19 @@ DATABASES = {
     }
 }
 
+try:
+    with open(FIREBASE_SERVICE_ACCOUNT_PATH, 'r', encoding='utf-8') as f:
+        FIREBASE_SERVICE_ACCOUNT = json.load(f)
+    print("✅ Firebase service account loaded successfully")
+except FileNotFoundError:
+    FIREBASE_SERVICE_ACCOUNT = None
+    print(f"⚠️  Warning: firebase-service-account.json not found at {FIREBASE_SERVICE_ACCOUNT_PATH}")
+except json.JSONDecodeError:
+    FIREBASE_SERVICE_ACCOUNT = None
+    print("❌ Error: firebase-service-account.json is not valid JSON")
+except Exception as e:
+    FIREBASE_SERVICE_ACCOUNT = None
+    print(f"❌ Error loading Firebase service account: {e}")
 
 # Password validation
 # https://docs.djangoproject.com/en/6.0/ref/settings/#auth-password-validators

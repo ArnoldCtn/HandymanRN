@@ -20,6 +20,7 @@ export default function AuthRoutesLayout() {
 <Stack.Screen name='SignIn' />
 <Stack.Screen name='SignUp' />
 <Stack.Screen name='Home' />
+<Stack.Screen name='ChatsList' />
   </Stack>
 
   

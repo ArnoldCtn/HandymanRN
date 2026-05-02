@@ -1,0 +1,17 @@
+& C:\Users\ArnoldCtn\.virtualenvs\backend-81P7jbCI\Scripts\Activate.ps1
+
+python manage.py runserver 0.0.0.0:8000
+now lets set the entire booking mechanism, the user makes request, the handyman receives the request and modify accordingly. when accepted, the messaging becomes possible. users have the my booking tabs, it is where the boookings card appear(with handyman pic and info). same for handyman(pic of user and info booking). the modify price must be in those cards but only in the users side(both can discuss in chat but final decision is settled and set by user).
+also set the notifications for each accordingly. make the booking form functional
+ 
+so now go step by step provide each codes for each view page, react native, serializer,urls and others. keep it straight and clean setup. precise each file , folder name and location. for the setup use what we discussed earlier. channels,redis and all the rest(all free options). and for payment use mesomb. i will try to meet up
+
+
+fix the handyman  chat. when clicking i get error and cant chat with user.  same for user dide. for the different notifications,  they are not well done. it should be precide(e.g user ss side -> your booking request was send succesfully, handyman side -> ss send you a booking request. you accepedt ss request, ss side => handyman (name) accepted your request. then with correct redirect when clicked on each.
+2	"New Booking Request"	"ss sent you a booking request."	"booking_request"	false	"2026-05-01 22:01:26.989135+01"	20	1	19
+3	"New Booking Request"	"ss sent you a booking request."	"booking_request"	true	"2026-05-01 22:09:13.772431+01"	21	2	19
+4	"Booking Accepted"	"tetsu accepted your booking."	"booking_accepted"	false	"2026-05-01 23:22:12.40481+01"	21	2	19
+
+then i want the notication etc tabs to all have badges representing the nofications just a simple dot to precise unread ones,. also why am i not getting notifications in phone or is it because it is dev?
+
+make such as to avoid clashes. and well do the job. 

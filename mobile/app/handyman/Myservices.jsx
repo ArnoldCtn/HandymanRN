@@ -11,8 +11,11 @@ import {
   Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import handymanApi from '@/services/handymanApi';
+import useHandymanGlobal from '@/services/handymanGlobal'
+
 
 export default function HandymanBookingsScreen() {
   const router = useRouter();
@@ -20,12 +23,49 @@ export default function HandymanBookingsScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
+    const authenticated = useHandymanGlobal(s => s.authenticated)
+  const [unreadCount, setUnreadCount] = useState(0)
+
+   // Fetch unread notification count
+    useEffect(() => {
+      if (!authenticated) return
+  
+      const fetchUnread = async () => {
+        try {
+          const res = await handymanApi.get('/notifications/unread-count/')
+          setUnreadCount(res.data?.unread_count || 0)
+        } catch (e) {}
+      }
+  
+      fetchUnread()
+      const interval = setInterval(fetchUnread, 15000) // poll every 15s
+      return () => clearInterval(interval)
+    }, [authenticated])
+
   const fetchBookings = async () => {
     try {
+      setLoading(true);
+      
+      // Debug: Check if we have a token
+      const token = await AsyncStorage.getItem('handyman_access_token');
+      console.log('🔑 Myservices token exists:', !!token);
+      console.log('🔑 Token preview:', token ? token.substring(0, 20) + '...' : 'none');
+      
       const res = await handymanApi.get('/bookings/');
-      setBookings(res.data);
+      console.log('✅ Myservices API call successful');
+      console.log('📊 Response status:', res.status);
+      console.log('📊 Response data length:', res.data?.length || 0);
+      console.log('📊 Full response data:', JSON.stringify(res.data, null, 2));
+      
+      setBookings(res.data || []);
     } catch (err) {
-      Alert.alert("Error", "Failed to load your requests");
+      console.error("❌ Fetch myservices error:");
+      console.error("❌ Error status:", err.response?.status);
+      console.error("❌ Error data:", err.response?.data);
+      console.error("❌ Error message:", err.message);
+      console.error("❌ Full error:", err);
+      
+      Alert.alert("Error", `Failed to load bookings (${err.response?.status || 'Network'}). Please check your connection and login.`);
     } finally {
       setLoading(false);
     }
@@ -52,7 +92,7 @@ export default function HandymanBookingsScreen() {
     <View style={styles.bookingCard}>
       <View style={styles.cardHeader}>
         <Image 
-          source={{ uri: item.user?.avatar || 'https://via.placeholder.com/50' }} 
+          source={{ uri: item.user?.thumbnail || 'https://via.placeholder.com/50' }} 
           style={styles.avatar}
         />
         <View style={styles.info}>
@@ -91,10 +131,15 @@ export default function HandymanBookingsScreen() {
       {item.status === 'accepted' && (
         <TouchableOpacity 
           style={styles.chatButton}
-          onPress={() => router.push(`/chat/${item.id}`)}
+          onPress={() => router.push(`/chat/${item.id}?source=handyman`)}
         >
           <Ionicons name="chatbubble" size={20} color="#fff" />
           <Text style={styles.chatButtonText}>Open Chat</Text>
+           {unreadCount > 0 && (
+                           <View style={styles.badge}>
+                             <Text style={styles.badgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
+                           </View>
+                         )}
         </TouchableOpacity>
       )}
     </View>
@@ -102,12 +147,18 @@ export default function HandymanBookingsScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Booking Requests</Text>
+      <Text style={styles.title}>Bookings & Chats</Text>
       <FlatList
         data={bookings}
         keyExtractor={item => item.id.toString()}
         renderItem={renderBooking}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={fetchBookings} />}
+        ListEmptyComponent={
+                  <View style={styles.empty}>
+                    <Ionicons name="calendar-outline" size={60} color="#9ca3af" />
+                    <Text style={styles.emptyText}>No bookings Request yet</Text>
+                  </View>
+                }
       />
     </View>
   );
@@ -146,4 +197,23 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   chatButtonText: { color: 'white', fontWeight: '600' },
+
+  empty: { alignItems: 'center', justifyContent: 'center', marginTop: 100 },
+  emptyText: { marginTop: 16, fontSize: 16, color: '#9ca3af' },
+  badge: {
+    position: 'absolute',
+    right: -6,
+    top: -3,
+    backgroundColor: '#ef4444',
+    borderRadius: 10,
+    width: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  badgeText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
 });

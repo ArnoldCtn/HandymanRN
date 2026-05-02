@@ -10,6 +10,7 @@ import {
   Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import handymanApi from '@/services/handymanApi';
 
@@ -23,12 +24,26 @@ export default function HandymanBookingsScreen() {
     try {
       setLoading(true);
       
-      const res = await handymanApi.get('/handymen/me/bookings/');
-      console.log('✅ Handyman bookings fetched successfully:', res.data);
-      setBookings(res.data);
+      // Debug: Check if we have a token
+      const token = await AsyncStorage.getItem('handyman_access_token');
+      console.log('🔑 Handyman token exists:', !!token);
+      console.log('🔑 Token preview:', token ? token.substring(0, 20) + '...' : 'none');
+      
+      const res = await handymanApi.get('/bookings/');
+      console.log('✅ Handyman bookings API call successful');
+      console.log('📊 Response status:', res.status);
+      console.log('📊 Response data length:', res.data?.length || 0);
+      console.log('📊 Full response data:', JSON.stringify(res.data, null, 2));
+      
+      setBookings(res.data || []);
     } catch (err) {
-      console.error("❌ Fetch handyman bookings error:", err.response?.data || err.message);
-      Alert.alert("Error", "Failed to load your booking requests. Please make sure you are logged in.");
+      console.error("❌ Fetch handyman bookings error:");
+      console.error("❌ Error status:", err.response?.status);
+      console.error("❌ Error data:", err.response?.data);
+      console.error("❌ Error message:", err.message);
+      console.error("❌ Full error:", err);
+      
+      Alert.alert("Error", `Failed to load bookings (${err.response?.status || 'Network'}). Please check your connection and login.`);
     } finally {
       setLoading(false);
     }
@@ -70,7 +85,10 @@ export default function HandymanBookingsScreen() {
   };
 
   const renderBooking = ({ item }) => (
-    <View style={styles.bookingCard}>
+    <TouchableOpacity
+      style={styles.bookingCard}
+      onPress={() => router.push(`/handyman/booking-detail/${item.id}`)}
+    >
       <View style={styles.cardHeader}>
         <Image 
           source={{ uri: item.user?.thumbnail || `https://ui-avatars.com/api/?name=${item.user?.username}&background=random` }} 
@@ -95,7 +113,7 @@ export default function HandymanBookingsScreen() {
       </Text>
 
       <View style={styles.serviceInfo}>
-        <Text style={styles.serviceName}>Service: {item.service?.name}</Text>
+        <Text style={styles.serviceName}>Service: {item.service_name}</Text>
         <Text style={styles.amount}>
           {item.total_amount ? `${item.total_amount} FCFA` : "Price to be negotiated"}
         </Text>
@@ -105,7 +123,10 @@ export default function HandymanBookingsScreen() {
         <View style={styles.actionButtons}>
           <TouchableOpacity 
             style={[styles.actionBtn, styles.acceptBtn]}
-            onPress={() => handleBookingAction(item.id, 'accept')}
+            onPress={(e) => {
+              e.stopPropagation();
+              handleBookingAction(item.id, 'accept');
+            }}
           >
             <Ionicons name="checkmark" size={16} color="white" />
             <Text style={styles.actionBtnText}>Accept</Text>
@@ -113,7 +134,8 @@ export default function HandymanBookingsScreen() {
           
           <TouchableOpacity 
             style={[styles.actionBtn, styles.declineBtn]}
-            onPress={() => {
+            onPress={(e) => {
+              e.stopPropagation();
               Alert.alert(
                 "Decline Booking",
                 "Are you sure you want to decline this booking?",
@@ -137,13 +159,16 @@ export default function HandymanBookingsScreen() {
       {item.status === 'accepted' && (
         <TouchableOpacity 
           style={styles.chatBtn}
-          onPress={() => router.push(`/chat/${item.id}`)}
+          onPress={(e) => {
+            e.stopPropagation();
+            router.push(`/chat/${item.id}?source=handyman`);
+          }}
         >
           <Ionicons name="chatbubble-outline" size={18} color="#6366F1" />
           <Text style={styles.chatBtnText}>Chat with Client</Text>
         </TouchableOpacity>
       )}
-    </View>
+    </TouchableOpacity>
   );
 
   return (
@@ -213,6 +238,18 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start'
   },
   chatBtnText: { color: '#6366F1', fontWeight: '600', fontSize: 14 },
+  acceptedActions: { flexDirection: 'row', gap: 12 },
+  completeBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#dbeafe',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
+    gap: 8,
+    alignSelf: 'flex-start'
+  },
+  completeBtnText: { color: '#3b82f6', fontWeight: '600', fontSize: 14 },
   empty: { alignItems: 'center', justifyContent: 'center', marginTop: 100, paddingHorizontal: 40 },
   emptyText: { marginTop: 16, fontSize: 16, color: '#9ca3af', textAlign: 'center' },
   emptySubText: { marginTop: 8, fontSize: 14, color: '#d1d5db', textAlign: 'center' },
