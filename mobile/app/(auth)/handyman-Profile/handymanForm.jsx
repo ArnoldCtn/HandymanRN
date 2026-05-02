@@ -1,4 +1,4 @@
-// app/booking/[id].jsx
+
 import React, { useEffect, useState } from 'react';
 import {
   View,
@@ -14,7 +14,6 @@ import {
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import handymanApi from '@/services/handymanApi';
 import api from '@/services/api';
 import useGlobal from '@/services/global'
 import useHandymanGlobal from '@/services/handymanGlobal'
@@ -52,7 +51,7 @@ export default function BookingScreen() {
   useEffect(() => {
     const fetchHandyman = async () => {
       try {
-        const res = await handymanApi.get(`/handymen/${id}/`);
+        const res = await api.get(`/handymen/${id}/`);
         setHandyman(res.data);
         if (res) {
           console.log('res for fetch ok')
@@ -132,7 +131,7 @@ export default function BookingScreen() {
       console.log('[Booking] location is string:', handyman.location)
       // If you need the ID, fetch it:
       try {
-        const lRes = await handymanApi.get('/handymen/locations/')
+        const lRes = await api.get('/handymen/locations/')
         const match = lRes.data.find(
           l => l.location.toLowerCase() === handyman.location.toLowerCase()
         )
@@ -150,10 +149,11 @@ export default function BookingScreen() {
       // Build payload
       const payload = {
         handyman: parseInt(id),
-        service: parseInt(selectedServices[0]),
+        service: selectedServices[0],           // You can allow multiple later
         scheduled_date: selectedDate.toISOString(),
         job_description: jobDescription,
-        total_amount: budget ? budget.toString() : "0",
+        total_amount: parseFloat(budget) || 0,
+        status: 'pending',
       };
 
       // Only add location if it exists (as integer ID)

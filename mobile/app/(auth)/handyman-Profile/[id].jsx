@@ -6,7 +6,7 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import handymanApi from '@/services/handymanApi';
+import api from '@/services/api';
 
 
 const DAYS = [
@@ -54,7 +54,7 @@ export default function HandymanProfileScreen() {
     const fetchProfile = async () => {
       try {
         setLoading(true);
-        const res = await handymanApi.get(`/handymen/${id}/`);
+        const res = await api.get(`/handymen/${id}/`);
         setHandyman(res.data);
       } catch (err) {
         console.error("Failed to fetch handyman:", err?.response?.data || err.message);

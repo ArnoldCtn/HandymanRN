@@ -24,12 +24,21 @@ from services.models import Service
 # ── Custom JWT auth — looks up Handyman, not users.User ──
 class HandymanJWTAuthentication(JWTAuthentication):
     def get_user(self, validated_token):
+        print(f"🔍 DEBUG: HandymanJWTAuthentication.get_user called")
         try:
             user_id = validated_token['user_id']
-            return Handyman.objects.get(pk=user_id)
+            print(f"🔍 DEBUG: Looking for handyman with ID: {user_id}")
+            handyman = Handyman.objects.get(pk=user_id)
+            print(f"✅ DEBUG: Found handyman: {handyman}")
+            return handyman
         except Handyman.DoesNotExist:
+            print(f"❌ DEBUG: Handyman not found with ID: {user_id}")
             from rest_framework_simplejwt.exceptions import AuthenticationFailed
             raise AuthenticationFailed('Handyman not found')
+        except KeyError as e:
+            print(f"❌ DEBUG: Token missing key: {e}")
+            from rest_framework_simplejwt.exceptions import AuthenticationFailed
+            raise AuthenticationFailed(f'Token missing required key: {e}')
 
 
 # ── No-op authentication — used on public endpoints ──────

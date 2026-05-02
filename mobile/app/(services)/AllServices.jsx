@@ -127,7 +127,7 @@ export default function AllServicesScreen() {
 }
 
 const styles = StyleSheet.create({
-  header:      { flexDirection:'row', alignItems:'center', justifyContent:'space-between', paddingHorizontal:16, paddingVertical:14, backgroundColor:'#fff', borderBottomWidth:1, borderColor:'#f0f0f0' },
+  header:      { flexDirection:'row', alignItems:'center', justifyContent:'space-between', paddingHorizontal:16, paddingVertical:34, backgroundColor:'#fff', borderBottomWidth:1, borderColor:'#f0f0f0' },
   backBtn:     { padding: 4 },
   headerTitle: { fontSize: 18, fontWeight: '700', color: '#202020' },
 

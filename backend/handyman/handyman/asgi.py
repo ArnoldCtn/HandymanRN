@@ -1,16 +1,17 @@
-"""
-ASGI config for handyman project.
-
-It exposes the ASGI callable as a module-level variable named ``application``.
-
-For more information on this file, see
-https://docs.djangoproject.com/en/6.0/howto/deployment/asgi/
-"""
-
+# handyman/asgi.py
 import os
-
-from django.core.asgi import get_asgi_application
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'handyman.settings')
 
-application = get_asgi_application()
+from django.core.asgi import get_asgi_application
+from channels.routing import ProtocolTypeRouter, URLRouter
+
+from chats.routing import websocket_urlpatterns
+from chats.middleware import JWTQueryParamAuthMiddleware
+
+application = ProtocolTypeRouter({
+    "http": get_asgi_application(),
+    "websocket": JWTQueryParamAuthMiddleware(
+        URLRouter(websocket_urlpatterns)
+    ),
+})
