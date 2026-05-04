@@ -31,6 +31,7 @@ export default function HandymanHomeLayout() {
   const navigation = useNavigation();
 
   const [unreadCount, setUnreadCount] = useState(0)
+  const [chatUnreadCount, setChatUnreadCount] = useState(0)
 
   const authenticated = useHandymanGlobal(s => s.authenticated)
   const appState      = useRef(AppState.currentState)
@@ -48,6 +49,26 @@ export default function HandymanHomeLayout() {
 
     fetchUnread()
     const interval = setInterval(fetchUnread, 15000) // poll every 15s
+    return () => clearInterval(interval)
+  }, [authenticated])
+
+  // Fetch unread chat messages count
+  useEffect(() => {
+    if (!authenticated) return;
+
+    const fetchChatUnread = async () => {
+      try {
+        const res = await handymanApi.get('/chats/my-chats/')
+        const newCount = res.data?.filter(chat => chat.has_unread_messages).length || 0
+        console.log('[Home] Chat unread count:', newCount)
+        setChatUnreadCount(newCount)
+      } catch (e) {
+        console.error('[Home] Error fetching chat unread:', e.response?.status, e.message)
+      }
+    }
+
+    fetchChatUnread()
+    const interval = setInterval(fetchChatUnread, 15000)
     return () => clearInterval(interval)
   }, [authenticated])
 
@@ -71,7 +92,7 @@ export default function HandymanHomeLayout() {
      function resolveAvatar(thumbnail) {
        if (!thumbnail) return null
        if (thumbnail.startsWith('http')) return thumbnail
-       return `http://192.168.1.XXX:8000/media/${thumbnail}`
+       return `http://192.168.43.188:8000/media/${thumbnail}`
      }
      const avatarUrl = resolveAvatar(user?.thumbnail)
    
@@ -108,17 +129,30 @@ export default function HandymanHomeLayout() {
                  </View>
             ), 
        headerRight: () => (
-             <TouchableOpacity 
-               onPress={() => navigation.navigate('Notifications')}
-               style={styles.notificationButton}
-             >
-               <Ionicons name="notifications-outline" size={24} color="#333" />
-               {unreadCount > 0 && (
-                 <View style={styles.badge}>
-                   <Text style={styles.badgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
-                 </View>
-               )}
-             </TouchableOpacity>
+             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+               <TouchableOpacity 
+                 onPress={() => navigation.navigate('ChatsList')}
+                 style={[styles.notificationButton, { marginRight: 10 }]}
+               >
+                 <Ionicons name="send-outline" size={24} color="#333" />
+                 {chatUnreadCount > 0 && (
+                   <View style={styles.badge}>
+                     <Text style={styles.badgeText}>{chatUnreadCount > 9 ? '9+' : chatUnreadCount}</Text>
+                   </View>
+                 )}
+               </TouchableOpacity>
+               <TouchableOpacity 
+                 onPress={() => navigation.navigate('Notifications')}
+                 style={styles.notificationButton}
+               >
+                 <Ionicons name="notifications-outline" size={24} color="#333" />
+                 {unreadCount > 0 && (
+                   <View style={styles.badge}>
+                     <Text style={styles.badgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
+                   </View>
+                 )}
+               </TouchableOpacity>
+             </View>
             ), 
     }}>
       <Tab.Screen name="Dashboard" component={HandymanDashboard}

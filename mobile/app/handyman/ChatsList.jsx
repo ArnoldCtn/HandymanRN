@@ -12,30 +12,27 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import api from '@/services/api';
-import useGlobal from '@/services/global';
+import handymanApi from '@/services/handymanApi';
 
-export default function ChatsListScreen() {
+export default function HandymanChatsListScreen() {
   const router = useRouter();
   const [chats, setChats] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
-  
-  const user = useGlobal(state => state.user);
 
   const fetchChats = async () => {
     try {
-      console.log('[ChatsList] Fetching chats...');
-      const res = await api.get('/chats/my-chats/');
-      console.log('[ChatsList] Chats fetched:', res.data?.length || 0);
+      console.log('[H-ChatsList] Fetching chats...');
+      const res = await handymanApi.get('/chats/my-chats/');
+      console.log('[H-ChatsList] Chats fetched:', res.data?.length || 0);
       setChats(res.data || []);
       
-      // Count unread messages
       const unread = res.data?.filter(chat => chat.has_unread_messages).length || 0;
       setUnreadCount(unread);
+      console.log('[H-ChatsList] Unread chats:', unread);
     } catch (error) {
-      console.error('[ChatsList] Error fetching chats:', error);
+      console.error('[H-ChatsList] Error fetching chats:', error.response?.status, error.response?.data || error.message);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -61,13 +58,13 @@ export default function ChatsListScreen() {
     return (
       <TouchableOpacity 
         style={styles.chatItem}
-        onPress={() => router.push(`/chat/${item.booking_id}?source=user`)}
+        onPress={() => router.push(`/chat/${item.booking_id}?source=handyman`)}
       >
         <View style={styles.avatarContainer}>
           <Image 
             source={{ uri: avatarUrl }} 
             style={styles.avatar}
-            onError={() => console.log('[ChatsList] Avatar failed to load:', avatarUrl)}
+            onError={() => console.log('[H-ChatsList] Avatar failed to load:', avatarUrl)}
           />
           {item.has_unread_messages && (
             <View style={styles.unreadDot} />
@@ -92,7 +89,7 @@ export default function ChatsListScreen() {
         
         {item.has_unread_messages && (
           <View style={styles.unreadBadge}>
-            <Text style={styles.unreadText}>•</Text>
+            <Text style={styles.unreadText}>{item.unread_count || '•'}</Text>
           </View>
         )}
       </TouchableOpacity>
@@ -110,7 +107,7 @@ export default function ChatsListScreen() {
           <View style={{ width: 24 }} />
         </View>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#0277BD" />
+          <ActivityIndicator size="large" color="#f59e0b" />
         </View>
       </SafeAreaView>
     );
@@ -125,7 +122,7 @@ export default function ChatsListScreen() {
         <Text style={styles.headerTitle}>Chats</Text>
         {unreadCount > 0 && (
           <View style={styles.headerBadge}>
-            <Text style={styles.headerBadgeText}>{unreadCount}</Text>
+            <Text style={styles.headerBadgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
           </View>
         )}
       </View>
@@ -248,11 +245,13 @@ const styles = StyleSheet.create({
     color: '#6b7280',
   },
   unreadBadge: {
-    width: 8,
-    height: 8,
+    minWidth: 20,
+    height: 20,
     backgroundColor: '#ef4444',
-    borderRadius: 4,
-    marginLeft: 8,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 4,
   },
   unreadText: {
     color: 'white',

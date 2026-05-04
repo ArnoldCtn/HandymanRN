@@ -43,4 +43,8 @@ class Notification(models.Model):
         ordering = ['-created_at']
 
     def __str__(self):
-        return f"{self.title} - {self.user}"
+        if self.user:
+            return f"{self.title} - User:{self.user.username}"
+        elif self.handyman:
+            return f"{self.title} - Handyman:{self.handyman.username}"
+        return f"{self.title} - Unknown"
