@@ -55,12 +55,13 @@ def create_and_send_notification(recipient, title, body, notification_type, book
     notification = None
 
     # Debug logging
-    print(f"[NOTIF DEBUG] recipient={recipient}, type={type(recipient)}, isinstance Handyman={isinstance(recipient, Handyman)}")
+    recipient_class_name = type(recipient).__name__
+    print(f"[NOTIF DEBUG] recipient={recipient}, type={type(recipient)}, class_name={recipient_class_name}")
     print(f"[NOTIF DEBUG] title={title}, body={body}")
 
     try:
-        # Determine recipient type and create notification accordingly
-        if isinstance(recipient, Handyman):
+        # Determine recipient type - use class name check to avoid import path issues
+        if recipient_class_name == 'Handyman':
             notification = Notification.objects.create(
                 user=None,
                 handyman=recipient,
@@ -80,6 +81,10 @@ def create_and_send_notification(recipient, title, body, notification_type, book
                 booking=booking
             )
             print(f"[NOTIF] Created user notification for {recipient.username}: {title}")
+        
+        if not notification:
+            print(f"[NOTIF ERROR] Notification creation returned None for {recipient}")
+            return None
     except IntegrityError as e:
         print(f"[NOTIF] DB IntegrityError creating notification: {e}")
         print(f"[NOTIF] Did you run migrations after making Notification.user nullable?")

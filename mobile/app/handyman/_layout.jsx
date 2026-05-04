@@ -40,6 +40,7 @@ export default function HandymanAuthLayout() {
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="Home" />
       <Stack.Screen name="Notifications" />
+      <Stack.Screen name="ChatsList" />
       <Stack.Screen name="PINSettings" />
     </Stack>
   )

@@ -47,6 +47,14 @@ export default function ChatScreen() {
         setBooking(bookingRes.data);
         setMessages(messagesRes.data || []);
 
+        // Mark messages as read so unread badges clear
+        try {
+          await client.post(`/chats/booking/${booking_id}/mark-read/`);
+          console.log('[Chat] Marked messages as read');
+        } catch (e) {
+          console.log('[Chat] Mark-read failed (non-critical):', e.response?.status);
+        }
+
         // Set my username for bubble coloring based on explicit source
         if (isHandyman) {
           setMyUsername(bookingRes.data?.handyman?.username || 'Handyman');
