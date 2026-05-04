@@ -201,7 +201,7 @@ export default function HandymanNotificationsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8fafc', paddingTop: 50 },
+  container: { flex: 1, backgroundColor: '#f8fafc', paddingTop: 30 },
   header: {
     flexDirection: 'row',
     justifyContent: 'start',

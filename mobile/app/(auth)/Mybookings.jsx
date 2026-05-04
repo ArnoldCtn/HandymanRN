@@ -141,7 +141,7 @@ export default function MyBookingsScreen() {
               }}
             >
               <Ionicons name="create-outline" size={16} color="#f59e0b" />
-              <Text style={styles.modifyBtnText}>Modify</Text>
+              <Text style={styles.modifyBtnText}>Modify Price</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -215,7 +215,7 @@ export default function MyBookingsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8fafc', paddingTop: 50 },
+  container: { flex: 1, backgroundColor: '#f8fafc', paddingTop: 10 },
   title: { fontSize: 24, fontWeight: '700', padding: 20, color: '#1f2937' },
   tabBar: {
     flexDirection: 'row',
