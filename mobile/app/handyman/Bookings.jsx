@@ -14,11 +14,28 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import handymanApi from '@/services/handymanApi';
 
+
+const STATUS_TABS = [
+  { key: 'all', label: 'All' },
+  { key: 'pending', label: 'Pending' },
+  { key: 'accepted', label: 'Accepted' },
+  { key: 'completed', label: 'Done' },
+  { key: 'declined', label: 'Declined' },
+];
+
+
 export default function HandymanBookingsScreen() {
   const router = useRouter();
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+
+  const [activeTab, setActiveTab] = useState('all');
+  
+
+  const filteredBookings = activeTab === 'all'
+    ? bookings
+    : bookings.filter(b => b.status === activeTab);
 
   const fetchBookings = async () => {
     try {
@@ -174,9 +191,23 @@ export default function HandymanBookingsScreen() {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Booking Requests</Text>
+
+       <View style={styles.tabBar}>
+              {STATUS_TABS.map(tab => (
+                <TouchableOpacity
+                  key={tab.key}
+                  style={[styles.tab, activeTab === tab.key && styles.tabActive]}
+                  onPress={() => setActiveTab(tab.key)}
+                >
+                  <Text style={[styles.tabText, activeTab === tab.key && styles.tabTextActive]}>
+                    {tab.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
       
       <FlatList
-        data={bookings}
+        data={filteredBookings}
         keyExtractor={(item) => item.id.toString()}
         renderItem={renderBooking}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
@@ -253,4 +284,20 @@ const styles = StyleSheet.create({
   empty: { alignItems: 'center', justifyContent: 'center', marginTop: 100, paddingHorizontal: 40 },
   emptyText: { marginTop: 16, fontSize: 16, color: '#9ca3af', textAlign: 'center' },
   emptySubText: { marginTop: 8, fontSize: 14, color: '#d1d5db', textAlign: 'center' },
+
+  tabBar: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    marginBottom: 8,
+    gap: 6,
+  },
+  tab: {
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 20,
+    backgroundColor: '#e5e7eb',
+  },
+  tabActive: { backgroundColor: '#6366F1' },
+  tabText: { fontSize: 13, fontWeight: '600', color: '#475569' },
+  tabTextActive: { color: '#fff' },
 });
