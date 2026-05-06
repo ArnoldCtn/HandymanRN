@@ -4,7 +4,7 @@ from rest_framework_simplejwt.views import TokenRefreshView
 from .views import (HandymanSignInView, HandymanSignUpView, HandymanTokenRefreshView,
                     HandymanUpdateView, HandymanMarkOnlineView,
                     HandymanMarkOfflineView,HandymanAvailableServicesView,HandymanAvailableLocationsView,HandymanTokenRefreshView,
-                    HandymanListByServiceView,HandymanDetailView)
+                    HandymanListByServiceView,HandymanDetailView,HandymanListView)
 
 urlpatterns = [
     path('signin/',        HandymanSignInView.as_view()),
@@ -19,4 +19,6 @@ urlpatterns = [
 
     path('services/<int:service_id>/handymen/', HandymanListByServiceView.as_view(), name='handymen-by-service'),
     path('<int:pk>/', HandymanDetailView.as_view(), name='handymanDetail'),
+
+    path('search/', HandymanListView.as_view(), name='handymen-by-service'),
 ]

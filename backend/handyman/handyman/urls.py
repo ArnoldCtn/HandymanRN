@@ -28,6 +28,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('users/',include('users.urls')),
     path('services/', include('services.urls')),
+    path('ratings/', include('ratings.urls')),
     path('handymen/', include('handymen.urls')),
     path('bookings/', include('bookings.urls')),
     path('chats/', include('chats.urls')),

@@ -1,23 +1,61 @@
+# payments/models.py
 from django.db import models
+from django.conf import settings
+from handymen.models import Handyman
 from bookings.models import Booking
 
+
 class Payment(models.Model):
-    PAYMENT_STATUS = [
-        ('pending', 'Pending'),
-        ('success', 'Success'),
-        ('failed', 'Failed'),
+    STATUS_CHOICES = [
+        ('pending',   'Pending'),
+        ('collected', 'Collected'),   # user paid successfully
+        ('split',     'Split'),       # handyman payout sent
+        ('failed',    'Failed'),
+        ('refunded',  'Refunded'),
+    ]
+    METHOD_CHOICES = [
+        ('mtn',    'MTN Money'),
+        ('orange', 'Orange Money'),
     ]
 
-    booking = models.OneToOneField(Booking, on_delete=models.CASCADE, related_name='payment')
-    amount = models.DecimalField(max_digits=10, decimal_places=2)
-    status = models.CharField(max_length=20, choices=PAYMENT_STATUS, default='pending')
-    
-    transaction_id = models.CharField(max_length=100, null=True, blank=True)
-    payment_gateway = models.CharField(max_length=50, default='flutterwave')  # or mesomb
-    payment_method = models.CharField(max_length=50, null=True, blank=True)   # MTN, Orange, Card, etc.
+    booking        = models.OneToOneField(
+        Booking, on_delete=models.PROTECT,
+        related_name='payment', null=True, blank=True
+    )
+    user           = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT, related_name='payments',
+        null=True, blank=True
 
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    )
+    handyman       = models.ForeignKey(
+        Handyman, on_delete=models.PROTECT, related_name='received_payments',
+        null=True, blank=True
+    )
+
+    # ── Amounts ──────────────────────────────────────────
+    gross_amount    = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
+    platform_fee    = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)  # 30%
+    handyman_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)  # 70%
+
+    # ── Payment method ────────────────────────────────────
+    method          = models.CharField(max_length=10, choices=METHOD_CHOICES,default='mtn')
+    payer_number    = models.CharField(max_length=20, null=True)   # user's phone paying
+
+    # ── MeSomb references ─────────────────────────────────
+    collect_ref     = models.CharField(max_length=100, blank=True, null=True)  # collection tx id
+    payout_ref      = models.CharField(max_length=100, blank=True, null=True)  # payout tx id
+    collect_status  = models.CharField(max_length=30, blank=True, null=True)
+    payout_status   = models.CharField(max_length=30, blank=True, null=True)
+
+    status          = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    error_message   = models.TextField(blank=True, null=True)
+
+    created_at      = models.DateTimeField(auto_now_add=True)
+    updated_at      = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
 
     def __str__(self):
-        return f"Payment for Booking #{self.booking.id} - {self.status}"
+        return f'Payment #{self.id} | {self.gross_amount} FCFA | {self.status}'

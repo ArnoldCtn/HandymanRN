@@ -15,6 +15,8 @@ import Button from '@/components/Button'
 import Toast from '@/components/Toast'
 import handymanApi from '@/services/handymanApi'
 import useHandymanGlobal from '@/services/handymanGlobal'
+import favicon from '@/assets/images/FullLogo.jpg'
+
 
 // ── Constants ────────────────────────────────────────────
 const DAYS = [
@@ -97,6 +99,23 @@ export default function HandymanSignUpScreen() {
   const [loading,  setLoading]  = useState(false)
   const [fetching, setFetching] = useState(false)
   const [toast,    setToast]    = useState({ visible:false, message:'', type:'success' })
+
+  // Add this test to your SignUp component temporarily
+// const testConnection = async () => {
+//   try {
+//     const response = await fetch('http://192.168.43.188:8000/handymen/signup/', {
+//       method: 'POST',
+//       headers: { 'Content-Type': 'application/json' }
+//     });
+//     console.log('Server reachable:', response.status);
+//   } catch (error) {
+//     console.error('Connection failed:', error);
+//   }
+// };
+
+// // Call this before your actual signup
+// testConnection();
+
 
   function showToast(msg, type = 'success') {
     setToast({ visible:true, message:msg, type })
@@ -186,33 +205,45 @@ export default function HandymanSignUpScreen() {
     }
 
     setLoading(true)
-    const formData = new FormData()
-    formData.append('username',     username.trim().toLowerCase())
-    formData.append('email',        email.trim().toLowerCase())
-    formData.append('password',     password)
-    formData.append('phone',        phone)
-    formData.append('location',     selLocation)
-    formData.append('availability', JSON.stringify(availability))
 
-    // M2M — append each service ID separately
-    selServices.forEach(id => formData.append('services', id))
-
+    // ── Convert image to base64 if selected ─────────────────
+    let base64Image = null
     if (profilePicture) {
-      const filename = profilePicture.split('/').pop()
-      const ext      = filename.split('.').pop()
-      formData.append('thumbnail', {
-        uri:  profilePicture,
-        name: filename,
-        type: ext === 'png' ? 'image/png' : 'image/jpeg',
-      })
+      try {
+        console.log('Converting profile picture to base64...')
+        const imgResponse = await fetch(profilePicture)
+        const blob = await imgResponse.blob()
+        base64Image = await new Promise((resolve, reject) => {
+          const reader = new FileReader()
+          reader.onloadend = () => resolve(reader.result)
+          reader.onerror = reject
+          reader.readAsDataURL(blob)
+        })
+        console.log('Profile picture converted to base64')
+      } catch (imgErr) {
+        console.log('Failed to convert image to base64:', imgErr.message)
+      }
+    }
+
+    const signupData = {
+      username:     username.trim().toLowerCase(),
+      email:        email.trim().toLowerCase(),
+      password:     password,
+      phone:        phone,
+      location:     selLocation,
+      availability: JSON.stringify(availability),
+      services:     selServices
+    }
+    if (base64Image) {
+      signupData.thumbnail = base64Image
     }
 
     try {
       const response = await handymanApi({
         method:  'POST',
         url:     '/handymen/signup/',
-        data:    formData,
-        headers: { 'Content-Type': 'multipart/form-data' },
+        data:    signupData,
+        headers: { 'Content-Type': 'application/json' },
       })
 
       const { tokens, handyman } = response.data
@@ -225,14 +256,17 @@ export default function HandymanSignUpScreen() {
       setTimeout(() => router.replace('/handyman/Home'), 1200)
 
     } catch (error) {
-  const data = error.response?.data
-  if (data?.username)     showToast(data.username[0], 'error')
-  else if (data?.email)   showToast(data.email[0], 'error')
-  else if (data?.detail)  showToast(data.detail, 'error')
-  else                    showToast(error.message ?? 'Error occurred', 'error')
-} finally {
-  setLoading(false)
-}
+      const data = error.response?.data
+      console.log('handyman signup error:', error.message)
+      console.log('handyman signup error data:', data)
+
+      if (data?.username)     showToast(data.username[0], 'error')
+      else if (data?.email)   showToast(data.email[0], 'error')
+      else if (data?.detail)  showToast(data.detail, 'error')
+      else                    showToast(error.message ?? 'Error occurred', 'error')
+    } finally {
+      setLoading(false)
+    }
   }
 
   // ─────────────────────────────────────────────────────
@@ -240,12 +274,16 @@ export default function HandymanSignUpScreen() {
   // ─────────────────────────────────────────────────────
   if (step === 1) {
     return (
+      <ScrollView>
       <DismissKeyboard>
         <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
           <Toast visible={toast.visible} message={toast.message}
             type={toast.type}
             onHide={() => setToast(t => ({ ...t, visible: false }))} />
 
+            <View>
+                 <Image source={favicon} width={200} height={250} alt="" style={{alignSelf:'center',padding:10, height:'250',width:'100%'}} />
+            </View>
           <KeyboardAvoidingView
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
             style={{ flex: 1 }}
@@ -253,7 +291,7 @@ export default function HandymanSignUpScreen() {
             <ScrollView contentContainerStyle={styles.scroll}
               keyboardShouldPersistTaps="handled">
 
-              <Title text='HandymanWest Pro' color='#202020' />
+          <Text style={{textAlign:'center',marginBottom:20, fontSize:30,fontWeight:'black',color:'gray'}}>Sign Up Here As a Pro</Text>
               <StepBar step={1} />
               <Text style={styles.stepTitle}>Basic Information</Text>
 
@@ -295,13 +333,21 @@ export default function HandymanSignUpScreen() {
 
               <Input title="Phone (e.g. +237...)" value={phone} maxLength={9} KeyboardType="phone-pad"
                 setValue={setPhone} error="" setError={() => {}} />
+                <Text style={{color:'gray',fontWeight:'100',fontSize:12}}>Should be your MTN or OM number</Text>
 
               <Button title="Next →" onPress={goToStep2} />
 
-              <Text style={styles.signinLink}>
+              <Text style={styles.signinLink} onPress={() => router.push('/handyman/SignIn')}>
                 Already have an account?{' '}
                 <Text style={{ color: '#f59e0b' }}
                   onPress={() => router.push('/handyman/SignIn')}>
+                  Sign In
+                </Text>
+              </Text>
+              <Text style={styles.signinLink} onPress={() => router.push('/(auth)/SignUp')}>
+                Create a Client Account?{' '}
+                <Text style={{ color: '#0b17f5' }}
+                  onPress={() => router.push('/(auth)/SignUp')}>
                   Sign In
                 </Text>
               </Text>
@@ -310,6 +356,7 @@ export default function HandymanSignUpScreen() {
           </KeyboardAvoidingView>
         </SafeAreaView>
       </DismissKeyboard>
+      </ScrollView>
     )
   }
 
@@ -317,7 +364,7 @@ export default function HandymanSignUpScreen() {
   // RENDER STEP 2
   // ─────────────────────────────────────────────────────
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#fff',paddingTop:20 }}>
       <Toast visible={toast.visible} message={toast.message}
         type={toast.type}
         onHide={() => setToast(t => ({ ...t, visible: false }))} />
@@ -484,7 +531,7 @@ const styles = StyleSheet.create({
   signinLink:    { textAlign:'center', marginTop:16, color:'gray', fontSize:13 },
 
   // Header (step 2)
-  header:        { flexDirection:'row', alignItems:'center', justifyContent:'space-between', paddingHorizontal:16, paddingVertical:12, borderBottomWidth:1, borderColor:'#f0f0f0' },
+  header:        { flexDirection:'row', alignItems:'center', justifyContent:'space-between', paddingHorizontal:16, paddingVertical:15, borderBottomWidth:1, borderColor:'#f0f0f0' },
   headerTitle:   { fontSize:16, fontWeight:'700', color:'#202020' },
 
   // Sections

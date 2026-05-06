@@ -43,6 +43,8 @@ class Base64ImageField(serializers.ImageField):
         return super().to_internal_value(data)
 
 class SignUpSerializer(serializers.ModelSerializer):
+    thumbnail = Base64ImageField(required=False, allow_null=True)
+
     class Meta:
         model = User
         fields = [

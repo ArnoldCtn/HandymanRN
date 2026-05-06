@@ -1,7 +1,7 @@
 import { ActivityIndicator, Image, StyleSheet, Text, View, TouchableOpacity } from 'react-native'
 import React, { useEffect, useState } from 'react'
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
-import { useNavigation } from '@react-navigation/native'
+import { useNavigation, useRoute } from '@react-navigation/native'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import Feather from '@expo/vector-icons/Feather';
 
@@ -15,6 +15,7 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import useGlobal from '@/services/global'
 import api from '@/services/api'
+import { useRouter } from 'expo-router'
 
 // import index from '@/app/(auth)/index';
 
@@ -26,7 +27,8 @@ export default function Home() {
 
   const user = useGlobal(state => state.user)
   const authenticated = useGlobal(state => state.authenticated)
-
+  
+  const router = useRouter();
   // Fetch unread notification count
   useEffect(() => {
     if (!authenticated) return
@@ -99,7 +101,10 @@ export default function Home() {
       ), 
        headerRight: () => (
        <View style={styles.container}>
+        <TouchableOpacity  onPress={() => router.push('(auth)/search') }>
          <Ionicons name='search-outline' size={35} color='#090808' style={styles.search} />
+
+        </TouchableOpacity>
          <TouchableOpacity onPress={() => navigation.navigate('ChatsList')} style={styles.chatButton}>
            <Ionicons name='send-outline' size={35} color='#090808' style={styles.search} />
            {newMessagesCount > 0 && (
