@@ -10,6 +10,7 @@ import api from '@/services/api'
 import Toast from '@/components/Toast';import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 import  useGlobal from '@/services/global'
+import favicon from '@/assets/images/FullLogo.jpg'
 
 
 console.log('Platform:', Platform.OS);
@@ -66,57 +67,85 @@ export default function SignUpScreen() {
   }
 
 
+
+
   
  async function onSignUp() {
   const failUsername = !username;
   if (failUsername) setUsernameError('Username not provided');
+    console.log('failUsername:',failUsername);
+
 
   let failEmail = false;
   if (!email.trim()) {
     setEmailError('Email is required');
+    console.log('setEmailError:',failEmail);
     failEmail = true;
   } else if (!isValidEmail(email)) {
     setEmailError('Please enter a valid email address');
+    console.log('setEmailError:',failEmail);
     failEmail = true;
   }
 
   const failPassword = !password;
   if (failPassword) setPasswordError('Password not provided');
+    console.log('setPasswordError:',failPassword);
+
 
   if (failUsername || failEmail || failPassword) return;
 
-
-  const formData = new FormData;
-  formData.append('username', username)
-  formData.append('email', email)
-  formData.append('password', password)
-
-  if(profilePicture){
-    const filename = profilePicture.split('/').pop();
-    const ext = filename.split('.').pop();
-    const mimeType = ext === 'png' ? 'image/png' : 'image/jpeg';
-
-    formData.append('thumbnail',{
-      uri:profilePicture,
-      name:filename,
-      type:mimeType,
-    });
+  // ── Convert image to base64 if selected ─────────────────
+  let base64Image = null;
+  if (profilePicture) {
+    try {
+      console.log('Converting profile picture to base64...');
+      const imgResponse = await fetch(profilePicture);
+      const blob = await imgResponse.blob();
+      base64Image = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+      console.log('Profile picture converted to base64');
+    } catch (imgErr) {
+      console.log('Failed to convert image to base64:', imgErr.message);
+    }
   }
+
+  const signupData = {
+    username: username.trim().toLowerCase(),
+    email: email.trim().toLowerCase(),
+    password: password,
+    user_type: 'client'
+  };
+  if (base64Image) {
+    signupData.thumbnail = base64Image;
+  }
+
+  console.log('profile pic:', profilePicture ? 'present (base64)' : 'none');
 
   let responseData = null;
 
-  // ── 1. API call only ──────────────────────────────────
+  // ── 1. Signup with JSON (no FormData) ─────────────────
   try {
     const response = await api({
       method: 'POST',
       url: '/users/signup/',
-      data: formData,
-      headers:{
-        'Content-Type': 'multipart/form-data',
-      } 
+      data: signupData,
+      headers: {
+        'Content-Type': 'application/json',
+      }
     });
+
+    // const response = await api.post('/users/signup/',signupData,{
+    //   header:{
+    //     'Content-Type':'application/json',
+    //   }
+    // })
+    console.log('responseee: ', response);
     responseData = response.data;
-    login(response.data.user)
+    login(response.data.user);
   } catch (error) {
     console.log('[SignUp] API error:', error.message);
     console.log('[SignUp] Status:', error.response?.status);
@@ -162,6 +191,7 @@ export default function SignUpScreen() {
 // }
 
   return (
+    <ScrollView>
       <DismissKeyboard>
     <SafeAreaView style={{flex:1}} >
       <KeyboardAvoidingView
@@ -169,12 +199,16 @@ export default function SignUpScreen() {
       keyboardVerticalOffset={Platform.OS === "ios" ? 64 : 0}
       style={{flex:1}}
       >
+         <View>
+                <Image source={favicon} width={200} height={250} alt="" style={{alignSelf:'center',padding:10, height:'250',width:'100%'}} />
+              </View>
+
         <ScrollView contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={true}
         keyboardShouldPersistTaps="handled">
           <View style={{flex:1,justifyContent:'center',paddingHorizontal:20}}>
                      
-            <Title text='Handyman West' color='#202020'  />
+            {/* <Title text='Handyman West' color='#202020'  /> */}
               
                <Toast
           visible={toast.visible}
@@ -183,7 +217,7 @@ export default function SignUpScreen() {
           onHide={() => setToast(t => ({ ...t, visible: false }))}
         />
 
-              <Text style={{textAlign:'center',marginBottom:24, fontSize:36,fontWeight:'black',color:'gray'}}>Sign Up</Text>
+              <Text style={{textAlign:'center',marginBottom:20, fontSize:36,fontWeight:'black',color:'gray'}}>Sign Up</Text>
 
                 <TouchableOpacity style={styles.ImagePicker} onPress={pickImage}>
                   {profilePicture ? (
@@ -227,15 +261,15 @@ export default function SignUpScreen() {
     
     
               <Text style={{textAlign:'center', marginVertical:15,color:'gray'}} onPress={() => router.push("SignIn")}>
-                Don &apos;  t have an account?
-                <Text style={{color:'blue'}}  onPress={() => router.push("SignIn")} >
+                Already have an account?
+                <Text style={{color:'#0b17f5'}}  onPress={() => router.push("SignIn")} >
                  Sign In 
                 </Text>
                 </Text>
                 
               <Text style={{textAlign:'center', marginVertical:15,color:'gray',fontSize:20}} onPress={() => router.push("handyman/SignUp")}>
                 Which to SignUp as a Handyman?
-                <Text style={{color:'blue'}}  onPress={() => router.push("handyman/SignUp")} >
+                <Text style={{color:'#f59e0b'}}  onPress={() => router.push("handyman/SignUp")} >
                  Sign Up
                 </Text>
                 </Text>
@@ -248,6 +282,7 @@ export default function SignUpScreen() {
           {/* <Text style={{color:'gray', textAlign:'center', justifyContent:'center'}}>SignInScreen</Text> */}
         </SafeAreaView>
         </DismissKeyboard>
+        </ScrollView>
   )
 }
 

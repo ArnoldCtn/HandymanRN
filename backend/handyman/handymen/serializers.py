@@ -68,6 +68,7 @@ class HandymanSignUpSerializer(serializers.ModelSerializer):
         queryset=Location.objects.all(), required=True
     )
     availability = FlexibleJSONField(required=False)
+    thumbnail    = Base64ImageField(required=False, allow_null=True)
 
     class Meta:
         model  = Handyman
@@ -114,7 +115,8 @@ class HandymanSerializer(serializers.ModelSerializer):
         model  = Handyman
         fields = ['id', 'username', 'email', 'phone', 'bio',
                   'thumbnail', 'availability', 'services', 'location',
-                  'is_online', 'last_seen', 'is_verified', 'is_available']
+                  'is_online', 'last_seen', 'is_verified', 'is_available',
+                  'average_rating', 'total_ratings']
 
     def get_thumbnail(self, obj):
         if obj.thumbnail:

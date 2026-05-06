@@ -5,6 +5,7 @@ from django.contrib.auth.models import (
 from django.utils import timezone
 from services.models import Service
 from locations.models import Location
+# from ratings.models import Rating
 
 
 def upload_handyman_thumbnail(instance, filename):
@@ -77,6 +78,15 @@ class Handyman(AbstractBaseUser, PermissionsMixin):
         blank=True,
         related_name='handymen'
     )
+
+    average_rating = models.DecimalField(
+        max_digits=3,decimal_places=2,null=True,blank=True,
+                help_text="Average rating from 1.00 to 10.00"
+
+    )
+
+    total_ratings = models.PositiveIntegerField(default=0)
+
 
     # ── Status ───────────────────────────────────────────
     is_online    = models.BooleanField(default=False)

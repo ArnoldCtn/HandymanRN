@@ -1,12 +1,12 @@
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
-from rest_framework.permissions import AllowAny,IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.authentication import BaseAuthentication
 
 from django.contrib.auth import authenticate
-from .serializers import UserSerializer, SignUpSerializer,UserUpdateSerializer
+from .serializers import UserSerializer, SignUpSerializer, UserUpdateSerializer
 from axes.handlers.proxy import AxesProxyHandler
 from django.conf import settings
 
@@ -19,10 +19,11 @@ from axes.models import AccessAttempt
 FAILURE_LIMIT = 5
 COOLOFF_HOURS = 1
 
+
 class NoAuthentication(BaseAuthentication):
     def authenticate(self, request):
         return None  # always anonymous — let permissions decide
-    
+
 
 def _lockout_info(username: str) -> tuple[int, bool, int]:
     """Return (failures, is_locked, minutes_remaining) for *username*."""
@@ -44,7 +45,6 @@ def _lockout_info(username: str) -> tuple[int, bool, int]:
     return failures, locked, mins
 
 
-
 def get_auth_for_user(user, request=None):
     tokens = RefreshToken.for_user(user)
     return {
@@ -62,6 +62,7 @@ def get_auth_for_user(user, request=None):
 class SignInView(APIView):
     permission_classes = [AllowAny]
     authentication_classes = [NoAuthentication]   # public endpoint
+    print(f"post start")
 
 
     def post(self, request):
@@ -85,17 +86,18 @@ class SignInView(APIView):
                            .filter(username=username)
                            .order_by('-attempt_time')
                            .first())
-                cooloff    = settings.AXES_COOLOFF_TIME
-                unlock_at  = attempt.attempt_time + cooloff
-                remaining  = unlock_at - timezone.now()
-                mins       = max(int(remaining.total_seconds() / 60), 1)
+                cooloff = settings.AXES_COOLOFF_TIME
+                unlock_at = attempt.attempt_time + cooloff
+                remaining = unlock_at - timezone.now()
+                mins = max(int(remaining.total_seconds() / 60), 1)
                 msg = f'Account locked. Try again in {mins} minute(s).'
             except Exception:
                 msg = 'Account locked. Too many failed attempts.'
             return Response({'detail': msg}, status=429)
 
         # ── Try to authenticate ──────────────────────────
-        user = authenticate(request=request, username=username, password=password)
+        user = authenticate(
+            request=request, username=username, password=password)
 
         if not user:
             # ── Read failure count AFTER authenticate()
@@ -105,8 +107,8 @@ class SignInView(APIView):
                            .filter(username=username)
                            .order_by('-attempt_time')
                            .first())
-                failures  = attempt.failures_since_start if attempt else 1
-                limit     = settings.AXES_FAILURE_LIMIT
+                failures = attempt.failures_since_start if attempt else 1
+                limit = settings.AXES_FAILURE_LIMIT
                 remaining = max(limit - failures, 0)
 
                 if remaining == 0:
@@ -118,6 +120,7 @@ class SignInView(APIView):
                 msg = 'Invalid username or password.'
 
             return Response({'detail': msg}, status=401)
+        print(f"post done")
 
         # ── Success ──────────────────────────────────────
         user.mark_online()
@@ -126,12 +129,18 @@ class SignInView(APIView):
 
 class SignUpView(APIView):
     permission_classes = [AllowAny]
-    parser_classes = [MultiPartParser, FormParser]  # ✅ Required for image upload
+    # ✅ Required for image upload
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
+    # authentication_classes = [NoAuthentication]
+    # print(f"post start")
 
     def post(self, request):
+        print(f"post start")
+
         new_user = SignUpSerializer(data=request.data)
         new_user.is_valid(raise_exception=True)
         user = new_user.save()
+        print(f"post initialized")
 
         # ✅ Pass request
         user_data = get_auth_for_user(user, request)
@@ -152,8 +161,6 @@ class UserUpdateView(APIView):
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
         return Response(UserSerializer(user, context={'request': request}).data)
-    
-
 
 
 class MarkOnlineView(APIView):
@@ -170,12 +177,6 @@ class MarkOfflineView(APIView):
     def post(self, request):
         request.user.mark_offline()
         return Response({'status': 'offline'})
-    
-
-
-
-
-
 
     # def login_view(request):
     # form = LoginForm(request.POST or None)
@@ -215,4 +216,3 @@ class MarkOfflineView(APIView):
     #         messages.error(request, "Please fill in both fields.")
 
     # return render(request, "accounts/login.html", {"form": form})
-

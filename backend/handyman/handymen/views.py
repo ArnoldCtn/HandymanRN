@@ -176,7 +176,7 @@ class HandymanSignInView(APIView):
 class HandymanSignUpView(APIView):
     permission_classes = [AllowAny]
     authentication_classes = [NoAuthentication]   # ← skip global JWT
-    parser_classes = [MultiPartParser, FormParser]
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
 
     def post(self, request):
         print(f'[HandymanSignUp] Data received: {dict(request.data)}')
@@ -276,6 +276,27 @@ class HandymanListByServiceView(APIView):
 
         print(
             f"[HandymenByService] Service {service_id} → {handymen.count()} handymen found")
+
+        serializer = HandymanSerializer(
+            handymen,
+            many=True,
+            context={'request': request}
+        )
+        return Response(serializer.data, status=200)
+    
+class HandymanListView(APIView):
+    permission_classes = [AllowAny]
+    authentication_classes = [NoAuthentication]   # public endpoint
+
+    def get(self, request):
+        
+        # Efficient query: filter handymen who offer this service
+        handymen = Handyman.objects.filter(
+            is_active=True
+        ).select_related('location')
+
+        # print(
+        #     f"[HandymenByService] Service {service_id} → {handymen.count()} handymen found")
 
         serializer = HandymanSerializer(
             handymen,

@@ -18,6 +18,17 @@ import os
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+
+MESOMB_APP_KEY    = os.environ.get('MESOMB_APP_KEY',    'your-app-key')
+MESOMB_ACCESS_KEY = os.environ.get('MESOMB_ACCESS_KEY', 'your-access-key')
+MESOMB_SECRET_KEY = os.environ.get('MESOMB_SECRET_KEY', 'your-secret-key')
+
+# Split percentages
+PLATFORM_FEE_PERCENT  = 0.30   # 30% goes to admin
+HANDYMAN_CUT_PERCENT  = 0.70   # 70% goes to handyman
+
+
+
 # Correct path: firebase-service-account.json should be in the same folder as settings.py
 FIREBASE_SERVICE_ACCOUNT_PATH = BASE_DIR / 'handyman/firebase-service-account.json'
 
@@ -61,6 +72,7 @@ AXES_ENABLED            = True
 CORS_ALLOW_ALL_ORIGINS = True
 # Application definition
 
+
 INSTALLED_APPS = [
     'daphne',
     'channels',
@@ -83,6 +95,7 @@ INSTALLED_APPS = [
     'chats',
     'payments',
     'notifications.apps.NotificationsConfig',
+    'ratings',
 ]
 
 ASGI_APPLICATION = 'handyman.asgi.application'

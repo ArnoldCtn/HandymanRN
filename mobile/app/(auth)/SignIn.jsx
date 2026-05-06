@@ -17,7 +17,7 @@ import  useGlobal from '@/services/global'
 import { HANDYMAN_PIN } from '@/services/pin'   // ← change this import
         // ← import PIN
 import PINLockScreen from '@/components/PINLock' // ← import PIN 
-import favicon from '@/assets/images/favicon.png'
+import favicon from '@/assets/images/FullLogo.jpg'
 
 // import { SafeAreaView } from 'react-native-safe-area-context'
 
@@ -167,7 +167,7 @@ const PinEnabled = await HANDYMAN_PIN.isEnabled()
     <DismissKeyboard>
     <SafeAreaView style={{flex:1}}>
       <View>
-        <Image source={favicon} width={200} height={250} alt="" style={{alignSelf:'center',padding:100}} />
+        <Image source={favicon} width={200} height={250} alt="" style={{alignSelf:'center',padding:10, height:'250',width:'100%'}} />
       </View>
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"}
             keyboardVerticalOffset={Platform.OS === "ios" ? 64 : 0}>
@@ -176,7 +176,7 @@ showsVerticalScrollIndicator={false}
 keyboardShouldPersistTaps="handled">
       <View style={{flex:1,justifyContent:'center',paddingHorizontal:20}}>
                  
-        <Title text='Handyman West' color='#202020'  />
+        {/* <Title text='Handyman West' color='#202020'  /> */}
           
             <Toast
           visible={toast.visible}
@@ -184,6 +184,8 @@ keyboardShouldPersistTaps="handled">
           type={toast.type}
           onHide={() => setToast(t => ({ ...t, visible: false }))}
         />
+                      <Text style={{textAlign:'center',marginBottom:20, fontSize:36,fontWeight:'black',color:'gray'}}>Sign In Here</Text>
+        
 
           <Input title='Username'
           value={username}
@@ -210,14 +212,14 @@ keyboardShouldPersistTaps="handled">
 
           <Text style={{textAlign:'center', marginVertical:15,color:'gray'}}>
             Don &apos;  t have an account?
-            <Text style={{color:'blue'}} onPress={() => router.push("SignUp")} >
+            <Text style={{color:'#0b17f5'}} onPress={() => router.push("SignUp")} >
              Sign Up 
             </Text>
             </Text>
 
           <Text style={{textAlign:'center', marginVertical:15,color:'gray'}} onPress={() => router.push("handyman/SignIn")}>
             Wish to login as Handyman?
-            <Text style={{color:'blue'}} onPress={() => router.push("handyman/SignIn")} >
+            <Text style={{color:'#f59e0b'}} onPress={() => router.push("handyman/SignIn")} >
              Sign In
             </Text>
             </Text>

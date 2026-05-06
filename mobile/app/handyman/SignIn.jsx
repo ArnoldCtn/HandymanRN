@@ -1,4 +1,5 @@
 import {
+  Image,
   Keyboard, KeyboardAvoidingView, Platform, SafeAreaView,
   ScrollView, StyleSheet, Text, TouchableOpacity,
   TouchableWithoutFeedback, View
@@ -15,6 +16,8 @@ import PINLockScreen from '@/components/PINLock'
 import { PIN } from '@/services/pin'
 import handymanApi from '@/services/handymanApi'
 import useHandymanGlobal from '@/services/handymanGlobal'
+import favicon from '@/assets/images/FullLogo.jpg'
+
 
 function DismissKeyboard({ children }) {
   if (Platform.OS === 'web') return <>{children}</>
@@ -122,18 +125,22 @@ export default function HandymanSignInScreen() {
   }
 
   return (
+    <ScrollView>
     <DismissKeyboard>
       <SafeAreaView style={{ flex:1, backgroundColor:'#fff' }}>
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
         >
+           <View>
+                  <Image source={favicon} width={200} height={250} alt="" style={{alignSelf:'center',padding:10, height:'250',width:'100%'}} />
+                </View>
           <ScrollView contentContainerStyle={styles.scroll}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled">
             <View style={{ flex:1, justifyContent:'center', paddingHorizontal:20 }}>
 
-              <Title text='Handyman Pro' color='#202020' />
+          <Text style={{textAlign:'center',marginBottom:20, fontSize:30,fontWeight:'black',color:'gray'}}>Sign In Here As a Pro</Text>
 
               <Toast visible={toast.visible} message={toast.message}
                 type={toast.type}
@@ -165,7 +172,7 @@ export default function HandymanSignInScreen() {
               </Text>
               <Text style={{ textAlign:'center', marginVertical:15, color:'gray' }}>
                Sign In as A simple user?{' '}
-                <Text style={{ color:'#320bf5' }}
+                <Text style={{ color:'#0b17f5' }}
                   onPress={() => router.push('/SignIn')}>
                   Sign In
                 </Text>
@@ -178,6 +185,7 @@ export default function HandymanSignInScreen() {
         </KeyboardAvoidingView>
       </SafeAreaView>
     </DismissKeyboard>
+    </ScrollView>
   )
 }
 

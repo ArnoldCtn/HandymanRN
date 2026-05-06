@@ -30,9 +30,12 @@ handymanApi.interceptors.request.use(async config => {
     console.log('[API] Detected FormData, setting up for multipart');
     delete config.headers['Content-Type']
     // On Android, axios needs this to not re-serialize FormData
-    // config.transformRequest = [(data) => data]
-     if (Platform.OS !== 'web') {
-      config.transformRequest = [(data) => data]
+    if (Platform.OS !== 'web') {
+      // config.transformRequest = [(data) => data]
+      
+      config.transformRequest = (data) => data
+      console.log('[API] Detected FormData, on android');
+      console.log('[API] Transform function:', config.transformRequest);
     }
   }
   console.log('[API] Request config:', {
