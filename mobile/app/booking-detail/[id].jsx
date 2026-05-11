@@ -16,6 +16,12 @@ export default function UserBookingDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [modifyModal, setModifyModal] = useState(false);
   const [newPrice, setNewPrice] = useState('');
+  const [paymentModal, setPaymentModal] = useState(false);
+  const [selectedProvider, setSelectedProvider] = useState(null);
+  const [paymentNumber, setPaymentNumber] = useState('');
+  const [phoneError, setPhoneError] = useState('');
+  const [paymentLoading, setPaymentLoading] = useState(false);
+  const [paymentResult, setPaymentResult] = useState(null);
 
   useEffect(() => {
     console.log('[U-BookingDetail] Mount, id:', id);
@@ -39,17 +45,185 @@ export default function UserBookingDetailScreen() {
     fetchBooking();
   }, [id]);
 
-  const handleComplete = async () => {
-    console.log('[U-BookingDetail] Mark complete, id:', id);
+  const handleComplete = () => {
+    setPaymentModal(true);
+  };
+
+  const validatePhoneNumber = (number, provider) => {
+    if (!number) return false;
+    
+    const orangePattern = /^(69)\d{7}$|^(655|656|657|658|659)\d{6}$/;
+    const mtnPattern = /^(67|68)\d{7}$|^(650|651|652|653|654)\d{6}$/;
+    
+    if (provider === 'orange') {
+      return orangePattern.test(number);
+    } else if (provider === 'mtn') {
+      return mtnPattern.test(number);
+    }
+    return false;
+  };
+
+  const handlePaymentNumberChange = (number) => {
+    setPaymentNumber(number);
+    
+    if (!selectedProvider) {
+      setPhoneError('Please select a payment provider first');
+      return;
+    }
+    
+    if (validatePhoneNumber(number, selectedProvider)) {
+      setPhoneError('');
+    } else {
+      setPhoneError(`Invalid ${selectedProvider === 'orange' ? 'Orange Money' : 'MTN Mobile Money'} number format`);
+    }
+  };
+
+  const handleProviderSelect = (provider) => {
+    setSelectedProvider(provider);
+    setPaymentNumber('');
+    setPhoneError('');
+  };
+
+  const handlePaymentSubmit = async () => {
+    console.log('[U-BookingDetail] ==============================');
+    console.log('[U-BookingDetail] handlePaymentSubmit START');
+    console.log('[U-BookingDetail] Provider:', selectedProvider);
+    console.log('[U-BookingDetail] Number:', paymentNumber);
+    console.log('[U-BookingDetail] Booking ID:', id);
+    console.log('[U-BookingDetail] ==============================');
+    
+    if (!selectedProvider) {
+      console.log('[U-BookingDetail] VALIDATION FAIL: no provider');
+      Alert.alert('Error', 'Please select a payment provider');
+      return;
+    }
+    
+    if (!paymentNumber) {
+      console.log('[U-BookingDetail] VALIDATION FAIL: no number');
+      Alert.alert('Error', 'Please enter your payment number');
+      return;
+    }
+    
+    if (phoneError) {
+      console.log('[U-BookingDetail] VALIDATION FAIL: phoneError=', phoneError);
+      Alert.alert('Error', phoneError);
+      return;
+    }
+    
+    setPaymentLoading(true);
+    setPaymentResult(null);
+    console.log('[U-BookingDetail] Calling API: PATCH /bookings/' + id + '/action/');
+    console.log('[U-BookingDetail] Payload:', JSON.stringify({
+      action: 'complete',
+      payment_provider: selectedProvider,
+      payment_number: paymentNumber
+    }));
+    
     try {
-      await api.patch(`/bookings/${id}/action/`, { action: 'complete' });
-      console.log('[U-BookingDetail] Complete OK');
-      Alert.alert('Success', 'Booking marked as completed');
+      const response = await api.patch(`/bookings/${id}/action/`, { 
+        action: 'complete',
+        payment_provider: selectedProvider,
+        payment_number: paymentNumber
+      });
+      
+      console.log('[U-BookingDetail] ==============================');
+      console.log('[U-BookingDetail] API SUCCESS! Status:', response.status);
+      console.log('[U-BookingDetail] Response data:', JSON.stringify(response.data, null, 2));
+      console.log('[U-BookingDetail] ==============================');
+      
+      setPaymentResult({
+        type: 'success',
+        ...response.data
+      });
+      
+      // Show detailed success alert
+      const successMsg = [
+        `Payment Status: ${response.data.payment_status || 'Completed'}`,
+        `Amount Paid: ${response.data.amount_paid || 'N/A'} XAF`,
+        `Handyman Amount: ${response.data.handyman_amount || 'N/A'} XAF`,
+        `Platform Fee: ${response.data.platform_fee || 'N/A'} XAF`,
+        `Transaction ID: ${response.data.transaction_id || 'N/A'}`,
+        '',
+        response.data.detail
+      ].join('\n');
+      
+      Alert.alert(
+        'Payment Successful',
+        successMsg,
+        [
+          {
+            text: 'OK',
+            onPress: () => {
+              setPaymentModal(false);
+              setSelectedProvider(null);
+              setPaymentNumber('');
+              setPhoneError('');
+              setPaymentResult(null);
+            }
+          }
+        ]
+      );
+      
+      // Refresh booking data
       const res = await api.get(`/bookings/${id}/`);
+      console.log('[U-BookingDetail] Booking refreshed after payment');
       setBooking(res.data);
+      
     } catch (err) {
-      console.error('[U-BookingDetail] Complete ERROR:', err.response?.status, err.response?.data || err.message);
-      Alert.alert('Error', err.response?.data?.detail || 'Action failed');
+      console.log('[U-BookingDetail] ==============================');
+      console.log('[U-BookingDetail] API ERROR!');
+      console.log('[U-BookingDetail] Error status:', err.response?.status);
+      console.log('[U-BookingDetail] Error data:', JSON.stringify(err.response?.data, null, 2));
+      console.log('[U-BookingDetail] Error message:', err.message);
+      console.log('[U-BookingDetail] ==============================');
+      
+      const errorData = err.response?.data || {};
+      const statusCode = err.response?.status;
+      
+      setPaymentResult({
+        type: 'error',
+        ...errorData
+      });
+      
+      // Build detailed error message
+      let errorMsg = errorData.detail || 'Payment processing failed';
+      
+      if (statusCode === 402) {
+        errorMsg = [
+          'Payment Failed - MeSomb Error',
+          '',
+          errorData.detail || '',
+          '',
+          'Error Code: ' + (errorData.error_code || 'N/A'),
+          'MeSomb Error: ' + (errorData.mesomb_error || 'N/A'),
+          '',
+          'What to do:',
+          '- Make sure your phone has enough balance',
+          '- Check that the phone number is correct',
+          '- Try again in a few moments',
+          '- If using Orange Money, ensure account is active'
+        ].join('\n');
+      } else if (statusCode === 400) {
+        errorMsg = [
+          'Invalid Request',
+          '',
+          errorData.detail || '',
+          'Error Code: ' + (errorData.error_code || 'N/A')
+        ].join('\n');
+      } else if (statusCode === 500) {
+        errorMsg = [
+          'Server Error',
+          '',
+          errorData.detail || 'Internal server error occurred',
+          '',
+          'Please try again. If the problem persists, contact support.'
+        ].join('\n');
+      }
+      
+      Alert.alert('Payment Failed', errorMsg);
+    } finally {
+      setPaymentLoading(false);
+      console.log('[U-BookingDetail] handlePaymentSubmit END');
     }
   };
 
@@ -171,7 +345,7 @@ export default function UserBookingDetailScreen() {
           )}
         </View>
 
-        {(isPending || isAccepted) && (
+        {( isAccepted) && (
           <TouchableOpacity style={styles.chatButton} onPress={() => router.push(`/chat/${id}?source=user`)}>
             <Ionicons name="chatbubble-outline" size={20} color="#6366F1" />
             <Text style={styles.chatButtonText}>Chat with Handyman</Text>
@@ -198,6 +372,152 @@ export default function UserBookingDetailScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* Payment Modal */}
+      <Modal visible={paymentModal} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.paymentHeader}>
+              <Text style={styles.modalTitle}>Complete Booking</Text>
+              <TouchableOpacity onPress={() => { setPaymentModal(false); setSelectedProvider(null); setPaymentNumber(''); setPhoneError(''); }}>
+                <Ionicons name="close" size={24} color="#64748b" />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={styles.paymentDescription}>
+              Select your payment provider and enter your mobile money number
+            </Text>
+
+            {/* Payment Provider Selection */}
+            <View style={styles.providerContainer}>
+              <Text style={styles.providerLabel}>Payment Provider</Text>
+              <View style={styles.providerButtons}>
+                <TouchableOpacity
+                  style={[
+                    styles.providerButton,
+                    selectedProvider === 'orange' && styles.selectedProvider
+                  ]}
+                  onPress={() => handleProviderSelect('orange')}
+                >
+                  <Image 
+                    source={require('@/assets/images/OM.png')} 
+                    style={styles.providerImage} 
+                    resizeMode="contain"
+                  />
+                  <Text style={styles.providerName}>Orange Money</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[
+                    styles.providerButton,
+                    selectedProvider === 'mtn' && styles.selectedProvider
+                  ]}
+                  onPress={() => handleProviderSelect('mtn')}
+                >
+                  <Image 
+                    source={require('@/assets/images/momo.png')} 
+                    style={styles.providerImage} 
+                    resizeMode="contain"
+                  />
+                  <Text style={styles.providerName}>MTN Mobile Money</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* Phone Number Input */}
+            {selectedProvider && (
+              <View style={styles.phoneContainer}>
+                <Text style={styles.phoneLabel}>Payment Number</Text>
+                <TextInput
+                  style={[
+                    styles.phoneInput,
+                    phoneError ? styles.phoneInputError : null
+                  ]}
+                  keyboardType="phone-pad"
+                  value={paymentNumber}
+                  onChangeText={handlePaymentNumberChange}
+                  placeholder={`Enter ${selectedProvider === 'orange' ? 'Orange Money' : 'MTN Mobile Money'} number`}
+                  maxLength={9}
+                />
+                {phoneError ? (
+                  <Text style={styles.errorText}>{phoneError}</Text>
+                ) : (
+                  <Text style={styles.hintText}>
+                    {selectedProvider === 'orange' 
+                      ? 'Format: 69XXXXXXX or 655XXXXXX' 
+                      : 'Format: 67XXXXXXX or 650XXXXXX'
+                    }
+                  </Text>
+                )}
+              </View>
+            )}
+
+            {/* Result Feedback */}
+            {paymentResult && (
+              <View style={[
+                styles.resultContainer,
+                paymentResult.type === 'success' ? styles.resultSuccess : styles.resultError
+              ]}>
+                <Ionicons 
+                  name={paymentResult.type === 'success' ? 'checkmark-circle' : 'close-circle'} 
+                  size={20} 
+                  color={paymentResult.type === 'success' ? '#22c55e' : '#ef4444'} 
+                />
+                <Text style={[
+                  styles.resultText,
+                  paymentResult.type === 'success' ? styles.resultTextSuccess : styles.resultTextError
+                ]}>
+                  {paymentResult.type === 'success' 
+                    ? 'Payment successful! See alert for details.' 
+                    : `Payment failed: ${paymentResult.detail || paymentResult.mesomb_error || 'Unknown error'}`
+                  }
+                </Text>
+              </View>
+            )}
+
+            {/* Submit Button */}
+            <View style={styles.paymentModalButtons}>
+              <TouchableOpacity 
+                style={[styles.modalCancel, { flex: 1 }]} 
+                onPress={() => { 
+                  setPaymentModal(false); 
+                  setSelectedProvider(null); 
+                  setPaymentNumber(''); 
+                  setPhoneError(''); 
+                  setPaymentResult(null);
+                }}
+                disabled={paymentLoading}
+              >
+                <Text style={styles.modalCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[
+                  styles.modalConfirm, 
+                  { flex: 1 },
+                  (!selectedProvider || !paymentNumber || !!phoneError || paymentLoading) && styles.disabledButton
+                ]} 
+                onPress={handlePaymentSubmit}
+                disabled={!selectedProvider || !paymentNumber || !!phoneError || paymentLoading}
+              >
+                {paymentLoading ? (
+                  <ActivityIndicator color="#ffffff" size="small" />
+                ) : (
+                  <Text style={styles.modalConfirmText}>Complete & Pay</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+
+            {/* Loading Overlay */}
+            {paymentLoading && (
+              <View style={styles.loadingOverlay}>
+                <ActivityIndicator size="large" color="#2563eb" />
+                <Text style={styles.loadingText}>Processing payment with MeSomb...</Text>
+                <Text style={styles.loadingSubtext}>Please check your phone for a mobile money prompt</Text>
+              </View>
+            )}
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -208,11 +528,12 @@ function getStatusColor(status) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8fafc' },
+  container: { flex: 1, backgroundColor: '#d3e5f8' },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     padding: 16, backgroundColor: 'white', borderBottomWidth: 1, borderBottomColor: '#e5e7eb',
+    paddingTop:25,
   },
   headerTitle: { fontSize: 18, fontWeight: '600', color: '#1f2937' },
   content: { padding: 16 },
@@ -246,4 +567,145 @@ const styles = StyleSheet.create({
   modalCancelText: { fontWeight: '600', color: '#475569' },
   modalConfirm: { flex: 1, padding: 14, borderRadius: 12, backgroundColor: '#6366F1', alignItems: 'center' },
   modalConfirmText: { color: 'white', fontWeight: '700' },
+  // Payment modal styles
+  paymentHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  paymentDescription: {
+    fontSize: 14,
+    color: '#64748b',
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  providerContainer: {
+    marginBottom: 24,
+  },
+  providerLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1f2937',
+    marginBottom: 12,
+  },
+  providerButtons: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  providerButton: {
+    flex: 1,
+    alignItems: 'center',
+    padding: 16,
+    borderWidth: 2,
+    borderColor: '#e5e7eb',
+    borderRadius: 12,
+    backgroundColor: '#f9fafb',
+  },
+  selectedProvider: {
+    borderColor: '#3b82f6',
+    backgroundColor: '#eff6ff',
+  },
+  providerImage: {
+    width: 60,
+    height: 40,
+    marginBottom: 8,
+  },
+  providerName: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#1f2937',
+  },
+  phoneContainer: {
+    marginBottom: 24,
+  },
+  phoneLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1f2937',
+    marginBottom: 8,
+  },
+  phoneInput: {
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+    backgroundColor: '#ffffff',
+  },
+  phoneInputError: {
+    borderColor: '#ef4444',
+  },
+  errorText: {
+    color: '#ef4444',
+    fontSize: 12,
+    marginTop: 4,
+  },
+  hintText: {
+    color: '#6b7280',
+    fontSize: 12,
+    marginTop: 4,
+  },
+  paymentModalButtons: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 8,
+  },
+  disabledButton: {
+    backgroundColor: '#d1d5db',
+    opacity: 0.6,
+  },
+  // Loading overlay styles
+  loadingOverlay: {
+    position: 'absolute',
+    top: 0, left: 0, right: 0, bottom: 0,
+    backgroundColor: 'rgba(255,255,255,0.95)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 20,
+  },
+  loadingText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1f2937',
+    marginTop: 16,
+    textAlign: 'center',
+  },
+  loadingSubtext: {
+    fontSize: 13,
+    color: '#64748b',
+    marginTop: 8,
+    textAlign: 'center',
+    paddingHorizontal: 20,
+  },
+  // Result feedback styles
+  resultContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 12,
+    marginBottom: 16,
+    gap: 8,
+  },
+  resultSuccess: {
+    backgroundColor: '#f0fdf4',
+    borderWidth: 1,
+    borderColor: '#bbf7d0',
+  },
+  resultError: {
+    backgroundColor: '#fef2f2',
+    borderWidth: 1,
+    borderColor: '#fecaca',
+  },
+  resultText: {
+    fontSize: 13,
+    fontWeight: '600',
+    flex: 1,
+  },
+  resultTextSuccess: {
+    color: '#166534',
+  },
+  resultTextError: {
+    color: '#991b1b',
+  },
 });

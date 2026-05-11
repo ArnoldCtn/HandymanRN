@@ -10,10 +10,10 @@ from .models import Handyman
 class HandymanAdmin(admin.ModelAdmin):
     list_display  = ['id','username', 'email', 'thumbnail_preview',
                      'status_badge', 'last_seen_display',
-                     'is_verified', 'is_available', 'location']
-    list_filter   = ['is_online', 'is_active',
-                     'is_verified', 'is_available']  # ← removed 'specialty'
-    search_fields = ['username', 'email', 'phone']
+                     'is_verified', 'is_available', 'location','subscription_level']
+    list_filter   = ['is_online', 'is_active','subscription_level',
+                     'is_verified', 'is_available']  
+    search_fields = ['username', 'email', 'phone','subscription_level']
     ordering      = ['-is_online', '-last_seen']
     readonly_fields = ['thumbnail_preview', 'last_seen']
 
