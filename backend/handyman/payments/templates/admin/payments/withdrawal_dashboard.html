@@ -1,0 +1,176 @@
+{% extends "admin/base_site.html" %}
+{% load admin_modify %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+<a href="{% url 'admin:index' %}">Home</a>
+&rsaquo; <a href="{% url 'admin:app_list' 'payments' %}">Payments</a>
+&rsaquo; {{ title }}
+</div>
+{% endblock %}
+
+{% block content %}
+<div id="content-main">
+    <div class="module" style="margin-bottom: 30px;">
+        <h2> Revenue Dashboard</h2>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin: 20px 0;">
+            <div class="card" style="background: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 4px solid #28a745;">
+                <h3 style="margin: 0 0 10px 0; color: #28a745;">Total Revenue</h3>
+                <div style="font-size: 24px; font-weight: bold;">{{ total_revenue }} XAF</div>
+                <div style="color: #6c757d; font-size: 14px;">All time platform fees</div>
+            </div>
+            
+            <div class="card" style="background: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 4px solid #ffc107;">
+                <h3 style="margin: 0 0 10px 0; color: #ffc107;">Pending Withdrawals</h3>
+                <div style="font-size: 24px; font-weight: bold;">{{ pending_withdrawals }} XAF</div>
+                <div style="color: #6c757d; font-size: 14px;">Awaiting processing</div>
+            </div>
+            
+            <div class="card" style="background: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 4px solid #17a2b8;">
+                <h3 style="margin: 0 0 10px 0; color: #17a2b8;">Available for Withdrawal</h3>
+                <div style="font-size: 24px; font-weight: bold;">{{ available_for_withdrawal }} XAF</div>
+                <div style="color: #6c757d; font-size: 14px;">Ready to withdraw</div>
+            </div>
+            
+            <div class="card" style="background: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 4px solid #dc3545;">
+                <h3 style="margin: 0 0 10px 0; color: #dc3545;">MeSomb Balance</h3>
+                <div style="font-size: 24px; font-weight: bold;">{{ mesomb_balance }}</div>
+                <div style="color: #6c757d; font-size: 14px;">
+                    <form method="post" action="/payments/refresh-mesomb-balance/" style="display: inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="button" style="background: #17a2b8; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; margin-top: 5px;">
+                            Refresh
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="module" style="margin-bottom: 30px;">
+        <h2> Process Withdrawal</h2>
+        <form method="post" action="/payments/process-withdrawal/" style="background: #f8f9fa; padding: 20px; border-radius: 8px;">
+            {% csrf_token %}
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 25px; align-items: end;">
+                <div>
+                    <label for="withdrawal_amount" style="display: block; margin-bottom: 5px; font-weight: bold;">Amount (XAF):</label>
+                    <input type="number" id="withdrawal_amount" name="withdrawal_amount" 
+                           max="{{ available_for_withdrawal }}" min="1" required
+                           style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                </div>
+                <div>
+                    <label for="withdrawal_number" style="display: block; margin-bottom: 5px; font-weight: bold;">Phone Number:</label>
+                    <input type="tel" id="withdrawal_number" name="withdrawal_number" 
+                           placeholder="e.g. 670123456" required
+                           style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                </div>
+                <div>
+                    <label for="withdrawal_method" style="display: block; margin-bottom: 5px; font-weight: bold;">Method:</label>
+                    <select id="withdrawal_method" name="withdrawal_method" 
+                            style="width: 100%; padding: 4px; border: 1px solid #ddd; border-radius: 4px;">
+                        <option value="mtn">MTN Money</option>
+                        <option value="orange">Orange Money</option>
+                    </select>
+                </div>
+                <div>
+                    <button type="submit" class="button" style="background: #28a745; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-weight: bold;">
+                         Withdraw Now
+                    </button>
+                </div>
+            </div>
+            <div style="margin-top: 10px; color: #6c757d; font-size: 14px;">
+                Available: {{ available_for_withdrawal }} XAF | Failed payments: {{ failed_payments }}
+            </div>
+        </form>
+    </div>
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
+        <div class="module">
+            <h2>Recent Payments</h2>
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="background: #f8f9fa;">
+                        <th style="padding: 10px; text-align: left; border-bottom: 2px solid #dee2e6;">ID</th>
+                        <th style="padding: 10px; text-align: left; border-bottom: 2px solid #dee2e6;">User</th>
+                        <th style="padding: 10px; text-align: left; border-bottom: 2px solid #dee2e6;">Amount</th>
+                        <th style="padding: 10px; text-align: left; border-bottom: 2px solid #dee2e6;">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for payment in recent_payments %}
+                    <tr style="border-bottom: 1px solid #dee2e6;">
+                        <td style="padding: 10px;">#{{ payment.id }}</td>
+                        <td style="padding: 10px;">{{ payment.user.username }}</td>
+                        <td style="padding: 10px;">{{ payment.gross_amount }} XAF</td>
+                        <td style="padding: 10px;">
+                            {% if payment.status == 'pending' %}
+                                <span style="background: #ffc107; color: white; padding: 2px 8px; border-radius: 12px; font-size: 12px;">{{ payment.get_status_display }}</span>
+                            {% elif payment.status == 'collected' %}
+                                <span style="background: #17a2b8; color: white; padding: 2px 8px; border-radius: 12px; font-size: 12px;">{{ payment.get_status_display }}</span>
+                            {% elif payment.status == 'split' %}
+                                <span style="background: #28a745; color: white; padding: 2px 8px; border-radius: 12px; font-size: 12px;">{{ payment.get_status_display }}</span>
+                            {% elif payment.status == 'failed' %}
+                                <span style="background: #dc3545; color: white; padding: 2px 8px; border-radius: 12px; font-size: 12px;">{{ payment.get_status_display }}</span>
+                            {% else %}
+                                <span style="background: #6c757d; color: white; padding: 2px 8px; border-radius: 12px; font-size: 12px;">{{ payment.get_status_display }}</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" style="padding: 20px; text-align: center; color: #6c757d;">No recent payments</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="module">
+            <h2>Withdrawal History</h2>
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="background: #f8f9fa;">
+                        <th style="padding: 10px; text-align: left; border-bottom: 2px solid #dee2e6;">Amount</th>
+                        <th style="padding: 10px; text-align: left; border-bottom: 2px solid #dee2e6;">Number</th>
+                        <th style="padding: 10px; text-align: left; border-bottom: 2px solid #dee2e6;">Status</th>
+                        <th style="padding: 10px; text-align: left; border-bottom: 2px solid #dee2e6;">Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for payment in withdrawal_history %}
+                    <tr style="border-bottom: 1px solid #dee2e6;">
+                        <td style="padding: 10px;">{{ payment.admin_withdrawal_amount }} XAF</td>
+                        <td style="padding: 10px;">{{ payment.admin_withdrawal_number }}</td>
+                        <td style="padding: 10px;">
+                            {% if payment.admin_withdrawal_status == 'processed' %}
+                                <span style="background: #28a745; color: white; padding: 2px 8px; border-radius: 12px; font-size: 12px;">Processed</span>
+                            {% else %}
+                                <span style="background: #ffc107; color: white; padding: 2px 8px; border-radius: 12px; font-size: 12px;">Pending</span>
+                            {% endif %}
+                        </td>
+                        <td style="padding: 10px;">{{ payment.updated_at|date:"M d, Y H:i" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" style="padding: 20px; text-align: center; color: #6c757d;">No withdrawal history</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<style>
+.card {
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: transform 0.2s;
+}
+.card:hover {
+    transform: translateY(-2px);
+}
+.button:hover {
+    opacity: 0.9;
+}
+</style>
+{% endblock %}

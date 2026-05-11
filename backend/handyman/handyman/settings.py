@@ -18,10 +18,34 @@ import os
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# ── Load .env file ─────────────────────────────────────────────────
+# Try to load environment variables from .env file
+env_path = BASE_DIR.parent / '.env'
+try:
+    from dotenv import load_dotenv
+    if env_path.exists():
+        load_dotenv(dotenv_path=env_path)
+        print(f"[SETTINGS] Loaded .env from {env_path}")
+    else:
+        print(f"[SETTINGS] No .env file found at {env_path}")
+except ImportError:
+    print("[SETTINGS] python-dotenv not installed. Run: pip install python-dotenv")
 
-MESOMB_APP_KEY    = os.environ.get('MESOMB_APP_KEY',    'your-app-key')
-MESOMB_ACCESS_KEY = os.environ.get('MESOMB_ACCESS_KEY', 'your-access-key')
-MESOMB_SECRET_KEY = os.environ.get('MESOMB_SECRET_KEY', 'your-secret-key')
+# ── MeSomb Configuration ───────────────────────────────────────────
+# Load from environment variables for security
+MESOMB_ACCESS_KEY = os.getenv('MESOMB_ACCESS_KEY', 'e3c418a5-043f-4a2b-aeb4-4c8207384932 ')
+MESOMB_SECRET_KEY = os.getenv('MESOMB_SECRET_KEY', '9733680c-1139-4901-9fd3-59802a786af6')
+MESOMB_APPLICATION_KEY = os.getenv('MESOMB_APPLICATION_KEY', 'e96d73249360397e619946b8913a87763658bc3d')
+
+# Webhook security (optional but recommended)
+MESOMB_WEBHOOK_SECRET = os.getenv('MESOMB_WEBHOOK_SECRET', 'your_webhook_secret_here')
+
+# Environment settings
+MESOMB_ENVIRONMENT = os.getenv('MESOMB_ENVIRONMENT', 'sandbox')  # Change to 'production' when ready
+
+# Webhook URLs (for ngrok testing - update with your ngrok URL)
+NGROK_URL = os.getenv('NGROK_URL', 'https://sharpie-carless-rimless.ngrok-free.dev')
+WEBHOOK_BASE_URL = f"{NGROK_URL}/api/payments/webhooks"
 
 # Split percentages
 PLATFORM_FEE_PERCENT  = 0.30   # 30% goes to admin
@@ -219,3 +243,37 @@ STATIC_URL = 'static/'
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+# Logging configuration — ensure payment debug output is visible in terminal
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '[{levelname}] {name} — {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'INFO',
+    },
+    'loggers': {
+        'payments': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'bookings': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+    },
+}

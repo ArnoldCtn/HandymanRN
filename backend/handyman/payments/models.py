@@ -18,7 +18,7 @@ class Payment(models.Model):
         ('orange', 'Orange Money'),
     ]
 
-    booking        = models.OneToOneField(
+    booking        = models.ForeignKey(
         Booking, on_delete=models.PROTECT,
         related_name='payment', null=True, blank=True
     )
@@ -33,6 +33,8 @@ class Payment(models.Model):
         null=True, blank=True
     )
 
+
+
     # ── Amounts ──────────────────────────────────────────
     gross_amount    = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     platform_fee    = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)  # 30%
@@ -41,12 +43,31 @@ class Payment(models.Model):
     # ── Payment method ────────────────────────────────────
     method          = models.CharField(max_length=10, choices=METHOD_CHOICES,default='mtn')
     payer_number    = models.CharField(max_length=20, null=True)   # user's phone paying
+    handyman_payment_number = models.CharField(max_length=20, null=True, blank=True)
 
     # ── MeSomb references ─────────────────────────────────
     collect_ref     = models.CharField(max_length=100, blank=True, null=True)  # collection tx id
     payout_ref      = models.CharField(max_length=100, blank=True, null=True)  # payout tx id
+    
+    # ── Automatic Payout Status ──────────────────────────────
+    handyman_withdrawal_status = models.CharField(
+        max_length=20,
+        choices=[
+            ('pending', 'Pending'),
+            ('processing', 'Processing'),
+            ('completed', 'Completed'),
+            ('failed', 'Failed')
+        ],
+        default='pending'
+    )
     collect_status  = models.CharField(max_length=30, blank=True, null=True)
     payout_status   = models.CharField(max_length=30, blank=True, null=True)
+
+    # Track admin withdrawal requests  
+    admin_withdrawal_requested = models.BooleanField(default=False)
+    admin_withdrawal_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
+    admin_withdrawal_number = models.CharField(max_length=20, null=True, blank=True)
+    admin_withdrawal_status = models.CharField(max_length=20, default='pending')  # pending/processed
 
     status          = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     error_message   = models.TextField(blank=True, null=True)

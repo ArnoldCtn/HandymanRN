@@ -6,6 +6,7 @@ name = "pypi"
 [packages]
 pymesomb = "*"
 django-environ = "*"
+pyngrok = "*"
 
 [dev-packages]
 

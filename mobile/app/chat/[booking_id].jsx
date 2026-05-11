@@ -218,7 +218,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f8fafc' },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   header: {
-    flexDirection: 'row', alignItems: 'center', padding: 16,
+    flexDirection: 'row', alignItems: 'center', padding: 16,marginTop:20,
     backgroundColor: 'white', borderBottomWidth: 1, borderBottomColor: '#e5e7eb',
   },
   headerAvatar: { width: 40, height: 40, borderRadius: 20 },

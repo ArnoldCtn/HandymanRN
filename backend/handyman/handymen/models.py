@@ -17,6 +17,7 @@ def upload_handyman_thumbnail(instance, filename):
 # ── Manager — querying only, no model fields here ────────
 class HandymanManager(BaseUserManager):
 
+
     def create_user(self, username, email, password=None, **extra):
         if not username: raise ValueError('Username is required')
         if not email:    raise ValueError('Email is required')
@@ -33,6 +34,13 @@ class HandymanManager(BaseUserManager):
 
 # ── Model ─────────────────────────────────────────────────
 class Handyman(AbstractBaseUser, PermissionsMixin):
+
+    SUBSCRIPTION_CHOICES = [
+        ('free', 'Free'),
+        ('pro', 'Pro'),
+        ('premium', 'Premium'),
+        
+    ]
 
     # ── Fix clash: override related_name on BOTH M2M fields ──
     # This is the ONLY fix needed for the reverse accessor errors
@@ -93,6 +101,13 @@ class Handyman(AbstractBaseUser, PermissionsMixin):
     last_seen    = models.DateTimeField(null=True, blank=True)
     is_available = models.BooleanField(default=True)
     is_verified  = models.BooleanField(default=False)  # admin approves
+
+
+    subscription_level = models.CharField(
+        max_length=20, 
+        choices=SUBSCRIPTION_CHOICES, 
+        default='free'
+    )
 
     # ── 2FA ──────────────────────────────────────────────
     two_fa_enabled = models.BooleanField(default=False)
