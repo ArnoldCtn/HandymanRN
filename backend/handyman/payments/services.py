@@ -29,6 +29,93 @@ class MeSombService:
             missing.append('MESOMB_SECRET_KEY')
         return missing
 
+    def _map_mesomb_error(self, raw_error, error_code=None):
+        """
+        Map MeSomb error messages/codes to user-friendly messages.
+        Based on MeSomb API documentation: https://mesomb.hachther.com
+        """
+        raw_lower = (raw_error or '').lower()
+        
+        # Map known MeSomb error patterns
+        error_map = {
+            # Insufficient balance
+            'insufficient': 'Insufficient balance: Your mobile money account does not have enough funds for this payment. Please top up and try again.',
+            'insuffisant': 'Insufficient balance: Your mobile money account does not have enough funds for this payment. Please top up and try again.',
+            'not enough': 'Insufficient balance: Your mobile money account does not have enough funds for this payment. Please top up and try again.',
+            'solde insuffisant': 'Insufficient balance: Your mobile money account does not have enough funds for this payment. Please top up and try again.',
+            
+            # Invalid/inactive phone number
+            'not found': 'Invalid phone number: The phone number was not found or is not registered for mobile money. Please check and try again.',
+            'not exist': 'Invalid phone number: The phone number was not found or is not registered for mobile money. Please check and try again.',
+            'invalid number': 'Invalid phone number: The phone number format is incorrect. Please use a valid Cameroon mobile number.',
+            'does not exist': 'Invalid phone number: The phone number does not exist or is not registered for mobile money.',
+            
+            # Account inactive/blocked
+            'inactive': 'Account inactive: Your mobile money account is not active. Please contact your provider (MTN/Orange) to activate it.',
+            'not active': 'Account inactive: This mobile money account is not active. Please contact your provider (MTN/Orange) to activate it.',
+            'sender account': 'Account inactive: This mobile money account is not active or registered. Please check the number or contact your provider.',
+            'blocked': 'Account blocked: Your mobile money account is temporarily blocked. Please contact your provider to resolve this.',
+            'suspend': 'Account suspended: Your mobile money account has been suspended. Please contact your provider.',
+            'not activated': 'Account inactive: Your mobile money account is not yet activated. Please visit an MTN/Orange service center.',
+            
+            # Transaction limits
+            'limit': 'Transaction limit exceeded: You have reached your daily/monthly transaction limit. Please try again tomorrow or contact your provider.',
+            'maximum': 'Transaction limit exceeded: The amount exceeds your transaction limit. Please try a smaller amount or contact your provider.',
+            'quota': 'Transaction limit exceeded: You have reached your transaction quota. Please try again later.',
+            
+            # Wrong PIN / Authentication
+            'pin': 'Wrong PIN: The transaction was cancelled because the wrong PIN was entered. Please try again with the correct PIN.',
+            'password': 'Wrong PIN: The transaction was cancelled because the wrong PIN was entered. Please try again with the correct PIN.',
+            'cancelled by user': 'Transaction cancelled: You cancelled the payment on your phone. Please try again if you want to proceed.',
+            'refused': 'Payment refused: The payment was refused. Please check your account status or try again.',
+            
+            # Network/Service issues
+            'timeout': 'Network timeout: The request took too long. Please check your connection and try again.',
+            'too much time': 'Timeout: You took too long to enter the PIN on your phone. Please try again and enter the PIN immediately when you receive the SMS.',
+            'took too long': 'Timeout: You took too long to enter the PIN on your phone. Please try again and enter the PIN immediately when you receive the SMS.',
+            'validate the transaction': 'Timeout: You took too long to enter the PIN on your phone. Please try again and enter the PIN immediately when you receive the SMS.',
+            'temporarily unavailable': 'Service temporarily unavailable: The mobile money service is currently down. Please try again in a few minutes.',
+            'service unavailable': 'Service temporarily unavailable: The mobile money service is currently down. Please try again in a few minutes.',
+            
+            # Application/Config errors
+            'invalid application': 'Configuration error: The application key is invalid. Please contact support.',
+            'unauthorized': 'Authentication error: The API credentials are invalid. Please contact support.',
+            'forbidden': 'Permission denied: Your application does not have permission for this operation.',
+            'not allowed': 'Operation not allowed: This operation is not permitted for your application.',
+            
+            # Currency/Amount issues
+            'invalid amount': 'Invalid amount: The payment amount is not valid. Please contact support.',
+            'minimum': 'Amount too small: The amount is below the minimum allowed. Please increase the amount.',
+            'maximum amount': 'Amount too large: The amount exceeds the maximum allowed. Please reduce the amount.',
+        }
+        
+        # Check for known error patterns
+        for pattern, message in error_map.items():
+            if pattern in raw_lower:
+                return message
+        
+        # Check error codes if provided
+        if error_code:
+            code_map = {
+                '400': 'Invalid request: The payment details are incorrect. Please check your information and try again.',
+                '401': 'Authentication failed: The API credentials are invalid. Please contact support.',
+                '403': 'Permission denied: This operation is not allowed. Please contact support.',
+                '404': 'Service not found: The requested mobile money service is unavailable.',
+                '409': 'Duplicate transaction: A transaction with this ID already exists.',
+                '422': 'Invalid data: The phone number or amount is not valid. Please check and try again.',
+                '429': 'Too many requests: You are sending too many requests. Please wait a moment and try again.',
+                '500': 'MeSomb server error: The payment service is experiencing issues. Please try again later.',
+                '503': 'Service unavailable: The mobile money service is temporarily down. Please try again later.',
+            }
+            if str(error_code) in code_map:
+                return code_map[str(error_code)]
+        
+        # If no specific match, return raw error with generic prefix
+        if raw_error:
+            return f'Payment failed: {raw_error}. Please try again or contact support if the problem persists.'
+        
+        return 'Payment failed: An unexpected error occurred. Please try again or contact support.'
+
     def collect_payment(self, amount, payer_number, service, booking_id, user_id):
         """
         Collect payment FROM user via MeSomb.
@@ -90,15 +177,33 @@ class MeSombService:
                     }
                 }
             else:
-                error_msg = 'MeSomb operation failed'
+                # Extract specific error details from MeSomb response
+                raw_error = None
+                error_code = None
+                
+                # Try to get detailed error from response
                 if hasattr(response, 'message') and response.message:
-                    error_msg = response.message
+                    raw_error = response.message
                 elif hasattr(response, 'detail') and response.detail:
-                    error_msg = response.detail
-                logger.error(f"[MeSombService.collect_payment] FAILED | MeSomb error: {error_msg}")
+                    raw_error = response.detail
+                elif hasattr(response, 'raw_response') and response.raw_response:
+                    raw_error = str(response.raw_response)
+                
+                # Try to extract error code
+                if hasattr(response, 'code'):
+                    error_code = response.code
+                elif hasattr(response, 'status'):
+                    error_code = response.status
+                
+                # Map to user-friendly message
+                user_friendly = self._map_mesomb_error(raw_error, error_code)
+                
+                logger.error(f"[MeSombService.collect_payment] FAILED | code={error_code} | raw={raw_error} | mapped={user_friendly}")
                 return {
                     'success': False,
-                    'error': error_msg,
+                    'error': user_friendly,
+                    'mesomb_raw_error': raw_error,
+                    'mesomb_error_code': error_code,
                     'mesomb_response': {
                         'operation_success': response.is_operation_success(),
                         'transaction_success': response.is_transaction_success()
@@ -155,7 +260,7 @@ class MeSombService:
             
             # Initiate MeSomb transfer
             transfer_result = self._initiate_transfer(
-                amount=handyman_share,
+                amount=float(handyman_share),  # Convert Decimal to float for MeSomb SDK
                 recipient=payout_phone,
                 payment_id=payment.id
             )
@@ -180,7 +285,7 @@ class MeSombService:
     
     def _calculate_handyman_share(self, payment):
         """Calculate handyman's share based on subscription level"""
-        total_amount = payment.total_amount
+        total_amount = payment.gross_amount  # Fixed: use gross_amount field
         
         if payment.handyman.subscription_level == 'free':
             # Free: 70% to handyman

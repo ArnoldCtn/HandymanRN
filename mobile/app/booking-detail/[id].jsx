@@ -110,6 +110,20 @@ export default function UserBookingDetailScreen() {
       return;
     }
     
+    // Start payment flow directly
+    console.log('[U-BookingDetail] Starting payment flow directly...');
+    console.log('[U-BookingDetail] About to call runPaymentFlow()');
+    try {
+      await runPaymentFlow();
+      console.log('[U-BookingDetail] runPaymentFlow() completed');
+    } catch (error) {
+      console.log('[U-BookingDetail] runPaymentFlow() error:', error);
+    }
+  };
+  
+  const runPaymentFlow = async () => {
+    let shouldClearLoading = true; // Track if we should clear loading in finally
+    
     setPaymentLoading(true);
     setPaymentResult(null);
     console.log('[U-BookingDetail] Calling API: PATCH /bookings/' + id + '/action/');
@@ -127,10 +141,35 @@ export default function UserBookingDetailScreen() {
       });
       
       console.log('[U-BookingDetail] ==============================');
-      console.log('[U-BookingDetail] API SUCCESS! Status:', response.status);
+      console.log('[U-BookingDetail] API Response! Status:', response.status);
       console.log('[U-BookingDetail] Response data:', JSON.stringify(response.data, null, 2));
       console.log('[U-BookingDetail] ==============================');
       
+      // Handle 202 ACCEPTED - payment initiated, waiting for PIN
+      if (response.status === 202) {
+        setPaymentResult({
+          type: 'pending',
+          ...response.data
+        });
+        
+        Alert.alert(
+          'Payment Initiated',
+          `${response.data.detail}\n\nAmount: ${response.data.amount} XAF\n\nPlease enter your PIN when you receive the SMS.`,
+          [
+            {
+              text: 'Waiting for SMS...',
+              style: 'cancel'
+            }
+          ]
+        );
+        
+        // Keep loading active - user should see the waiting screen
+        shouldClearLoading = false; // Don't clear loading in finally
+        console.log('[U-BookingDetail] Payment initiated, waiting for user PIN...');
+        return; // Don't clear loading yet
+      }
+      
+      // Handle 200 OK - payment completed immediately
       setPaymentResult({
         type: 'success',
         ...response.data
@@ -139,7 +178,7 @@ export default function UserBookingDetailScreen() {
       // Show detailed success alert
       const successMsg = [
         `Payment Status: ${response.data.payment_status || 'Completed'}`,
-        `Amount Paid: ${response.data.amount_paid || 'N/A'} XAF`,
+        `Amount Paid: ${response.data.amount || 'N/A'} XAF`,
         `Handyman Amount: ${response.data.handyman_amount || 'N/A'} XAF`,
         `Platform Fee: ${response.data.platform_fee || 'N/A'} XAF`,
         `Transaction ID: ${response.data.transaction_id || 'N/A'}`,
@@ -186,22 +225,26 @@ export default function UserBookingDetailScreen() {
       });
       
       // Build detailed error message
+      // Backend now sends mapped user-friendly messages in errorData.detail
       let errorMsg = errorData.detail || 'Payment processing failed';
       
       if (statusCode === 402) {
+        // Use the specific mapped message from backend if available
+        const specificReason = errorData.detail || 'Payment failed';
+        const rawError = errorData.mesomb_raw_error || errorData.mesomb_error || 'N/A';
+        const errorCode = errorData.mesomb_error_code || errorData.error_code || 'N/A';
+        
         errorMsg = [
-          'Payment Failed - MeSomb Error',
+          specificReason,
           '',
-          errorData.detail || '',
-          '',
-          'Error Code: ' + (errorData.error_code || 'N/A'),
-          'MeSomb Error: ' + (errorData.mesomb_error || 'N/A'),
+          'Error Code: ' + errorCode,
+          'Raw Error: ' + rawError,
           '',
           'What to do:',
           '- Make sure your phone has enough balance',
-          '- Check that the phone number is correct',
+          '- Check that the phone number is correct and active',
+          '- Ensure your mobile money account is not blocked',
           '- Try again in a few moments',
-          '- If using Orange Money, ensure account is active'
         ].join('\n');
       } else if (statusCode === 400) {
         errorMsg = [
@@ -222,7 +265,9 @@ export default function UserBookingDetailScreen() {
       
       Alert.alert('Payment Failed', errorMsg);
     } finally {
-      setPaymentLoading(false);
+      if (shouldClearLoading) {
+        setPaymentLoading(false);
+      }
       console.log('[U-BookingDetail] handlePaymentSubmit END');
     }
   };
@@ -456,20 +501,26 @@ export default function UserBookingDetailScreen() {
             {paymentResult && (
               <View style={[
                 styles.resultContainer,
-                paymentResult.type === 'success' ? styles.resultSuccess : styles.resultError
+                paymentResult.type === 'success' ? styles.resultSuccess : 
+                paymentResult.type === 'pending' ? styles.resultPending : styles.resultError
               ]}>
                 <Ionicons 
-                  name={paymentResult.type === 'success' ? 'checkmark-circle' : 'close-circle'} 
+                  name={paymentResult.type === 'success' ? 'checkmark-circle' : 
+                        paymentResult.type === 'pending' ? 'time' : 'close-circle'} 
                   size={20} 
-                  color={paymentResult.type === 'success' ? '#22c55e' : '#ef4444'} 
+                  color={paymentResult.type === 'success' ? '#22c55e' : 
+                        paymentResult.type === 'pending' ? '#f59e0b' : '#ef4444'} 
                 />
                 <Text style={[
                   styles.resultText,
-                  paymentResult.type === 'success' ? styles.resultTextSuccess : styles.resultTextError
+                  paymentResult.type === 'success' ? styles.resultTextSuccess : 
+                  paymentResult.type === 'pending' ? styles.resultTextPending : styles.resultTextError
                 ]}>
                   {paymentResult.type === 'success' 
                     ? 'Payment successful! See alert for details.' 
-                    : `Payment failed: ${paymentResult.detail || paymentResult.mesomb_error || 'Unknown error'}`
+                    : paymentResult.type === 'pending'
+                    ? `${paymentResult.detail || 'Payment initiated... Check your phone for SMS'}`
+                    : paymentResult.detail || paymentResult.mesomb_error || 'Payment processing failed'
                   }
                 </Text>
               </View>
@@ -511,8 +562,27 @@ export default function UserBookingDetailScreen() {
             {paymentLoading && (
               <View style={styles.loadingOverlay}>
                 <ActivityIndicator size="large" color="#2563eb" />
-                <Text style={styles.loadingText}>Processing payment with MeSomb...</Text>
-                <Text style={styles.loadingSubtext}>Please check your phone for a mobile money prompt</Text>
+                <Text style={styles.loadingText}>Waiting for payment confirmation...</Text>
+                <Text style={styles.loadingSubtext}>
+                  1. Check your phone for an SMS from MTN/Orange{'\n'}
+                  2. Enter your PIN immediately to confirm{'\n'}
+                  3. Do NOT close this screen until done
+                </Text>
+                <Text style={[styles.loadingSubtext, {color: '#ef4444', fontWeight: '600', marginTop: 8}]}>
+                  You have about 60 seconds to enter your PIN
+                </Text>
+                <TouchableOpacity 
+                  style={styles.cancelLoadingButton}
+                  onPress={() => {
+                    setPaymentLoading(false);
+                    setPaymentResult({
+                      type: 'error',
+                      detail: 'Payment cancelled. You can try again if you did not receive the SMS.'
+                    });
+                  }}
+                >
+                  <Text style={styles.cancelLoadingText}>Cancel / Did not receive SMS</Text>
+                </TouchableOpacity>
               </View>
             )}
           </View>
@@ -678,6 +748,20 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     paddingHorizontal: 20,
   },
+  cancelLoadingButton: {
+    marginTop: 20,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    backgroundColor: '#fee2e2',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#fecaca',
+  },
+  cancelLoadingText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#991b1b',
+  },
   // Result feedback styles
   resultContainer: {
     flexDirection: 'row',
@@ -697,6 +781,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#fecaca',
   },
+  resultPending: {
+    backgroundColor: '#fffbeb',
+    borderWidth: 1,
+    borderColor: '#fcd34d',
+  },
   resultText: {
     fontSize: 13,
     fontWeight: '600',
@@ -707,5 +796,8 @@ const styles = StyleSheet.create({
   },
   resultTextError: {
     color: '#991b1b',
+  },
+  resultTextPending: {
+    color: '#92400e',
   },
 });

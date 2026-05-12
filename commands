@@ -13,10 +13,33 @@ cd "c:\Users\ArnoldCtn\Desktop\Handyman RN\HandymanRN\backend"
 ngrok http 8000
 
 
+Test Webhook Endpoint (PowerShell Version)
+1. Test GET Request
+Invoke-WebRequest -Uri "http://localhost:8000/payments/webhooks/test/" -Method GET
+
+2. Test POST Request
+$body = @{
+    status = "SUCCESS"
+    pk = "test123"
+    reference = "1"
+    amount = 1000
+} | ConvertTo-Json
+
+$headers = @{
+    "Content-Type" = "application/json"
+}
+
+Invoke-WebRequest -Uri "http://localhost:8000/payments/webhooks/test/" -Method POST -Headers $headers -Body $body
 
 
+To go to production:
 
-
+Change environment in .env:
+MESOMB_ENVIRONMENT=production
+Update webhook URLs in MeSomb dashboard:
+Success: https://your-domain.com/payments/webhooks/success/
+Failed:  https://your-domain.com/payments/webhooks/failed/
+Ensure account balance for payouts
 
 
  STEP 5: SSL Certificate Setup
