@@ -15,6 +15,7 @@
     "@kolking/react-native-rating": "^1.4.1",
     "@react-native-async-storage/async-storage": "2.2.0",
     "@react-native-community/datetimepicker": "8.4.4",
+    "@react-native-google-signin/google-signin": "^16.1.2",
     "@react-native-vector-icons/fontawesome6": "^13.0.0",
     "@react-navigation/bottom-tabs": "^7.15.9",
     "@react-navigation/core": "^7.17.2",

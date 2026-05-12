@@ -74,6 +74,8 @@ AUTH_USER_MODEL = 'users.User'
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES':(
        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'rest_framework.authentication.TokenAuthentication',
+
     )
 }
 from datetime import timedelta
@@ -103,6 +105,9 @@ INSTALLED_APPS = [
     'axes',
     'corsheaders',
     'rest_framework',
+    'rest_framework.authtoken',
+    'dj_rest_auth',
+    'allauth',
     'rest_framework_simplejwt',
     'django.contrib.admin',
     'django.contrib.auth',
@@ -110,6 +115,11 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'allauth.account',
+    'dj_rest_auth.registration',
+    'allauth.socialaccount',
+    'allauth.socialaccount.providers.google',
+    'socialauth'
     'handyman',
     'bookings',
     'services',
@@ -121,6 +131,9 @@ INSTALLED_APPS = [
     'notifications.apps.NotificationsConfig',
     'ratings',
 ]
+
+SITE_ID = 1 
+
 
 ASGI_APPLICATION = 'handyman.asgi.application'
 
@@ -140,6 +153,8 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'axes.middleware.AxesMiddleware',
+    "allauth.account.middleware.AccountMiddleware"
+
 ]
 
 

@@ -153,81 +153,84 @@ class BookingAcceptDeclineView(generics.UpdateAPIView):
                     "error_code": "PAYMENT_RECORD_ERROR"
                 }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
             
-            # Call MeSomb to collect payment from user's phone
-            print(f"[PAYMENT DEBUG] Initializing MeSombService...")
-            logger.info(f"[PAYMENT DEBUG] Initializing MeSombService...")
-            mesomb = MeSombService()
+            # ── ASYNC PAYMENT COLLECTION ────────────────────────
+            # MeSomb takes time waiting for user PIN entry.
+            # We initiate payment, return immediately, and process result 
+            # via webhook or background thread.
             
-            print(f"[PAYMENT DEBUG] Calling mesomb.collect_payment()...")
-            logger.info(f"[PAYMENT DEBUG] Calling mesomb.collect_payment()...")
-            collect_result = mesomb.collect_payment(
-                amount=total,
-                payer_number=payment_number,
-                service=payment_provider,
-                booking_id=booking.id,
-                user_id=booking.user.id
+            import threading
+            
+            def process_mesomb_payment(payment_id, booking_id, total, payment_number, payment_provider, handyman_amount, platform_fee):
+                """Run MeSomb collection in background thread."""
+                try:
+                    from payments.models import Payment
+                    from bookings.models import Booking
+                    
+                    payment = Payment.objects.get(id=payment_id)
+                    booking = Booking.objects.get(id=booking_id)
+                    
+                    mesomb = MeSombService()
+                    collect_result = mesomb.collect_payment(
+                        amount=total,
+                        payer_number=payment_number,
+                        service=payment_provider,
+                        booking_id=booking.id,
+                        user_id=booking.user.id
+                    )
+                    
+                    print(f"[BACKGROUND] MeSomb result for payment {payment_id}: {collect_result}")
+                    
+                    if collect_result['success']:
+                        payment.collect_ref = collect_result.get('transaction_id')
+                        payment.collect_status = collect_result.get('status')
+                        payment.status = 'collected'
+                        payment.save()
+                        
+                        booking.status = 'completed'
+                        booking.save()
+                        
+                        # Trigger payout
+                        payout_result = mesomb.process_automatic_payout(payment)
+                        if payout_result:
+                            payment.status = 'completed'
+                            payment.handyman_withdrawal_status = 'completed'
+                            payment.save()
+                            print(f"[BACKGROUND] Payment FULLY COMPLETED | payment={payment_id}")
+                        else:
+                            payment.status = 'collected'
+                            payment.save()
+                            print(f"[BACKGROUND] Payment COLLECTED but payout failed | payment={payment_id}")
+                    else:
+                        # MeSomb returned an actual error (not timeout)
+                        error_msg = collect_result.get('error', 'Unknown error')
+                        payment.status = 'failed'
+                        payment.error_message = error_msg
+                        payment.save()
+                        print(f"[BACKGROUND] Payment FAILED | payment={payment_id} | error={error_msg}")
+                        
+                except Exception as e:
+                    print(f"[BACKGROUND] Exception processing payment {payment_id}: {e}")
+                    logger.error(f"[BACKGROUND] Exception: {e}")
+            
+            # Start background thread
+            thread = threading.Thread(
+                target=process_mesomb_payment,
+                args=(payment.id, booking.id, total, payment_number, payment_provider, handyman_amount, platform_fee),
+                daemon=True
             )
+            thread.start()
             
-            print(f"[PAYMENT DEBUG] MeSomb collect result: {collect_result}")
-            logger.info(f"[PAYMENT DEBUG] MeSomb collect result: {collect_result}")
+            print(f"[PAYMENT DEBUG] Background thread started for payment {payment.id}")
+            logger.info(f"[PAYMENT DEBUG] Background thread started for payment {payment.id}")
             
-            if collect_result['success']:
-                # Payment initiated successfully
-                payment.collect_ref = collect_result.get('transaction_id')
-                payment.collect_status = collect_result.get('status')
-                payment.status = 'collected'
-                payment.save()
-                
-                print(f"[PAYMENT DEBUG] Collection SUCCESS | txn_id={payment.collect_ref}")
-                logger.info(f"[PAYMENT DEBUG] Collection SUCCESS | txn_id={payment.collect_ref}")
-                
-                # Now mark booking complete and trigger payout
-                booking.status = 'completed'
-                booking.save()
-                
-                # Trigger automatic payout to handyman
-                payout_result = mesomb.process_automatic_payout(payment)
-                print(f"[PAYMENT DEBUG] Payout result: {payout_result}")
-                logger.info(f"[PAYMENT DEBUG] Payout result: {payout_result}")
-                
-                if payout_result:
-                    payment.status = 'completed'
-                    payment.handyman_withdrawal_status = 'completed'
-                    payment.save()
-                    print(f"[PAYMENT DEBUG] Payment FULLY COMPLETED | booking={booking.id}")
-                    logger.info(f"[PAYMENT DEBUG] Payment FULLY COMPLETED | booking={booking.id}")
-                else:
-                    payment.status = 'collected'  # collected but payout pending
-                    payment.save()
-                    print(f"[PAYMENT DEBUG] Payment COLLECTED but payout failed | booking={booking.id}")
-                    logger.warning(f"[PAYMENT DEBUG] Payment COLLECTED but payout failed | booking={booking.id}")
-                
-                return Response({
-                    "detail": "Payment successful! Booking completed.",
-                    "payment_status": payment.status,
-                    "transaction_id": payment.collect_ref,
-                    "amount_paid": total,
-                    "handyman_amount": handyman_amount,
-                    "platform_fee": platform_fee,
-                    "booking": BookingSerializer(booking, context={'request': request}).data
-                }, status=status.HTTP_200_OK)
-            
-            else:
-                # MeSomb collection failed
-                error_msg = collect_result.get('error', 'Unknown error')
-                payment.status = 'failed'
-                payment.error_message = error_msg
-                payment.save()
-                
-                print(f"[PAYMENT DEBUG] Collection FAILED | error={error_msg}")
-                logger.error(f"[PAYMENT DEBUG] Collection FAILED | error={error_msg}")
-                
-                return Response({
-                    "detail": f"Payment failed: {error_msg}",
-                    "error_code": "PAYMENT_FAILED",
-                    "mesomb_error": error_msg,
-                    "debug_info": collect_result.get('mesomb_response')
-                }, status=status.HTTP_402_PAYMENT_REQUIRED)
+            # Return immediately - don't wait for MeSomb
+            return Response({
+                "detail": "Payment initiated! Please check your phone for an SMS and enter your PIN.",
+                "payment_status": "pending",
+                "payment_id": payment.id,
+                "amount": total,
+                "message": "Your payment is being processed. You will receive an SMS shortly."
+            }, status=status.HTTP_202_ACCEPTED)
 
         return Response({"detail": "Invalid action"}, status=status.HTTP_400_BAD_REQUEST)
 
