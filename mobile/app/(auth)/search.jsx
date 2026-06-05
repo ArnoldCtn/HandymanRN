@@ -38,8 +38,9 @@ export default function AllServicesScreen() {
       const handymen = handymenRes.data.map(item => ({
         ...item,
         type: 'handyman',
-        searchKey: item.username.toLowerCase()
+        searchKey: `${item.username.toLowerCase() || ''} ${item.location.toLowerCase() || ''}`
       }));
+      
 
       const combined = [...services, ...handymen];
       setAllData(combined);
@@ -113,6 +114,14 @@ export default function AllServicesScreen() {
           <Text style={styles.cardName} numberOfLines={1}>
             {isHandyman ? item.username : item.name}
           </Text>
+          {isHandyman ? <Text>
+            {(item.location && isHandyman) ? item.location : ''}
+          </Text> : ''}
+
+          {isHandyman ? <Text style={styles.cardDesc} numberOfLines={1}>
+            {(item.average_rating && isHandyman)  ? item.average_rating : ( isHandyman ? 'no ratings yet' : '')}
+        { (item.average_rating && isHandyman) ?  < Ionicons  name="star" size={18} color="#daea01" /> : ''}
+          </Text> : ''}
           <Text style={styles.cardDesc} numberOfLines={2}>
             {isHandyman ? (item.bio || 'Handyman') : (item.description || '')}
           </Text>

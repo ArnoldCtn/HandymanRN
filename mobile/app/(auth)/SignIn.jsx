@@ -1,5 +1,5 @@
 import {   Image, Keyboard, KeyboardAvoidingView, 
-  Platform, SafeAreaView, 
+  Platform, 
   ScrollView, StyleSheet, 
   Text, 
   TouchableOpacity, 
@@ -14,12 +14,11 @@ import api from '@/services/api'
 import Toast from '@/components/Toast';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import  useGlobal from '@/services/global'
-import { HANDYMAN_PIN } from '@/services/pin'   // ← change this import
-        // ← import PIN
-import PINLockScreen from '@/components/PINLock' // ← import PIN 
+import { HANDYMAN_PIN } from '@/services/pin'   
+import PINLockScreen from '@/components/PINLock' 
 import favicon from '@/assets/images/FullLogo.jpg'
-
-// import { SafeAreaView } from 'react-native-safe-area-context'
+// import GoogleSignIn from '@/components/GoogleSignIn';
+import { SafeAreaView } from 'react-native-safe-area-context'
 
  function DismissKeyboard({ children }) {
   if (Platform.OS === 'web') return <>{children}</>;
@@ -166,14 +165,13 @@ const PinEnabled = await HANDYMAN_PIN.isEnabled()
     <ScrollView>
     <DismissKeyboard>
     <SafeAreaView style={{flex:1}}>
-      <View>
-        <Image source={favicon} width={200} height={250} alt="" style={{alignSelf:'center',padding:10, height:'250',width:'100%'}} />
-      </View>
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"}
-            keyboardVerticalOffset={Platform.OS === "ios" ? 64 : 0}>
-<ScrollView contentContainerStyle={styles.scrollContent}
-showsVerticalScrollIndicator={false}
-keyboardShouldPersistTaps="handled">
+            style={{flex: 1}}>
+      <View>
+        <Image source={favicon} alt="" style={{alignSelf:'center', padding:10, height: 250, width: '100%'}} />
+      </View>
+      <ScrollView contentContainerStyle={{flexGrow: 1}} keyboardShouldPersistTaps="handled">
+<View style={styles.scrollContent}>
       <View style={{flex:1,justifyContent:'center',paddingHorizontal:20}}>
                  
         {/* <Title text='Handyman West' color='#202020'  /> */}
@@ -210,24 +208,35 @@ keyboardShouldPersistTaps="handled">
                     </View>
 
 
-          <Text style={{textAlign:'center', marginVertical:15,color:'gray'}}>
-            Don &apos;  t have an account?
-            <Text style={{color:'#0b17f5'}} onPress={() => router.push("SignUp")} >
-             Sign Up 
+          <View style={{marginVertical: 15, alignItems: 'center'}}>
+            <Text style={{color:'gray'}}>
+              Dont have an account?{' '}
+              <Text style={{color:'#0b17f5'}} onPress={() => router.push("SignUp")} >
+                Sign Up 
+              </Text>
             </Text>
-            </Text>
+          </View>
 
-          <Text style={{textAlign:'center', marginVertical:15,color:'gray'}} onPress={() => router.push("handyman/SignIn")}>
-            Wish to login as Handyman?
-            <Text style={{color:'#f59e0b'}} onPress={() => router.push("handyman/SignIn")} >
-             Sign In
+          <View style={{marginVertical: 15, alignItems: 'center'}}>
+            <Text style={{color:'gray'}} onPress={() => router.push("handyman/SignIn")}>
+              Wish to login as Handyman?{' '}
+              <Text style={{color:'#f59e0b'}}>
+                Sign In
+              </Text>
             </Text>
-            </Text>
+          </View>
+          
           <Button title='Sign In' onPress={(onSignIn)} />
+          
+          {/* <GoogleSignIn onLogin={(user, token) => {
+            console.log('[SignIn] Google Sign-In Success:', user);
+            login(user);
+            router.replace('/(auth)/Home');
+          }} /> */}
       </View>
+</View>
       </ScrollView>
       </KeyboardAvoidingView>
-      {/* <Text style={{color:'gray', textAlign:'center', justifyContent:'center'}}>SignInScreen</Text> */}
     </SafeAreaView>
      </DismissKeyboard>
      </ScrollView>

@@ -15,7 +15,7 @@ from axes.models import AccessAttempt
 
 from .models import Handyman
 from .serializers import (HandymanSerializer, HandymanSignUpSerializer,
-                          HandymanUpdateSerializer)
+                          HandymanUpdateSerializer, HandymanIdVerificationSerializer)
 
 from services.serializers import ServiceSerializer
 from services.models import Service
@@ -179,7 +179,8 @@ class HandymanSignUpView(APIView):
     parser_classes = [MultiPartParser, FormParser, JSONParser]
 
     def post(self, request):
-        print(f'[HandymanSignUp] Data received: {dict(request.data)}')
+        print(f'[HandymanSignUp] Data keys: {list(request.data.keys())}')
+        print(f'[HandymanSignUp] Files: {list(request.FILES.keys())}')
         s = HandymanSignUpSerializer(data=request.data)
         if not s.is_valid():
             print(f'[HandymanSignUp] Validation errors: {s.errors}')
@@ -187,6 +188,129 @@ class HandymanSignUpView(APIView):
         handyman = s.save()
         print(f'[HandymanSignUp] Created handyman: {handyman.username}')
         return Response(get_tokens_for_handyman(handyman, request), status=201)
+
+
+class HandymanIdVerificationView(APIView):
+    """
+    Post-login ID verification for authenticated handymen.
+    POST JSON: id_full_name, birth_date, gender,
+    id_card_front + id_card_back as data:image/...;base64,... strings.
+    """
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [HandymanJWTAuthentication]
+    parser_classes = [JSONParser, MultiPartParser, FormParser]
+
+    def post(self, request):
+        from django.core.files.base import ContentFile
+        from .id_verification import verify_id_card, decode_base64_image
+
+        handyman = request.user
+
+        if handyman.is_verified:
+            return Response({
+                'verified': True,
+                'message': 'Your account is already verified.',
+                'handyman': HandymanSerializer(handyman, context={'request': request}).data,
+            }, status=200)
+
+        # Prefer JSON + base64 (mobile); fall back to multipart uploads
+        if request.FILES.get('id_card_front') or request.FILES.get('id_card'):
+            id_full_name = (
+                request.data.get('id_full_name')
+                or request.data.get('legal_name') or ''
+            ).strip()
+            birth_date = request.data.get('birth_date') or handyman.birth_date
+            gender = (request.data.get('gender') or handyman.gender or 'male').strip().lower()
+            front = request.FILES.get('id_card_front') or request.FILES.get('id_card')
+            back = request.FILES.get('id_card_back')
+            if not id_full_name or not birth_date or not front or not back:
+                return Response(
+                    {'detail': 'id_full_name, birth_date, id_card_front, id_card_back required.',
+                     'verified': False},
+                    status=400,
+                )
+            front_mime = front.content_type or 'image/jpeg'
+            back_mime = back.content_type or 'image/jpeg'
+            front_bytes = front.read()
+            back_bytes = back.read()
+        else:
+            s = HandymanIdVerificationSerializer(data=request.data)
+            if not s.is_valid():
+                print(f'[HandymanIdVerify] Validation errors: {s.errors}')
+                return Response({**s.errors, 'verified': False}, status=400)
+            data = s.validated_data
+            id_full_name = data['id_full_name'].strip()
+            birth_date = data.get('birth_date') or handyman.birth_date
+            gender = (data.get('gender') or handyman.gender or 'male').strip().lower()
+            if not birth_date:
+                return Response(
+                    {'detail': 'Birth date is required on your profile (YYYY-MM-DD).',
+                     'verified': False},
+                    status=400,
+                )
+            try:
+                front_bytes, front_mime = decode_base64_image(data['id_card_front'])
+                back_bytes, back_mime = decode_base64_image(data['id_card_back'])
+            except ValueError as e:
+                return Response({'detail': str(e), 'verified': False}, status=400)
+            print(
+                f'[HandymanIdVerify] JSON upload from {handyman.username}: '
+                f'front={len(front_bytes)}B, back={len(back_bytes)}B'
+            )
+
+        try:
+            result = verify_id_card(
+                form_name=id_full_name,
+                form_birth_date=birth_date,
+                form_gender=gender,
+                front_bytes=front_bytes,
+                front_mime=front_mime,
+                back_bytes=back_bytes,
+                back_mime=back_mime,
+                exclude_handyman_id=handyman.pk,
+            )
+        except ValueError as e:
+            handyman.id_verification_status = 'failed'
+            handyman.save(update_fields=['id_verification_status'])
+            return Response({'detail': str(e), 'verified': False}, status=400)
+        except Exception as e:
+            print(f'[HandymanIdVerify] Error: {e}')
+            import traceback
+            traceback.print_exc()
+            return Response(
+                {'detail': 'ID verification failed. Please try again.', 'verified': False},
+                status=500,
+            )
+
+        handyman.legal_name = result['legal_name']
+        handyman.id_number = result['id_number']
+        handyman.birth_date = result['birth_date']
+        handyman.gender = result['gender']
+        handyman.id_verification_status = 'verified'
+        handyman.id_verified_at = timezone.now()
+        handyman.is_verified = True
+
+        handyman.id_card_image.save(
+            f'{handyman.username}_front.jpg',
+            ContentFile(front_bytes),
+            save=False,
+        )
+        handyman.id_card_back_image.save(
+            f'{handyman.username}_back.jpg',
+            ContentFile(back_bytes),
+            save=False,
+        )
+        handyman.save()
+
+        return Response({
+            'verified': True,
+            'message': 'ID verification successful. Your account is now verified.',
+            'legal_name': result['legal_name'],
+            'birth_date': result['birth_date'].isoformat(),
+            'gender': result['gender'],
+            'age': result['age'],
+            'handyman': HandymanSerializer(handyman, context={'request': request}).data,
+        }, status=200)
 
 
 class HandymanUpdateView(APIView):
@@ -271,7 +395,8 @@ class HandymanListByServiceView(APIView):
         # Efficient query: filter handymen who offer this service
         handymen = Handyman.objects.filter(
             services=service_id,
-            is_active=True
+            is_active=True,
+            is_verified=True,
         ).select_related('location').prefetch_related('services')
 
         print(
@@ -292,8 +417,9 @@ class HandymanListView(APIView):
         
         # Efficient query: filter handymen who offer this service
         handymen = Handyman.objects.filter(
-            is_active=True
-        ).select_related('location')
+            is_active=True,
+            is_verified=True,
+        ).select_related('location').prefetch_related('services')
 
         # print(
         #     f"[HandymenByService] Service {service_id} → {handymen.count()} handymen found")

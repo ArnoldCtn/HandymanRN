@@ -60,6 +60,31 @@ class FlexibleJSONField(serializers.JSONField):
         return super().to_internal_value(data)
 
 
+class HandymanIdVerificationSerializer(serializers.Serializer):
+    """JSON body with base64 ID images (same pattern as signup thumbnail)."""
+    id_full_name = serializers.CharField(max_length=255)
+    birth_date = serializers.DateField(required=False, allow_null=True)
+    gender = serializers.ChoiceField(choices=['male', 'female'], required=False)
+    id_card_front = serializers.CharField()
+    id_card_back = serializers.CharField()
+
+    def validate_id_card_front(self, value):
+        from .id_verification import decode_base64_image
+        try:
+            decode_base64_image(value)
+        except ValueError as e:
+            raise serializers.ValidationError(str(e))
+        return value
+
+    def validate_id_card_back(self, value):
+        from .id_verification import decode_base64_image
+        try:
+            decode_base64_image(value)
+        except ValueError as e:
+            raise serializers.ValidationError(str(e))
+        return value
+
+
 class HandymanSignUpSerializer(serializers.ModelSerializer):
     services     = serializers.PrimaryKeyRelatedField(
         queryset=Service.objects.all(), many=True, required=True
@@ -72,20 +97,41 @@ class HandymanSignUpSerializer(serializers.ModelSerializer):
 
     class Meta:
         model  = Handyman
-        fields = ['username', 'email', 'password', 'phone',
-                  'bio', 'availability', 'thumbnail', 'services', 'location']
+        fields = [
+            'username', 'email', 'password', 'phone', 'bio',
+            'birth_date', 'gender',
+            'availability', 'thumbnail', 'services', 'location',
+        ]
         extra_kwargs = {
-            'password':  {'write_only': True},
-            'thumbnail': {'required': False},
-            'phone':     {'required': False},
-            'bio':       {'required': False},
+            'password':   {'write_only': True},
+            'thumbnail':  {'required': False},
+            'phone':      {'required': False},
+            'bio':        {'required': False},
+            'birth_date': {'required': True},
+            'gender':     {'required': True},
         }
+
+    def validate_gender(self, value):
+        value = (value or 'male').lower()
+        if value not in ('male', 'female'):
+            raise serializers.ValidationError('Gender must be male or female.')
+        return value
+
+    def validate_birth_date(self, value):
+        from .id_verification import calculate_age, MIN_AGE
+        if calculate_age(value) < MIN_AGE:
+            raise serializers.ValidationError(
+                'You must be at least 18 years old to register as a handyman.'
+            )
+        return value
 
     def create(self, validated_data):
         services     = validated_data.pop('services', [])
         thumbnail    = validated_data.pop('thumbnail', None)
         location     = validated_data.pop('location', None)
         availability = validated_data.pop('availability', {})
+        birth_date   = validated_data.pop('birth_date')
+        gender       = validated_data.pop('gender', 'male')
 
         handyman = Handyman.objects.create_user(
             username     = validated_data['username'].lower(),
@@ -95,7 +141,10 @@ class HandymanSignUpSerializer(serializers.ModelSerializer):
             bio          = validated_data.get('bio'),
             availability = availability,
             location     = location,
+            birth_date   = birth_date,
+            gender       = gender,
         )
+
         if thumbnail:
             handyman.thumbnail = thumbnail
         if services:
@@ -114,6 +163,8 @@ class HandymanSerializer(serializers.ModelSerializer):
     class Meta:
         model  = Handyman
         fields = ['id', 'username', 'email', 'phone', 'bio',
+                  'legal_name', 'birth_date', 'gender',
+                  'id_verification_status', 'id_verified_at',
                   'thumbnail', 'availability', 'services', 'location',
                   'is_online', 'last_seen', 'is_verified', 'is_available',
                   'average_rating', 'total_ratings']

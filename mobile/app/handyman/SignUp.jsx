@@ -7,6 +7,7 @@ import {
 import { useEffect, useState } from 'react'
 import { useRouter } from 'expo-router'
 import * as ImagePicker from 'expo-image-picker'
+import DateTimePicker from '@react-native-community/datetimepicker'
 import Ionicons from '@expo/vector-icons/Ionicons'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import Title from '@/components/Title'
@@ -79,6 +80,13 @@ export default function HandymanSignUpScreen() {
   const [email,          setEmail]          = useState('')
   const [password,       setPassword]       = useState('')
   const [phone,          setPhone]          = useState('')
+  const [birthDate,      setBirthDate]      = useState(() => {
+    const d = new Date()
+    d.setFullYear(d.getFullYear() - 25)
+    return d
+  })
+  const [showBirthPicker, setShowBirthPicker] = useState(false)
+  const [gender,         setGender]         = useState('male')
   const [showPassword,   setShowPassword]   = useState(false)
   const [profilePicture, setProfilePicture] = useState(null)
 
@@ -154,6 +162,21 @@ export default function HandymanSignUpScreen() {
   }
 
   // ── Validate step 1 ───────────────────────────────────
+  function formatBirthDateISO(d) {
+    const y = d.getFullYear()
+    const m = String(d.getMonth() + 1).padStart(2, '0')
+    const day = String(d.getDate()).padStart(2, '0')
+    return `${y}-${m}-${day}`
+  }
+
+  function ageFromBirthDate(d) {
+    const today = new Date()
+    let age = today.getFullYear() - d.getFullYear()
+    const m = today.getMonth() - d.getMonth()
+    if (m < 0 || (m === 0 && today.getDate() < d.getDate())) age -= 1
+    return age
+  }
+
   function validateStep1() {
     let ok = true
     if (!username.trim()) { setUsernameError('Username required'); ok = false }
@@ -162,6 +185,10 @@ export default function HandymanSignUpScreen() {
     }
     if (!password || password.length < 6) {
       setPasswordError('Password must be at least 6 characters'); ok = false
+    }
+    if (ageFromBirthDate(birthDate) < 18) {
+      showToast('You must be at least 18 years old.', 'error')
+      ok = false
     }
     return ok
   }
@@ -230,6 +257,8 @@ export default function HandymanSignUpScreen() {
       email:        email.trim().toLowerCase(),
       password:     password,
       phone:        phone,
+      birth_date:   formatBirthDateISO(birthDate),
+      gender:       gender,
       location:     selLocation,
       availability: JSON.stringify(availability),
       services:     selServices
@@ -262,7 +291,9 @@ export default function HandymanSignUpScreen() {
 
       if (data?.username)     showToast(data.username[0], 'error')
       else if (data?.email)   showToast(data.email[0], 'error')
-      else if (data?.detail)  showToast(data.detail, 'error')
+      else if (data?.birth_date) showToast(Array.isArray(data.birth_date) ? data.birth_date[0] : data.birth_date, 'error')
+      else if (data?.gender)  showToast(Array.isArray(data.gender) ? data.gender[0] : data.gender, 'error')
+      else if (data?.detail)  showToast(typeof data.detail === 'string' ? data.detail : data.detail[0], 'error')
       else                    showToast(error.message ?? 'Error occurred', 'error')
     } finally {
       setLoading(false)
@@ -334,6 +365,42 @@ export default function HandymanSignUpScreen() {
               <Input title="Phone (e.g. +237...)" value={phone} maxLength={9} KeyboardType="phone-pad"
                 setValue={setPhone} error="" setError={() => {}} />
                 <Text style={{color:'gray',fontWeight:'100',fontSize:12}}>Should be your MTN or OM number</Text>
+
+              <Text style={styles.fieldLabel}>Date of birth</Text>
+              <TouchableOpacity
+                style={styles.dateBtn}
+                onPress={() => setShowBirthPicker(true)}
+              >
+                <Ionicons name="calendar-outline" size={20} color="#6b7280" />
+                <Text style={styles.dateBtnText}>{formatBirthDateISO(birthDate)}</Text>
+              </TouchableOpacity>
+              {showBirthPicker && (
+                <DateTimePicker
+                  value={birthDate}
+                  mode="date"
+                  display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                  maximumDate={new Date()}
+                  onChange={(_, selected) => {
+                    setShowBirthPicker(Platform.OS === 'ios')
+                    if (selected) setBirthDate(selected)
+                  }}
+                />
+              )}
+
+              <Text style={styles.fieldLabel}>Gender</Text>
+              <View style={styles.genderRow}>
+                {['male', 'female'].map(g => (
+                  <TouchableOpacity
+                    key={g}
+                    style={[styles.genderChip, gender === g && styles.genderChipActive]}
+                    onPress={() => setGender(g)}
+                  >
+                    <Text style={[styles.genderChipText, gender === g && styles.genderChipTextActive]}>
+                      {g === 'male' ? 'Male' : 'Female'}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
 
               <Button title="Next →" onPress={goToStep2} />
 
@@ -529,6 +596,14 @@ const styles = StyleSheet.create({
 
   eye:           { position:'absolute', right:16, top:40, padding:4 },
   signinLink:    { textAlign:'center', marginTop:16, color:'gray', fontSize:13 },
+  fieldLabel:    { fontSize:14, fontWeight:'600', color:'#374151', marginTop:12, marginBottom:6 },
+  dateBtn:       { flexDirection:'row', alignItems:'center', gap:10, padding:14, borderWidth:1, borderColor:'#e5e7eb', borderRadius:10, backgroundColor:'#f9fafb' },
+  dateBtnText:   { fontSize:15, color:'#202020' },
+  genderRow:     { flexDirection:'row', gap:10, marginBottom:8 },
+  genderChip:    { flex:1, paddingVertical:12, borderRadius:10, borderWidth:1.5, borderColor:'#e5e7eb', alignItems:'center', backgroundColor:'#f9fafb' },
+  genderChipActive: { backgroundColor:'#f59e0b', borderColor:'#f59e0b' },
+  genderChipText: { fontSize:14, fontWeight:'600', color:'#6b7280' },
+  genderChipTextActive: { color:'white' },
 
   // Header (step 2)
   header:        { flexDirection:'row', alignItems:'center', justifyContent:'space-between', paddingHorizontal:16, paddingVertical:15, borderBottomWidth:1, borderColor:'#f0f0f0' },

@@ -185,11 +185,14 @@ export default function SubscriptionScreen() {
 
       {/* Month Selection Modal */}
       <Modal
-        animationType="slide"
+        animationType="fade"
         transparent={true}
         visible={modalVisible}
         onRequestClose={() => setModalVisible(false)}
       >
+        <ScrollView
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled">
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
@@ -244,6 +247,7 @@ export default function SubscriptionScreen() {
             </View>
           </View>
         </View>
+        </ScrollView>
       </Modal>
     </ScrollView>
   );
@@ -410,7 +414,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     width: '90%',
     maxWidth: 400,
-    maxHeight: '80%',
+    maxHeight: '100%',
   },
   modalHeader: {
     flexDirection: 'row',
@@ -479,4 +483,5 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
+  
 });

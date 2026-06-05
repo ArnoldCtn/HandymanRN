@@ -14,6 +14,18 @@ def upload_handyman_thumbnail(instance, filename):
     return f"{path}.{extension}" if extension else path
 
 
+def upload_handyman_id_card_front(instance, filename):
+    path = f"handyman_id_cards/{instance.username}"
+    extension = filename.split('.')[-1]
+    return f"{path}_front.{extension}" if extension else f"{path}_front"
+
+
+def upload_handyman_id_card_back(instance, filename):
+    path = f"handyman_id_cards/{instance.username}"
+    extension = filename.split('.')[-1]
+    return f"{path}_back.{extension}" if extension else f"{path}_back"
+
+
 # ── Manager — querying only, no model fields here ────────
 class HandymanManager(BaseUserManager):
 
@@ -42,6 +54,17 @@ class Handyman(AbstractBaseUser, PermissionsMixin):
         
     ]
 
+    GENDER_CHOICES = [
+        ('male', 'Male'),
+        ('female', 'Female'),
+    ]
+
+    ID_VERIFICATION_CHOICES = [
+        ('pending', 'Pending'),
+        ('verified', 'Verified'),
+        ('failed', 'Failed'),
+    ]
+
     # ── Fix clash: override related_name on BOTH M2M fields ──
     # This is the ONLY fix needed for the reverse accessor errors
     groups = models.ManyToManyField(
@@ -64,6 +87,30 @@ class Handyman(AbstractBaseUser, PermissionsMixin):
     username     = models.CharField(max_length=150, unique=True)
     email        = models.EmailField(unique=True)
     phone        = models.CharField(max_length=20,  null=True, blank=True)
+    legal_name   = models.CharField(
+        max_length=255, null=True, blank=True,
+        help_text='Full legal name as printed on the government ID',
+    )
+    birth_date   = models.DateField(null=True, blank=True)
+    gender       = models.CharField(
+        max_length=10, choices=GENDER_CHOICES, default='male',
+    )
+    id_number    = models.CharField(
+        max_length=64, unique=True, null=True, blank=True,
+        help_text='National ID number extracted from ID card',
+    )
+    id_card_image = models.ImageField(
+        upload_to=upload_handyman_id_card_front, null=True, blank=True,
+        help_text='Front of national ID card',
+    )
+    id_card_back_image = models.ImageField(
+        upload_to=upload_handyman_id_card_back, null=True, blank=True,
+        help_text='Back of national ID card',
+    )
+    id_verification_status = models.CharField(
+        max_length=20, choices=ID_VERIFICATION_CHOICES, default='pending',
+    )
+    id_verified_at = models.DateTimeField(null=True, blank=True)
     bio          = models.TextField(null=True, blank=True)
     availability = models.JSONField(default=dict, blank=True, null=True)    
     thumbnail    = models.ImageField(

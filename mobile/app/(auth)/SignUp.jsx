@@ -7,10 +7,12 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router'
 import * as ImagePicker from 'expo-image-picker'
 import api from '@/services/api' 
-import Toast from '@/components/Toast';import AsyncStorage from '@react-native-async-storage/async-storage';
+import Toast from '@/components/Toast';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 import  useGlobal from '@/services/global'
 import favicon from '@/assets/images/FullLogo.jpg'
+// import GoogleSignIn from '@/components/GoogleSignIn';
 
 
 console.log('Platform:', Platform.OS);
@@ -275,6 +277,14 @@ export default function SignUpScreen() {
                 </Text>
 
               <Button title='Sign Up' onPress={onSignUp} />
+              
+              {/* Google Sign-In for Clients */}
+              {/* <GoogleSignIn onLogin={(user, token) => {
+                console.log('[SignUp] Google Sign-In Success:', user);
+                // Store client user data
+                login(user);
+                router.replace('/(auth)/Home');
+              }} /> */}
 
           </View>
           </ScrollView>

@@ -42,6 +42,13 @@ export default function HandymanAuthLayout() {
       <Stack.Screen name="Notifications" />
       <Stack.Screen name="ChatsList" />
       <Stack.Screen name="PINSettings" />
+      <Stack.Screen name="VerifyId" />
+      <Stack.Screen name="EditProfile" />
+      <Stack.Screen name="Bookings" />
+      <Stack.Screen name="booking-detail" />
+      <Stack.Screen name="Myservices" />
+      <Stack.Screen name="Subscription" />
+      <Stack.Screen name="Dashboard" />
     </Stack>
   )
 }

@@ -127,3 +127,309 @@ Tier  Name          Price       (Monthly)     Key  Benefit
 Free  Casual          0      XAFStandard  Standard booking
 Silver	Homeowner Plus	2,500 XAF    10% Discount + Priority Chat     
 Gold  Peace of Mind 7,000 XAF     1 Free Inspection + Emergency Priority
+
+
+
+
+
+ LOG  [API] Response: 200 /notifications/unread-count/
+
+ LOG  [API] Response: 200 /handymen/me/online/
+
+ LOG  [API] Response: 200 /chats/my-chats/
+
+ LOG  [Home] Chat unread count: 0
+
+ LOG  [API] Token from storage: present
+
+ LOG  [API] Request config: {"dataType": "Object", "hasAuth": true, "method": "post", "url": "/handymen/me/offline/"}
+
+ LOG  [API] Response: 200 /handymen/me/offline/
+
+ LOG  [API] Token from storage: present
+
+ LOG  [API] Request config: {"dataType": undefined, "hasAuth": true, "method": "get", "url": "/notifications/unread-count/"}
+
+ LOG  [API] Token from storage: present
+
+ LOG  [API] Request config: {"dataType": undefined, "hasAuth": true, "method": "get", "url": "/chats/my-chats/"}
+
+ LOG  [API] Token from storage: present
+
+ LOG  [API] Request config: {"dataType": "Object", "hasAuth": true, "method": "post", "url": "/handymen/me/online/"}
+
+ LOG  [API] Response: 200 /chats/my-chats/
+
+ LOG  [Home] Chat unread count: 0
+
+ LOG  [API] Response: 200 /notifications/unread-count/
+
+ LOG  [API] Response: 200 /handymen/me/online/
+
+ LOG  [VerifyId] Converting images to base64...
+
+ LOG  [API] Token from storage: present
+
+ LOG  [API] Request config: {"dataType": "Object", "hasAuth": true, "method": "post", "url": "/handymen/verify-id/"}
+
+ LOG  [API] Token from storage: present
+
+ LOG  [API] Request config: {"dataType": undefined, "hasAuth": true, "method": "get", "url": "/notifications/unread-count/"}
+
+ LOG  [API] Token from storage: present
+
+ LOG  [API] Request config: {"dataType": undefined, "hasAuth": true, "method": "get", "url": "/chats/my-chats/"}
+
+ LOG  [API] Response: 200 /chats/my-chats/
+
+ LOG  [Home] Chat unread count: 0
+
+ LOG  [API] Response: 200 /notifications/unread-count/
+
+ LOG  [API] Token from storage: present
+
+ LOG  [API] Request config: {"dataType": undefined, "hasAuth": true, "method": "get", "url": "/notifications/unread-count/"}
+
+ LOG  [API] Token from storage: present
+
+ LOG  [API] Request config: {"dataType": undefined, "hasAuth": true, "method": "get", "url": "/chats/my-chats/"}
+
+ LOG  [API] Response: 200 /chats/my-chats/
+
+ LOG  [Home] Chat unread count: 0
+
+ LOG  [API] Response: 200 /notifications/unread-count/
+
+ LOG  [API] Error: ERR_BAD_RESPONSE Request failed with status code 500
+
+ LOG  [API] Error config: /handymen/verify-id/
+
+ LOG  [VerifyId] error: Request failed with status code 500 500
+
+ LOG  [API] Token from storage: present
+
+ LOG  [API] Request config: {"dataType": undefined, "hasAuth": true, "method": "get", "url": "/notifications/unread-count/"}
+
+ LOG  [API] Token from storage: present
+
+ LOG  [API] Request config: {"dataType": undefined, "hasAuth": true, "method": "get", "url": "/chats/my-chats/"}
+
+ LOG  [API] Response: 200 /notifications/unread-count/
+
+ LOG  [API] Response: 200 /chats/my-chats/
+
+ LOG  [Home] Chat unread count: 0
+
+ LOG  [API] Token from storage: present
+
+ LOG  [API] Request config: {"dataType": undefined, "hasAuth": true, "method": "get", "url": "/notifications/unread-count/"}
+
+ LOG  [API] Token from storage: present
+
+ LOG  [API] Request config: {"dataType": undefined, "hasAuth": true, "method": "get", "url": "/chats/my-chats/"}
+
+ LOG  [API] Response: 200 /notifications/unread-count/
+
+ LOG  [API] Response: 200 /chats/my-chats/
+
+ LOG  [Home] Chat unread count: 0
+
+ LOG  [VerifyId] Converting images to base64...
+
+ LOG  [API] Token from storage: present
+
+ LOG  [API] Request config: {"dataType": "Object", "hasAuth": true, "method": "post", "url": "/handymen/verify-id/"}
+
+ LOG  [API] Token from storage: present
+
+ LOG  [API] Request config: {"dataType": undefined, "hasAuth": true, "method": "get", "url": "/notifications/unread-count/"}
+
+ LOG  [API] Token from storage: present
+
+ LOG  [API] Request config: {"dataType": undefined, "hasAuth": true, "method": "get", "url": "/chats/my-chats/"}
+
+ LOG  [API] Response: 200 /chats/my-chats/
+
+ LOG  [Home] Chat unread count: 0
+
+ LOG  [API] Response: 200 /notifications/unread-count/
+
+ LOG  [API] Error: ERR_BAD_RESPONSE Request failed with status code 500
+
+ LOG  [API] Error config: /handymen/verify-id/
+
+ LOG  [VerifyId] error: Request failed with status code 500 500
+
+ LOG  [API] Token from storage: present
+
+ LOG  [API] Request config: {"dataType": undefined, "hasAuth": true, "method": "get", "url": "/notifications/unread-count/"}
+
+ LOG  [API] Token from storage: present
+
+ LOG  [API] Request config: {"dataType": undefined, "hasAuth": true, "method": "get", "url": "/chats/my-chats/"}
+
+ LOG  [API] Response: 200 /chats/my-chats/
+
+ LOG  [Home] Chat unread count: 0
+
+ LOG  [API] Response: 200 /notifications/unread-count/
+
+HTTP GET /chats/my-chats/ 200 [0.16, 192.168.43.170:59416]
+
+[INFO] django.channels.server — HTTP GET /chats/my-chats/ 200 [0.16, 192.168.43.170:59416] 
+
+HTTP GET /notifications/unread-count/ 200 [0.32, 192.168.43.170:59417]
+
+[INFO] django.channels.server — HTTP GET /notifications/unread-count/ 200 [0.32, 192.168.43.170:59417]
+
+[INFO] httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent "HTTP/1.1 404 Not Found"
+
+[HandymanIdVerify] Error: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'models/gemini-1.5-flash is not found for API version v1beta, or is not supported for generateContent. Call ModelService.ListModels to see the list of available models and their supported methods.', 'status': 'NOT_FOUND'}}
+
+Traceback (most recent call last):
+
+  File "C:\Users\ArnoldCtn\Desktop\Handyman RN\HandymanRN\backend\handyman\handymen\views.py", line 262, in post
+
+    result = verify_id_card(
+
+        form_name=id_full_name,
+
+    ...<6 lines>...
+
+        exclude_handyman_id=handyman.pk,
+
+    )
+
+  File "C:\Users\ArnoldCtn\Desktop\Handyman RN\HandymanRN\backend\handyman\handymen\id_verification.py", line 233, in verify_id_card
+
+    extracted = _call_gemini(front_bytes, front_mime, back_bytes, back_mime)
+
+  File "C:\Users\ArnoldCtn\Desktop\Handyman RN\HandymanRN\backend\handyman\handymen\id_verification.py", line 172, in _call_gemini
+
+    response = client.models.generate_content(
+
+        model=GEMINI_MODEL,
+
+    ...<8 lines>...
+
+        ),
+
+    )
+
+  File "C:\Users\ArnoldCtn\.virtualenvs\backend-81P7jbCI\Lib\site-packages\google\genai\models.py", line 6454, in generate_content
+
+    response = self._generate_content(
+
+        model=model, contents=contents, config=parsed_config
+
+    )
+
+  File "C:\Users\ArnoldCtn\.virtualenvs\backend-81P7jbCI\Lib\site-packages\google\genai\models.py", line 4890, in _generate_content
+
+    response = self._api_client.request(
+
+        'post', path, request_dict, http_options
+
+    )
+
+  File "C:\Users\ArnoldCtn\.virtualenvs\backend-81P7jbCI\Lib\site-packages\google\genai\_api_client.py", line 1611, in request
+
+    response = self._request(http_request, http_options, stream=False)
+
+  File "C:\Users\ArnoldCtn\.virtualenvs\backend-81P7jbCI\Lib\site-packages\google\genai\_api_client.py", line 1404, in _request
+
+    return self._retry(self._request_once, http_request, stream)  # type: ignore[no-any-return]
+
+           ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+  File "C:\Users\ArnoldCtn\.virtualenvs\backend-81P7jbCI\Lib\site-packages\tenacity\__init__.py", line 470, in __call__
+
+    do = self.iter(retry_state=retry_state)
+
+  File "C:\Users\ArnoldCtn\.virtualenvs\backend-81P7jbCI\Lib\site-packages\tenacity\__init__.py", line 371, in iter
+
+    result = action(retry_state)
+
+  File "C:\Users\ArnoldCtn\.virtualenvs\backend-81P7jbCI\Lib\site-packages\tenacity\__init__.py", line 413, in exc_check
+
+    raise retry_exc.reraise()
+
+          ~~~~~~~~~~~~~~~~~^^
+
+  File "C:\Users\ArnoldCtn\.virtualenvs\backend-81P7jbCI\Lib\site-packages\tenacity\__init__.py", line 184, in reraise
+
+    raise self.last_attempt.result()
+
+          ~~~~~~~~~~~~~~~~~~~~~~~~^^
+
+  File "C:\Users\ArnoldCtn\AppData\Local\Programs\Python\Python314\Lib\concurrent\futures\_base.py", line 443, in result
+
+    return self.__get_result()
+
+           ~~~~~~~~~~~~~~~~~^^
+
+  File "C:\Users\ArnoldCtn\AppData\Local\Programs\Python\Python314\Lib\concurrent\futures\_base.py", line 395, in __get_result
+
+    raise self._exception
+
+  File "C:\Users\ArnoldCtn\.virtualenvs\backend-81P7jbCI\Lib\site-packages\tenacity\__init__.py", line 473, in __call__
+
+    result = fn(*args, **kwargs)
+
+  File "C:\Users\ArnoldCtn\.virtualenvs\backend-81P7jbCI\Lib\site-packages\google\genai\_api_client.py", line 1381, in _request_once
+
+    errors.APIError.raise_for_response(response)
+
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^
+
+  File "C:\Users\ArnoldCtn\.virtualenvs\backend-81P7jbCI\Lib\site-packages\google\genai\errors.py", line 155, in raise_for_response
+
+    cls.raise_error(response.status_code, response_json, response)
+
+    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+  File "C:\Users\ArnoldCtn\.virtualenvs\backend-81P7jbCI\Lib\site-packages\google\genai\errors.py", line 184, in raise_error
+
+    raise ClientError(status_code, response_json, response)
+
+google.genai.errors.ClientError: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'models/gemini-1.5-flash is not found for API version v1beta, or is not supported for generateContent. Call ModelService.ListModels to see the list of available models and their supported methods.', 'status': 'NOT_FOUND'}}
+
+Internal Server Error: /handymen/verify-id/
+
+[ERROR] django.request — Internal Server Error: /handymen/verify-id/
+
+HTTP POST /handymen/verify-id/ 500 [5.49, 192.168.43.170:59404]
+
+[ERROR] django.channels.server — HTTP POST /handymen/verify-id/ 500 [5.49, 192.168.43.170:59404]
+
+[MyChats] user=bill, type=User, auth=None
+
+[MyChats] User bookings found: 0
+
+[MyChats] Returning 0 chats
+
+HTTP GET /chats/my-chats/ 200 [0.19, 192.168.43.170:59417]
+
+[INFO] django.channels.server — HTTP GET /chats/my-chats/ 200 [0.19, 192.168.43.170:59417] 
+
+HTTP GET /notifications/unread-count/ 200 [0.65, 192.168.43.170:59404]
+
+[INFO] django.channels.server — HTTP GET /notifications/unread-count/ 200 [0.65, 192.168.43.170:59404]
+
+HTTP GET /notifications/unread-count/ 200 [0.17, 192.168.43.170:59404]
+
+[INFO] django.channels.server — HTTP GET /notifications/unread-count/ 200 [0.17, 192.168.43.170:59404]
+
+[MyChats] user=bill, type=User, auth=None
+
+[MyChats] User bookings found: 0
+
+[MyChats] Returning 0 chats
+
+HTTP GET /chats/my-chats/ 200 [0.24, 192.168.43.170:59417]
+
+[INFO] django.channels.server — HTTP GET /chats/my-chats/ 200 [0.24, 192.168.43.170:59417] 
+
+
+GEMINI_MODEL = 'gemini-1.5-flash' in id_verification.py seems well written
+ meaning in this error. it happens when im verifiying the image front and back of id with gemini  
