@@ -34,6 +34,35 @@ export default function HandymanProfileScreen() {
   return (
     <ScrollView style={styles.root} showsVerticalScrollIndicator={false}>
 
+      {/* Government ID verification */}
+      <TouchableOpacity
+          style={[
+            styles.verifyCard,
+            handyman?.is_verified && styles.verifyCardDone,
+          ]}
+          onPress={() => {
+            if (!handyman?.is_verified) router.push('/handyman/VerifyId')
+          }}
+          disabled={handyman?.is_verified}
+        >
+          <Ionicons
+            name={handyman?.is_verified ? 'shield-checkmark' : 'id-card-outline'}
+            size={28}
+            color={handyman?.is_verified ? '#059669' : '#f59e0b'}
+          />
+          <View style={{ flex: 1, marginLeft: 12 }}>
+            <Text style={styles.verifyTitle}>
+              {handyman?.is_verified ? 'Government ID verified' : 'Verify government ID'}
+            </Text>
+            <Text style={styles.verifySub}>
+              {handyman?.is_verified
+                ? 'Your identity has been confirmed.'
+                : 'Required to appear in search and accept bookings.'}
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={22} color="#9ca3af" />
+        </TouchableOpacity>
+
       {/* ── Hero ──────────────────────────────────── */}
       <View style={styles.hero}>
         <View style={styles.avatarWrapper}>
@@ -253,4 +282,21 @@ const styles = StyleSheet.create({
   // Logout
   logoutBtn:  { flexDirection:'row', alignItems:'center', justifyContent:'center', gap:8, backgroundColor:'#1e293b', paddingVertical:14, borderRadius:14, marginBottom:10 },
   logoutText: { color:'white', fontSize:15, fontWeight:'700' },
+
+  verifyCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 14,
+    marginBottom: 20,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: '#fde68a',
+    backgroundColor: '#fffbeb',
+  },
+  verifyCardDone: {
+    borderColor: '#a7f3d0',
+    backgroundColor: '#ecfdf5',
+  },
+  verifyTitle: { fontSize: 15, fontWeight: '700', color: '#202020' },
+  verifySub: { fontSize: 12, color: '#6b7280', marginTop: 2 },
 })

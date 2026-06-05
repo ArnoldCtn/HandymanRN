@@ -40,6 +40,13 @@
           }
         }
       ],
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          "androidClientId": "1090418907591-3d976o7pjema03v8iobulp2v3kuk0d4u.apps.googleusercontent.com",
+          "iosUrlScheme": "com.googleusercontent.apps.1090418907591-YOUR_IOS_UNIQUE_ID"
+        }
+      ],
       "expo-secure-store",
       "@react-native-community/datetimepicker"
     ],

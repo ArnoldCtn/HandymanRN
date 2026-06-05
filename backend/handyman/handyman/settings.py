@@ -19,7 +19,6 @@ import os
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # ── Load .env file ─────────────────────────────────────────────────
-# Try to load environment variables from .env file
 env_path = BASE_DIR.parent / '.env'
 try:
     from dotenv import load_dotenv
@@ -30,6 +29,8 @@ try:
         print(f"[SETTINGS] No .env file found at {env_path}")
 except ImportError:
     print("[SETTINGS] python-dotenv not installed. Run: pip install python-dotenv")
+
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 # ── MeSomb Configuration ───────────────────────────────────────────
 # Load from environment variables for security
@@ -69,12 +70,19 @@ DEBUG = True
 
 ALLOWED_HOSTS = ['*']          # Allows all hosts during development
 
+# ID verification sends two base64 images in one JSON body
+DATA_UPLOAD_MAX_MEMORY_SIZE = 25 * 1024 * 1024  # 25 MB
+
 AUTH_USER_MODEL = 'users.User'
+
+# ── Google OAuth Configuration ───────────────────────────────────
+GOOGLE_OAUTH_CLIENT_ID = os.getenv('GOOGLE_OAUTH_CLIENT_ID', '')
+GOOGLE_OAUTH_CLIENT_SECRET = os.getenv('GOOGLE_OAUTH_CLIENT_SECRET', '')
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES':(
        'rest_framework_simplejwt.authentication.JWTAuthentication',
-        'rest_framework.authentication.TokenAuthentication',
+       'rest_framework.authentication.TokenAuthentication',
 
     )
 }
@@ -115,11 +123,11 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.sites',
     'allauth.account',
     'dj_rest_auth.registration',
     'allauth.socialaccount',
     'allauth.socialaccount.providers.google',
-    'socialauth'
     'handyman',
     'bookings',
     'services',
@@ -161,7 +169,19 @@ MIDDLEWARE = [
 AUTHENTICATION_BACKENDS = [
     'axes.backends.AxesStandaloneBackend',
     'django.contrib.auth.backends.ModelBackend',
+    'allauth.account.auth_backends.AuthenticationBackend',
+
 ]
+
+
+SOCIALACCOUNT_PROVIDERS = {
+    'google': {
+        'APP': {
+            'client_id': os.getenv('GOOGLE_OAUTH_CLIENT_ID'),
+            'secret': os.getenv('GOOGLE_OAUTH_CLIENT_SECRET'),
+        }
+    }
+}
 
 
 ROOT_URLCONF = 'handyman.urls'
