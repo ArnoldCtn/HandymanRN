@@ -72,29 +72,28 @@ export default function SignUpScreen() {
 
 
   
- async function onSignUp() {
-  const failUsername = !username;
-  if (failUsername) setUsernameError('Username not provided');
-    console.log('failUsername:',failUsername);
+  async function onSignUp() {
+    setUsernameError('');
+    setEmailError('');
+    setPasswordError('');
 
+    const failUsername = !username;
+    if (failUsername) setUsernameError('Username is required');
 
-  let failEmail = false;
-  if (!email.trim()) {
-    setEmailError('Email is required');
-    console.log('setEmailError:',failEmail);
-    failEmail = true;
-  } else if (!isValidEmail(email)) {
-    setEmailError('Please enter a valid email address');
-    console.log('setEmailError:',failEmail);
-    failEmail = true;
-  }
+    let failEmail = false;
+    if (!email.trim()) {
+      setEmailError('Email is required');
+      failEmail = true;
+    } else if (!isValidEmail(email)) {
+      setEmailError('Please enter a valid email address');
+      failEmail = true;
+    }
 
-  const failPassword = !password;
-  if (failPassword) setPasswordError('Password not provided');
-    console.log('setPasswordError:',failPassword);
+    const failPassword = !password;
+    if (failPassword) setPasswordError('Password is required');
 
-
-  if (failUsername || failEmail || failPassword) return;
+    if (failUsername || failEmail || failPassword) return;
+    
 
   // ── Convert image to base64 if selected ─────────────────
   let base64Image = null;
@@ -140,14 +139,8 @@ export default function SignUpScreen() {
       }
     });
 
-    // const response = await api.post('/users/signup/',signupData,{
-    //   header:{
-    //     'Content-Type':'application/json',
-    //   }
-    // })
     console.log('responseee: ', response);
     responseData = response.data;
-    login(response.data.user);
   } catch (error) {
     console.log('[SignUp] API error:', error.message);
     console.log('[SignUp] Status:', error.response?.status);
@@ -158,23 +151,27 @@ export default function SignUpScreen() {
       if (data.username) setUsernameError(data.username[0]);
       if (data.email) setEmailError(data.email[0]);
       if (data.password) setPasswordError(data.password[0]);
+      showToast('Please check your entries.', 'error')
     } else {
       setUsernameError(`Network error: ${error.message}`);
+      showToast('Network error occurred.', 'error')
     }
     return;
   }
 
   // ── 2. Store tokens + navigate ────────────────────────
   try {
-    const { tokens,user } = responseData;
+    const { tokens, user } = responseData;
     await AsyncStorage.setItem('access_token', tokens.access);
     await AsyncStorage.setItem('refresh_token', tokens.refresh);
-     await AsyncStorage.setItem('user', JSON.stringify(user)); // store full user
+    await AsyncStorage.setItem('user', JSON.stringify(user)); 
 
-      showToast('Login successful! Redirecting...', 'success');
+    // ✅ MUST update global state
+    login(user);
 
-      // Small delay so the toast is visible before navigating
-      setTimeout(() => router.replace('/(auth)/Home'), 1200);
+    showToast('Account created successfully!', 'success');
+
+    setTimeout(() => router.replace('/(auth)/Home'), 1200);
   } catch (storageError) {
     console.log('[SignUp] Post-signup error:', storageError.message);
     router.replace('/(auth)/Home');
@@ -187,11 +184,6 @@ export default function SignUpScreen() {
       };
     
     
-    
-//     const dismissKeyboard = () => {
-// Keyboard.dismiss();
-// }
-
   return (
     <ScrollView>
       <DismissKeyboard>
@@ -278,18 +270,9 @@ export default function SignUpScreen() {
 
               <Button title='Sign Up' onPress={onSignUp} />
               
-              {/* Google Sign-In for Clients */}
-              {/* <GoogleSignIn onLogin={(user, token) => {
-                console.log('[SignUp] Google Sign-In Success:', user);
-                // Store client user data
-                login(user);
-                router.replace('/(auth)/Home');
-              }} /> */}
-
           </View>
           </ScrollView>
           </KeyboardAvoidingView>
-          {/* <Text style={{color:'gray', textAlign:'center', justifyContent:'center'}}>SignInScreen</Text> */}
         </SafeAreaView>
         </DismissKeyboard>
         </ScrollView>

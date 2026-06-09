@@ -68,7 +68,10 @@ api.interceptors.response.use(
     console.log('[User API] Error:', error.code, error.message);
     console.log('[User API] Error config:', error.config?.url);
     const original = error.config
-    if (error.response?.status === 401 && !original._retry) {
+    // Don't try to refresh if we're on a sign-in endpoint
+    const isSignIn = original.url.includes('/signin/') || original.url.includes('/signup/')
+    
+    if (error.response?.status === 401 && !original._retry && !isSignIn) {
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject })

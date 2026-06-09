@@ -2,6 +2,7 @@
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.authentication import SessionAuthentication
 from django.shortcuts import get_object_or_404
 from handymen.models import Handyman
 from bookings.models import Booking
@@ -13,7 +14,7 @@ from .serializers import BookingMessageSerializer
 class BookingMessageListView(generics.ListAPIView):
     serializer_class = BookingMessageSerializer
     permission_classes = [permissions.IsAuthenticated]
-    authentication_classes = [DualJWTAuthentication]
+    authentication_classes = [DualJWTAuthentication, SessionAuthentication]
 
     def get_queryset(self):
         booking_id = self.kwargs['booking_id']
@@ -33,7 +34,7 @@ class BookingMessageListView(generics.ListAPIView):
 
 class MarkMessagesReadView(APIView):
     permission_classes = [permissions.IsAuthenticated]
-    authentication_classes = [DualJWTAuthentication]
+    authentication_classes = [DualJWTAuthentication, SessionAuthentication]
 
     def post(self, request, booking_id):
         user = request.user
@@ -58,7 +59,7 @@ class MarkMessagesReadView(APIView):
 
 class MyChatsListView(generics.GenericAPIView):
     permission_classes = [permissions.IsAuthenticated]
-    authentication_classes = [DualJWTAuthentication]
+    authentication_classes = [DualJWTAuthentication, SessionAuthentication]
 
     def get(self, request):
         user = request.user
@@ -116,7 +117,7 @@ class MyChatsListView(generics.GenericAPIView):
 
 class SupportChatHistoryView(APIView):
     permission_classes = [permissions.IsAuthenticated]
-    authentication_classes = [DualJWTAuthentication]
+    authentication_classes = [DualJWTAuthentication, SessionAuthentication]
 
     def get(self, request, conversation_id):
         user = request.user
@@ -154,7 +155,7 @@ class SupportChatHistoryView(APIView):
 
 class GetOrCreateSupportConversationView(APIView):
     permission_classes = [permissions.IsAuthenticated]
-    authentication_classes = [DualJWTAuthentication]
+    authentication_classes = [DualJWTAuthentication, SessionAuthentication]
 
     def post(self, request):
         user = request.user

@@ -108,6 +108,7 @@ CORS_ALLOW_ALL_ORIGINS = True
 
 
 INSTALLED_APPS = [
+    'chats',
     'daphne',
     'channels',
     'axes',
@@ -134,7 +135,6 @@ INSTALLED_APPS = [
     'users',
     'locations',
     'handymen',
-    'chats',
     'payments',
     'notifications.apps.NotificationsConfig',
     'ratings',
@@ -196,20 +196,11 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'chats.context_processors.support_unread_count',
             ],
         },
     },
 ]
-
-# Daphne
-
-# WSGI_APPLICATION = 'handyman.wsgi.application'
-
-# CHANNEL_LAYERS = {
-#     "default": {
-#         "BACKEND": "channels.layers.InMemoryChannelLayer"
-#     }
-# }
 
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases

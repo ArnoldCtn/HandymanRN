@@ -138,6 +138,9 @@ const PinEnabled = await HANDYMAN_PIN.isEnabled()
     await AsyncStorage.setItem('access_token',  tokens.access)
     await AsyncStorage.setItem('refresh_token', tokens.refresh)
     await AsyncStorage.setItem('user', JSON.stringify(user))
+    
+    // ✅ MUST update global state so user isn't "unknown"
+    login(user)
 
     showToast('Login successful! Redirecting...', 'success')
 
