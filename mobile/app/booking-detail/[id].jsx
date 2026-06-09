@@ -603,7 +603,8 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     padding: 16, backgroundColor: 'white', borderBottomWidth: 1, borderBottomColor: '#e5e7eb',
-    paddingTop:25,
+    paddingVertical: 15,
+    marginVertical: 20,
   },
   headerTitle: { fontSize: 18, fontWeight: '600', color: '#1f2937' },
   content: { padding: 16 },

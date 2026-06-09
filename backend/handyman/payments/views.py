@@ -1,144 +1,66 @@
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_http_methods
-from django.db import transaction
-from .models import Payment
-from .services import process_payment_webhook
-import logging
+from rest_framework import generics, permissions, status
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from rest_framework.pagination import PageNumberPagination
+from handyman.auth import DualJWTAuthentication
+from .models import Wallet, Transaction, Payment
+from .serializers import WalletSerializer, TransactionSerializer
+from handymen.models import Handyman
+from django.db.models import Sum
 
-logger = logging.getLogger(__name__)
+class TransactionPagination(PageNumberPagination):
+    page_size = 10
+    page_size_query_param = 'limit'
+    max_page_size = 50
 
-@csrf_exempt
-@require_http_methods(["POST"])
-def payment_success_webhook(request):
-    """Handle all MeSomb webhook events (single URL, multiple events)"""
-    try:
-        import json
-        data = json.loads(request.body)
-        logger.info(f"MeSomb webhook received: {data}")
-        
-        # Get event type
-        event_type = data.get('event')
-        
-        # Handle different event types
-        if event_type == 'payment.success':
-            return handle_payment_success(data)
-        elif event_type == 'payment.failed':
-            return handle_payment_failed(data)
-        elif event_type == 'transfer.success':
-            return handle_transfer_success(data)
-        elif event_type == 'balance.update':
-            return handle_balance_update(data)
+class WalletDetailView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+    authentication_classes = [DualJWTAuthentication]
+
+    def get(self, request):
+        user = request.user
+        if isinstance(user, Handyman):
+            wallet, _ = Wallet.objects.get_or_create(handyman=user)
         else:
-            logger.warning(f"Unknown event type: {event_type}")
-            return JsonResponse({'status': 'success', 'message': f'Event {event_type} received'})
-    
-    except Exception as e:
-        logger.error(f"Webhook processing error: {str(e)}")
-        return JsonResponse({'status': 'error', 'message': 'Webhook processing failed'}, status=400)
+            wallet, _ = Wallet.objects.get_or_create(user=user)
+        
+        serializer = WalletSerializer(wallet, context={'request': request})
+        return Response(serializer.data)
 
-def handle_payment_success(data):
-    """Handle successful payment event"""
-    payment_id = data.get('transaction', {}).get('id')
-    
-    if payment_id:
-        # Trigger automatic payout to handyman
-        payout_success = process_payment_webhook({
-            'payment_id': payment_id,
-            'transaction_data': data
+
+class TransactionListView(generics.ListAPIView):
+    permission_classes = [permissions.IsAuthenticated]
+    authentication_classes = [DualJWTAuthentication]
+    serializer_class = TransactionSerializer
+    pagination_class = TransactionPagination
+
+    def get_queryset(self):
+        user = self.request.user
+        if isinstance(user, Handyman):
+            wallet, _ = Wallet.objects.get_or_create(handyman=user)
+        else:
+            wallet, _ = Wallet.objects.get_or_create(user=user)
+        return wallet.transactions.all()
+
+
+from django.views.generic import TemplateView
+from django.contrib.auth.mixins import UserPassesTestMixin
+
+class AdminFinancialOverviewView(APIView):
+    permission_classes = [permissions.IsAdminUser]
+    authentication_classes = [DualJWTAuthentication]
+
+    def get(self, request):
+        total_gross = Payment.objects.filter(status='collected').aggregate(Sum('gross_amount'))['gross_amount__sum'] or 0
+        total_commissions = Payment.objects.filter(status='collected').aggregate(Sum('platform_fee'))['platform_fee__sum'] or 0
+        return Response({
+            'total_gross': total_gross,
+            'total_platform_fees': total_commissions,
+            'total_handyman_payouts': total_gross - total_commissions
         })
-        
-        if payout_success:
-            return JsonResponse({'status': 'success', 'message': 'Payment processed with automatic payout'})
-        else:
-            return JsonResponse({'status': 'error', 'message': 'Payout processing failed'}, status=500)
-    
-    return JsonResponse({'status': 'success', 'message': 'Payment success event processed'})
 
-def handle_payment_failed(data):
-    """Handle failed payment event"""
-    payment_id = data.get('transaction', {}).get('id')
+class WithdrawalDashboardView(UserPassesTestMixin, TemplateView):
+    template_name = 'admin/payments/withdrawal_dashboard.html'
     
-    if payment_id:
-        # Update payment status to failed
-        Payment.objects.filter(id=payment_id).update(status='failed')
-        logger.info(f"Payment {payment_id} marked as failed")
-    
-    return JsonResponse({'status': 'success', 'message': 'Payment failed event processed'})
-
-def handle_transfer_success(data):
-    """Handle successful transfer event"""
-    transfer_id = data.get('transfer', {}).get('id')
-    logger.info(f"Transfer {transfer_id} completed successfully")
-    return JsonResponse({'status': 'success', 'message': 'Transfer success event processed'})
-
-def handle_balance_update(data):
-    """Handle balance update event"""
-    balance = data.get('account', {}).get('balance')
-    logger.info(f"Account balance updated: {balance}")
-    return JsonResponse({'status': 'success', 'message': 'Balance update event processed'})
-
-@csrf_exempt
-@require_http_methods(["POST"])
-def payment_failed_webhook(request):
-    """Handle failed payment notifications from MeSomb"""
-    try:
-        import json
-        data = json.loads(request.body)
-        logger.info(f"Payment failed webhook: {data}")
-        
-        # Extract payment details
-        payment_id = data.get('transaction', {}).get('id')
-        
-        if payment_id:
-            # Update payment status to failed
-            Payment.objects.filter(id=payment_id).update(status='failed')
-            logger.info(f"Payment {payment_id} marked as failed")
-        
-        return JsonResponse({'status': 'success', 'message': 'Webhook received'})
-    
-    except Exception as e:
-        logger.error(f"Payment failed webhook error: {str(e)}")
-        return JsonResponse({'status': 'error', 'message': 'Webhook processing failed'}, status=400)
-
-@csrf_exempt
-@require_http_methods(["POST"])
-def transfer_success_webhook(request):
-    """Handle successful transfer notifications from MeSomb"""
-    try:
-        import json
-        data = json.loads(request.body)
-        logger.info(f"Transfer success webhook: {data}")
-        
-        # Extract transfer details
-        transfer_id = data.get('transfer', {}).get('id')
-        
-        # You can add transfer tracking logic here
-        logger.info(f"Transfer {transfer_id} completed successfully")
-        
-        return JsonResponse({'status': 'success', 'message': 'Webhook received'})
-    
-    except Exception as e:
-        logger.error(f"Transfer success webhook error: {str(e)}")
-        return JsonResponse({'status': 'error', 'message': 'Webhook processing failed'}, status=400)
-
-@csrf_exempt
-@require_http_methods(["POST"])
-def balance_update_webhook(request):
-    """Handle balance update notifications from MeSomb"""
-    try:
-        import json
-        data = json.loads(request.body)
-        logger.info(f"Balance update webhook: {data}")
-        
-        # Extract balance details
-        balance = data.get('account', {}).get('balance')
-        
-        # You can add balance tracking logic here
-        logger.info(f"Account balance updated: {balance}")
-        
-        return JsonResponse({'status': 'success', 'message': 'Webhook received'})
-    
-    except Exception as e:
-        logger.error(f"Balance update webhook error: {str(e)}")
-        return JsonResponse({'status': 'error', 'message': 'Webhook processing failed'}, status=400)
+    def test_func(self):
+        return self.request.user.is_staff

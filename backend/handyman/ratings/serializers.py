@@ -38,8 +38,11 @@ class RatingSerializer(serializers.ModelSerializer):
                 thumb = obj.user.thumbnail.url
                 if request:
                     thumb = request.build_absolute_uri(thumb)
-        except (UnicodeDecodeError, AttributeError, ValueError):
-            # Handle corrupt image files
+            elif hasattr(obj.user, 'image') and obj.user.image:
+                thumb = obj.user.image.url
+                if request:
+                    thumb = request.build_absolute_uri(thumb)
+        except Exception:
             thumb = None
         return {
             'id': obj.user.id,

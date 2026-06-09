@@ -127,7 +127,7 @@ export default function HandymanSignInScreen() {
   return (
     <ScrollView>
     <DismissKeyboard>
-      <SafeAreaView style={{ flex:1, backgroundColor:'#fff' }}>
+      <SafeAreaView style={{ flex:1}}>
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}

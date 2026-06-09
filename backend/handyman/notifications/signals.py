@@ -33,6 +33,7 @@ def booking_status_changed(sender, instance, created, **kwargs):
 
             # 2) Notify HANDYMAN: new request received
             print(f"[SIGNAL] Creating handyman notification for: {instance.handyman.username}")
+            print(f"[SIGNAL] Handyman FCM Token status: {getattr(instance.handyman, 'fcm_token', 'NOT ATTACHED')}")
             handyman_notif = create_and_send_notification(
                 recipient=instance.handyman,
                 title="New Booking Request",

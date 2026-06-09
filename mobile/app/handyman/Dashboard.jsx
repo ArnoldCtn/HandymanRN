@@ -1,10 +1,12 @@
 import {
   View, Text, StyleSheet, ScrollView,
-  TouchableOpacity, Image
+  TouchableOpacity, Image, ActivityIndicator
 } from 'react-native'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'expo-router'
 import Ionicons from '@expo/vector-icons/Ionicons'
 import useHandymanGlobal from '@/services/handymanGlobal'
+import handymanApi from '@/services/handymanApi'
 
 const QUICK_ACTIONS = [
   { icon: 'toggle-outline',      label: 'Availability',  color: '#10b981', bg: '#d1fae5', route: '/(auth_handyman)/Home/EditProfile' },
@@ -30,6 +32,23 @@ const TIPS = [
 export default function HandymanDashboard() {
   const router   = useRouter()
   const handyman = useHandymanGlobal(s => s.handyman)
+  const [recentReviews, setRecentReviews] = useState([])
+  const [loadingReviews, setLoadingReviews] = useState(true)
+
+  useEffect(() => {
+    async function fetchRecentReviews() {
+      if (!handyman?.id) return
+      try {
+        const res = await handymanApi.get(`/ratings/handyman/${handyman.id}/?limit=5`)
+        setRecentReviews(res.data.results || res.data || [])
+      } catch (e) {
+        console.log('[Dashboard] Error fetching reviews:', e)
+      } finally {
+        setLoadingReviews(false)
+      }
+    }
+    fetchRecentReviews()
+  }, [handyman?.id])
 
   function resolveAvatar(thumbnail) {
     if (!thumbnail) return null
@@ -97,15 +116,63 @@ export default function HandymanDashboard() {
       {/* ── Stat cards ────────────────────────────── */}
       <Text style={styles.sectionLabel}>Overview</Text>
       <View style={styles.statsGrid}>
-        {STAT_CARDS.map((s, i) => (
-          <View key={i} style={styles.statCard}>
-            <View style={[styles.statIconBox, { backgroundColor: s.color + '22' }]}>
-              <Ionicons name={s.icon} size={22} color={s.color} />
-            </View>
-            <Text style={styles.statValue}>{s.value}</Text>
-            <Text style={styles.statLabel}>{s.label}</Text>
+        <View style={styles.statCard}>
+          <View style={[styles.statIconBox, { backgroundColor: '#10b981' + '22' }]}>
+            <Ionicons name="checkmark-circle-outline" size={22} color="#10b981" />
           </View>
-        ))}
+          <Text style={styles.statValue}>—</Text>
+          <Text style={styles.statLabel}>Jobs Done</Text>
+        </View>
+        <View style={styles.statCard}>
+          <View style={[styles.statIconBox, { backgroundColor: '#f59e0b' + '22' }]}>
+            <Ionicons name="star-outline" size={22} color="#f59e0b" />
+          </View>
+          <Text style={styles.statValue}>{handyman?.average_rating ? Number(handyman.average_rating).toFixed(1) : '—'}</Text>
+          <Text style={styles.statLabel}>Rating</Text>
+        </View>
+        <View style={styles.statCard}>
+          <View style={[styles.statIconBox, { backgroundColor: '#6366F1' + '22' }]}>
+            <Ionicons name="time-outline" size={22} color="#6366F1" />
+          </View>
+          <Text style={styles.statValue}>—</Text>
+          <Text style={styles.statLabel}>Pending</Text>
+        </View>
+        <View style={styles.statCard}>
+          <View style={[styles.statIconBox, { backgroundColor: '#ef4444' + '22' }]}>
+            <Ionicons name="wallet-outline" size={22} color="#ef4444" />
+          </View>
+          <Text style={styles.statValue}>—</Text>
+          <Text style={styles.statLabel}>Earnings</Text>
+        </View>
+      </View>
+
+      {/* ── Recent Reviews ────────────────────────── */}
+      <View style={styles.rowBetween}>
+        <Text style={styles.sectionLabel}>Recent Reviews</Text>
+        <TouchableOpacity onPress={() => router.push('/handyman/Reviews')}>
+          <Text style={styles.viewAll}>View All</Text>
+        </TouchableOpacity>
+      </View>
+      
+      <View style={styles.reviewsList}>
+        {loadingReviews ? (
+          <ActivityIndicator color="#f59e0b" style={{ marginVertical: 20 }} />
+        ) : recentReviews.length > 0 ? (
+          recentReviews.map((item, i) => (
+            <View key={item.id} style={styles.miniReviewCard}>
+              <View style={styles.miniReviewHeader}>
+                <Ionicons name="star" size={12} color="#f59e0b" />
+                <Text style={styles.miniRating}>{item.rating}/10</Text>
+                <Text style={styles.miniUser}>by {item.user_info?.username || 'Anonymous'}</Text>
+              </View>
+              {item.review ? (
+                <Text style={styles.miniText} numberOfLines={2}>{item.review}</Text>
+              ) : null}
+            </View>
+          ))
+        ) : (
+          <Text style={styles.noReviews}>No ratings yet</Text>
+        )}
       </View>
 
       {/* ── Quick actions ─────────────────────────── */}
@@ -151,7 +218,7 @@ export default function HandymanDashboard() {
             </Text>
             {!item.done && (
               <TouchableOpacity
-                onPress={() => router.push('/(auth_handyman)/Home/EditProfile')}
+                onPress={() => router.push('/handyman/EditProfile')}
               >
                 <Text style={styles.healthFix}>Add →</Text>
               </TouchableOpacity>
@@ -173,6 +240,43 @@ export default function HandymanDashboard() {
           </View>
         </View>
       ))}
+
+      {/* ── App Info ──────────────────────────────── */}
+      <Text style={styles.sectionLabel}>App Info</Text>
+      <View style={styles.healthCard}>
+        <View style={styles.healthRow}>
+          <Ionicons name="information-circle-outline" size={20} color="#6366F1" />
+          <Text style={styles.healthLabel}>Version</Text>
+          <Text style={{ color: '#9ca3af', fontSize: 13 }}>1.0.4</Text>
+        </View>
+        <TouchableOpacity style={styles.healthRow}>
+          <Ionicons name="document-text-outline" size={20} color="#6366F1" />
+          <Text style={styles.healthLabel}>Terms & Conditions</Text>
+          <Ionicons name="chevron-forward" size={16} color="#d1d5db" />
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.healthRow}>
+          <Ionicons name="shield-outline" size={20} color="#6366F1" />
+          <Text style={styles.healthLabel}>Privacy Policy</Text>
+          <Ionicons name="chevron-forward" size={16} color="#d1d5db" />
+        </TouchableOpacity>
+      </View>
+
+      {/* Support Button at Bottom */}
+      <View style={styles.supportContainer}>
+        <TouchableOpacity 
+          style={styles.supportBtn}
+          onPress={() => router.push('/chat/support?source=handyman')}
+        >
+          <Ionicons name="headset-outline" size={24} color="white" />
+          <Text style={styles.supportBtnText}>Need Help? Contact Admin</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Footer */}
+      <View style={styles.footer}>
+        <Text style={styles.footerText}>© 2024 Handyman Connect. All rights reserved.</Text>
+        <Text style={styles.footerSubText}>Quality service at your fingertips</Text>
+      </View>
 
       <View style={{ height: 40 }} />
     </ScrollView>
@@ -200,6 +304,8 @@ const styles = StyleSheet.create({
 
   // Sections
   sectionLabel: { fontSize:14, fontWeight:'700', color:'#9ca3af', letterSpacing:1, textTransform:'uppercase', marginHorizontal:16, marginTop:24, marginBottom:12 },
+  rowBetween: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingRight: 16 },
+  viewAll: { fontSize: 13, color: '#f59e0b', fontWeight: '700', marginTop: 12 },
 
   // Stats
   statsGrid:    { flexDirection:'row', flexWrap:'wrap', paddingHorizontal:8 },
@@ -207,6 +313,15 @@ const styles = StyleSheet.create({
   statIconBox:  { width:44, height:44, borderRadius:12, alignItems:'center', justifyContent:'center', marginBottom:8 },
   statValue:    { fontSize:22, fontWeight:'800', color:'#202020' },
   statLabel:    { fontSize:12, color:'#9ca3af', marginTop:2 },
+
+  // Reviews List
+  reviewsList: { paddingHorizontal: 16 },
+  miniReviewCard: { backgroundColor: 'white', padding: 12, borderRadius: 12, marginBottom: 8, elevation: 1, shadowColor: '#000', shadowOpacity: 0.03, shadowRadius: 4, shadowOffset: { width: 0, height: 1 } },
+  miniReviewHeader: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 4 },
+  miniRating: { fontSize: 12, fontWeight: '700', color: '#92400e' },
+  miniUser: { fontSize: 11, color: '#9ca3af' },
+  miniText: { fontSize: 13, color: '#4b5563', fontStyle: 'italic' },
+  noReviews: { textAlign: 'center', color: '#9ca3af', fontSize: 13, marginVertical: 10 },
 
   // Actions
   actionsGrid:  { flexDirection:'row', flexWrap:'wrap', paddingHorizontal:8 },
@@ -223,6 +338,14 @@ const styles = StyleSheet.create({
   // Tips
   tipCard:      { flexDirection:'row', alignItems:'flex-start', gap:12, backgroundColor:'white', marginHorizontal:16, marginBottom:10, borderRadius:14, padding:14, elevation:1, shadowColor:'#000', shadowOpacity:0.04, shadowRadius:6, shadowOffset:{width:0,height:1} },
   tipIcon:      { width:40, height:40, borderRadius:12, alignItems:'center', justifyContent:'center' },
-  tipTitle:     { fontSize:14, fontWeight:'700', color:'#202020', marginBottom:3 },
-  tipBody:      { fontSize:12, color:'#6b7280', lineHeight:18 },
+  tipTitle: { fontSize:14, fontWeight:'700', color:'#202020', marginBottom:3 },
+  tipBody: { fontSize:12, color:'#6b7280', lineHeight:18 },
+
+  supportContainer: { paddingHorizontal: 16, marginTop: 30, marginBottom: 20 },
+  supportBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, backgroundColor: '#1e293b', paddingVertical: 16, borderRadius: 14, elevation: 4, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 10, shadowOffset: { width: 0, height: 4 } },
+  supportBtnText: { color: 'white', fontSize: 16, fontWeight: '700' },
+
+  footer: { marginTop: 40, alignItems: 'center', paddingBottom: 20 },
+  footerText: { fontSize: 12, color: '#9ca3af', fontWeight: '600' },
+  footerSubText: { fontSize: 10, color: '#d1d5db', marginTop: 4 },
 })

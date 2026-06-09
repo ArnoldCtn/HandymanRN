@@ -37,21 +37,31 @@ class JWTQueryParamAuthMiddleware(BaseMiddleware):
         try:
             decoded = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
             user_id = decoded.get('user_id')
+            user_type = decoded.get('user_type')
             if not user_id:
                 return None
 
-            # Try User first
-            try:
-                return User.objects.get(pk=user_id)
-            except User.DoesNotExist:
-                pass
+            if user_type == 'client':
+                try:
+                    return User.objects.get(pk=user_id)
+                except User.DoesNotExist:
+                    return None
+            elif user_type == 'handyman':
+                try:
+                    return Handyman.objects.get(pk=user_id)
+                except Handyman.DoesNotExist:
+                    return None
+            else:
+                # Fallback
+                try:
+                    return User.objects.get(pk=user_id)
+                except User.DoesNotExist:
+                    pass
 
-            # Try Handyman
-            try:
-                return Handyman.objects.get(pk=user_id)
-            except Handyman.DoesNotExist:
-                pass
-
+                try:
+                    return Handyman.objects.get(pk=user_id)
+                except Handyman.DoesNotExist:
+                    pass
         except jwt.ExpiredSignatureError:
             return None
         except jwt.InvalidTokenError:

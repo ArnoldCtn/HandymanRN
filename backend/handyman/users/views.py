@@ -47,6 +47,7 @@ def _lockout_info(username: str) -> tuple[int, bool, int]:
 
 def get_auth_for_user(user, request=None):
     tokens = RefreshToken.for_user(user)
+    tokens['user_type'] = 'client'
     return {
         # ✅ Pass request into context so thumbnail URL is absolute
         'user': UserSerializer(user, context={'request': request}).data,

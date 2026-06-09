@@ -106,105 +106,103 @@ export default function SubscriptionScreen() {
   };
 
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Choose Your Plan</Text>
-        <Text style={styles.subtitle}>
-          Select the subscription that best fits your business needs
-        </Text>
-      </View>
+    <View style={{ flex: 1, backgroundColor: '#f8fafc' }}>
+      <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+        <View style={styles.header}>
+          <Text style={styles.title}>Choose Your Plan</Text>
+          <Text style={styles.subtitle}>
+            Select the subscription that best fits your business needs
+          </Text>
+        </View>
 
-      <View style={styles.plansContainer}>
-        {plans.map((plan, index) => (
-          <TouchableOpacity
-            key={plan.id}
-            style={[
-              styles.planCard,
-              selectedPlan === plan.id && styles.selectedPlanCard,
-              plan.recommended && styles.recommendedPlanCard,
-              index < plans.length - 1 && { marginBottom: 16 }
-            ]}
-            onPress={() => handlePlanSelect(plan.id)}
-          >
-            {plan.recommended && (
-              <View style={styles.recommendedBadge}>
-                <Text style={styles.recommendedText}>RECOMMENDED</Text>
-              </View>
-            )}
-
-            <View style={styles.planHeader}>
-              <View style={[styles.iconContainer, { backgroundColor: plan.color }]}>
-                <Ionicons name={plan.icon} size={32} color="white" />
-              </View>
-              <Text style={styles.planName}>{plan.name}</Text>
-              <Text style={styles.planPrice}>{plan.price}</Text>
-            </View>
-
-            <View style={styles.feeSplit}>
-              <View style={styles.feeItem}>
-                <Text style={styles.feeLabel}>Admin Fee</Text>
-                <Text style={[styles.feeValue, { color: plan.color }]}>
-                  {plan.adminFee}
-                </Text>
-              </View>
-              <View style={styles.divider} />
-              <View style={styles.feeItem}>
-                <Text style={styles.feeLabel}>Your Cut</Text>
-                <Text style={[styles.feeValue, { color: plan.color }]}>
-                  {plan.handymanCut}
-                </Text>
-              </View>
-            </View>
-
-            <View style={styles.features}>
-              {plan.features.map((feature, index) => (
-                <View key={index} style={[styles.featureItem, index < plan.features.length - 1 && { marginBottom: 12 }]}>
-                  <Ionicons name="checkmark-circle" size={16} color={plan.color} />
-                  <Text style={styles.featureText}>{feature}</Text>
+        <View style={styles.plansContainer}>
+          {plans.map((plan, index) => (
+            <TouchableOpacity
+              key={plan.id}
+              style={[
+                styles.planCard,
+                selectedPlan === plan.id && styles.selectedPlanCard,
+                plan.recommended && styles.recommendedPlanCard,
+                index < plans.length - 1 && { marginBottom: 20 }
+              ]}
+              onPress={() => handlePlanSelect(plan.id)}
+              activeOpacity={0.9}
+            >
+              {plan.recommended && (
+                <View style={styles.recommendedBadge}>
+                  <Text style={styles.recommendedText}>RECOMMENDED</Text>
                 </View>
-              ))}
-            </View>
-          </TouchableOpacity>
-        ))}
-      </View>
+              )}
 
-      <TouchableOpacity style={styles.subscribeButton} onPress={handleSubscribe}>
-        <Text style={styles.subscribeButtonText}>
-          Subscribe to {plans.find(p => p.id === selectedPlan)?.name}
-        </Text>
-      </TouchableOpacity>
+              <View style={styles.planRow}>
+                <View style={[styles.iconContainer, { backgroundColor: plan.color }]}>
+                  <Ionicons name={plan.icon} size={28} color="white" />
+                </View>
+                <View style={{ flex: 1, marginLeft: 16 }}>
+                  <Text style={styles.planName}>{plan.name}</Text>
+                  <Text style={styles.planPrice}>{plan.price}</Text>
+                </View>
+                {selectedPlan === plan.id && (
+                  <Ionicons name="checkmark-circle" size={24} color="#3b82f6" />
+                )}
+              </View>
 
-      <View style={styles.footer}>
-        <Text style={styles.footerText}>
-          You can change your plan anytime. No hidden fees.
-        </Text>
-        <Text style={styles.footerNote}>
-          *Payment integration coming soon*
-        </Text>
+              <View style={styles.feeSplit}>
+                <View style={styles.feeItem}>
+                  <Text style={styles.feeLabel}>Admin Fee</Text>
+                  <Text style={[styles.feeValue, { color: plan.color }]}>{plan.adminFee}</Text>
+                </View>
+                <View style={styles.divider} />
+                <View style={styles.feeItem}>
+                  <Text style={styles.feeLabel}>Your Cut</Text>
+                  <Text style={[styles.feeValue, { color: plan.color }]}>{plan.handymanCut}</Text>
+                </View>
+              </View>
+
+              <View style={styles.features}>
+                {plan.features.map((feature, idx) => (
+                  <View key={idx} style={styles.featureItem}>
+                    <Ionicons name="checkmark-sharp" size={16} color={plan.color} />
+                    <Text style={styles.featureText}>{feature}</Text>
+                  </View>
+                ))}
+              </View>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        <View style={styles.bottomGap} />
+      </ScrollView>
+
+      {/* Fixed Subscribe Button at bottom */}
+      <View style={styles.actionArea}>
+        <TouchableOpacity style={styles.subscribeButton} onPress={handleSubscribe}>
+          <Text style={styles.subscribeButtonText}>
+            Subscribe to {plans.find(p => p.id === selectedPlan)?.name}
+          </Text>
+        </TouchableOpacity>
+        <Text style={styles.footerNote}>* Payment integration coming soon *</Text>
       </View>
 
       {/* Month Selection Modal */}
       <Modal
-        animationType="fade"
+        animationType="slide"
         transparent={true}
         visible={modalVisible}
         onRequestClose={() => setModalVisible(false)}
       >
-        <ScrollView
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled">
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Select Duration</Text>
-              <TouchableOpacity onPress={() => setModalVisible(false)}>
+              <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.closeBtn}>
                 <Ionicons name="close" size={24} color="#64748b" />
               </TouchableOpacity>
             </View>
 
-            <View style={styles.modalBody}>
+            <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
               <Text style={styles.modalDescription}>
-                Choose how many months you want to subscribe
+                Choose how many months you want to subscribe to the {plans.find(p => p.id === selectedPlan)?.name} plan.
               </Text>
               
               <View style={styles.monthOptions}>
@@ -226,16 +224,18 @@ export default function SubscriptionScreen() {
                         <Text style={styles.monthOptionText}>{months} {months === 1 ? 'Month' : 'Months'}</Text>
                         <Text style={styles.monthOptionPrice}>
                           {totalPrice.toLocaleString()} XAF
+                          {months > 1 && <Text style={styles.discountText}> ({plan.discount}% off)</Text>}
                         </Text>
                       </View>
-                      {selectedMonths === months && (
-                        <Ionicons name="checkmark-circle" size={20} color="#3b82f6" />
-                      )}
+                      <View style={[styles.radio, selectedMonths === months && styles.radioSelected]}>
+                        {selectedMonths === months && <View style={styles.radioInner} />}
+                      </View>
                     </TouchableOpacity>
                   );
                 })}
               </View>
-            </View>
+              <View style={{ height: 20 }} />
+            </ScrollView>
 
             <View style={styles.modalFooter}>
               <TouchableOpacity
@@ -247,241 +247,57 @@ export default function SubscriptionScreen() {
             </View>
           </View>
         </View>
-        </ScrollView>
       </Modal>
-    </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f8fafc',
-  },
-  header: {
-    padding: 20,
-    alignItems: 'center',
-    paddingTop: 60,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#1e293b',
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#64748b',
-    textAlign: 'center',
-    lineHeight: 22,
-  },
-  plansContainer: {
-    padding: 20,
-  },
-  planCard: {
-    backgroundColor: 'white',
-    borderRadius: 16,
-    padding: 20,
-    borderWidth: 2,
-    borderColor: '#e2e8f0',
-    position: 'relative',
-  },
-  selectedPlanCard: {
-    borderColor: '#3b82f6',
-    borderWidth: 3,
-  },
-  recommendedPlanCard: {
-    shadowColor: '#3b82f6',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 12,
-    elevation: 8,
-  },
-  recommendedBadge: {
-    position: 'absolute',
-    top: -10,
-    right: 20,
-    backgroundColor: '#3b82f6',
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  recommendedText: {
-    color: 'white',
-    fontSize: 10,
-    fontWeight: 'bold',
-  },
-  planHeader: {
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  iconContainer: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  planName: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#1e293b',
-    marginBottom: 4,
-  },
-  planPrice: {
-    fontSize: 18,
-    color: '#64748b',
-    fontWeight: '600',
-  },
-  feeSplit: {
-    flexDirection: 'row',
-    backgroundColor: '#f8fafc',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 20,
-    alignItems: 'center',
-  },
-  feeItem: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  feeLabel: {
-    fontSize: 12,
-    color: '#64748b',
-    marginBottom: 4,
-  },
-  feeValue: {
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-  divider: {
-    width: 1,
-    height: 40,
-    backgroundColor: '#e2e8f0',
-    marginHorizontal: 16,
-  },
-  features: {
-    // gap: 12, // Not supported in React Native
-  },
-  featureItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  featureText: {
-    fontSize: 14,
-    color: '#475569',
-    marginLeft: 8,
-    flex: 1,
-  },
-  subscribeButton: {
-    backgroundColor: '#3b82f6',
-    margin: 20,
-    padding: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  subscribeButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  footer: {
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingBottom: 40,
-  },
-  footerText: {
-    fontSize: 14,
-    color: '#64748b',
-    textAlign: 'center',
-    marginBottom: 8,
-  },
-  footerNote: {
-    fontSize: 12,
-    color: '#94a3b8',
-    fontStyle: 'italic',
-  },
-  // Modal styles
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContent: {
-    backgroundColor: 'white',
-    borderRadius: 20,
-    width: '90%',
-    maxWidth: 400,
-    maxHeight: '100%',
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#1e293b',
-  },
-  modalBody: {
-    padding: 20,
-  },
-  modalDescription: {
-    fontSize: 16,
-    color: '#64748b',
-    textAlign: 'center',
-    marginBottom: 20,
-  },
-  monthOptions: {
-    gap: 12,
-  },
-  monthOption: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 16,
-    borderWidth: 2,
-    borderColor: '#e2e8f0',
-    borderRadius: 12,
-  },
-  selectedMonthOption: {
-    borderColor: '#3b82f6',
-    backgroundColor: '#eff6ff',
-  },
-  monthOptionLeft: {
-    flex: 1,
-  },
-  monthOptionText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#1e293b',
-  },
-  monthOptionPrice: {
-    fontSize: 14,
-    color: '#64748b',
-    marginTop: 4,
-  },
-  modalFooter: {
-    padding: 20,
-    borderTopWidth: 1,
-    borderTopColor: '#e2e8f0',
-  },
-  confirmButton: {
-    backgroundColor: '#3b82f6',
-    padding: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  confirmButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  
+  container: { flex: 1, backgroundColor: '#f8fafc' },
+  header: { padding: 24, alignItems: 'center', paddingTop: 40 },
+  title: { fontSize: 28, fontWeight: '900', color: '#1e293b', marginBottom: 8 },
+  subtitle: { fontSize: 15, color: '#64748b', textAlign: 'center', lineHeight: 22 },
+  plansContainer: { paddingHorizontal: 20 },
+  planCard: { backgroundColor: 'white', borderRadius: 20, padding: 20, borderWidth: 2, borderColor: '#e2e8f0', position: 'relative' },
+  selectedPlanCard: { borderColor: '#3b82f6', backgroundColor: '#f0f9ff' },
+  recommendedPlanCard: { shadowColor: '#3b82f6', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.1, shadowRadius: 20, elevation: 10 },
+  recommendedBadge: { position: 'absolute', top: -12, right: 24, backgroundColor: '#3b82f6', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 12, zIndex: 10 },
+  recommendedText: { color: 'white', fontSize: 10, fontWeight: '800' },
+  planRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 20 },
+  iconContainer: { width: 56, height: 56, borderRadius: 16, justifyContent: 'center', alignItems: 'center' },
+  planName: { fontSize: 22, fontWeight: '800', color: '#1e293b' },
+  planPrice: { fontSize: 16, color: '#64748b', fontWeight: '600', marginTop: 2 },
+  feeSplit: { flexDirection: 'row', backgroundColor: '#f1f5f9', borderRadius: 16, padding: 16, marginBottom: 20, alignItems: 'center' },
+  feeItem: { flex: 1, alignItems: 'center' },
+  feeLabel: { fontSize: 11, color: '#64748b', marginBottom: 4, fontWeight: '600', textTransform: 'uppercase' },
+  feeValue: { fontSize: 20, fontWeight: '900' },
+  divider: { width: 1, height: 36, backgroundColor: '#cbd5e1' },
+  features: { gap: 10 },
+  featureItem: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
+  featureText: { fontSize: 14, color: '#475569', marginLeft: 10, flex: 1, fontWeight: '500' },
+  bottomGap: { height: 140 },
+  actionArea: { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: 'white', padding: 20, borderTopWidth: 1, borderTopColor: '#e2e8f0', alignItems: 'center' },
+  subscribeButton: { backgroundColor: '#3b82f6', width: '100%', padding: 18, borderRadius: 16, alignItems: 'center', shadowColor: '#3b82f6', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 4 },
+  subscribeButtonText: { color: 'white', fontSize: 17, fontWeight: '800' },
+  footerNote: { fontSize: 12, color: '#94a3b8', fontStyle: 'italic', marginTop: 12 },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(15, 23, 42, 0.6)', justifyContent: 'flex-end' },
+  modalContent: { backgroundColor: 'white', borderTopLeftRadius: 32, borderTopRightRadius: 32, width: '100%', maxHeight: '85%' },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 24, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
+  closeBtn: { padding: 4 },
+  modalTitle: { fontSize: 20, fontWeight: '800', color: '#1e293b' },
+  modalBody: { padding: 24 },
+  modalDescription: { fontSize: 15, color: '#64748b', textAlign: 'center', marginBottom: 24, lineHeight: 22 },
+  monthOptions: { gap: 12 },
+  monthOption: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 18, borderWidth: 2, borderColor: '#e2e8f0', borderRadius: 18, marginBottom: 12 },
+  selectedMonthOption: { borderColor: '#3b82f6', backgroundColor: '#f0f9ff' },
+  monthOptionLeft: { flex: 1 },
+  monthOptionText: { fontSize: 16, fontWeight: '800', color: '#1e293b' },
+  monthOptionPrice: { fontSize: 14, color: '#64748b', marginTop: 4, fontWeight: '500' },
+  discountText: { color: '#10b981', fontWeight: '700' },
+  radio: { width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: '#cbd5e1', alignItems: 'center', justifyContent: 'center' },
+  radioSelected: { borderColor: '#3b82f6' },
+  radioInner: { width: 12, height: 12, borderRadius: 6, backgroundColor: '#3b82f6' },
+  modalFooter: { padding: 24, paddingBottom: 34, borderTopWidth: 1, borderTopColor: '#f1f5f9' },
+  confirmButton: { backgroundColor: '#1e293b', padding: 18, borderRadius: 16, alignItems: 'center' },
+  confirmButtonText: { color: 'white', fontSize: 16, fontWeight: '800' },
 });

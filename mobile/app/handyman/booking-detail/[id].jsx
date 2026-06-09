@@ -218,6 +218,8 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     borderBottomWidth: 1,
     borderBottomColor: '#e5e7eb',
+    paddingVertical: 15,
+    marginVertical: 20,
   },
   headerTitle: { fontSize: 18, fontWeight: '600', color: '#1f2937' },
   content: { padding: 16 },

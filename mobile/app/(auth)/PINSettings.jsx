@@ -182,7 +182,8 @@ async function handleVerifyOld(entered) {
 
 const styles = StyleSheet.create({
   container:   { flex:1, backgroundColor:'#f9fafb' },
-  header:      { flexDirection:'row', alignItems:'center', justifyContent:'space-between', padding:16, backgroundColor:'#fff', borderBottomWidth:1, borderColor:'#f0f0f0' },
+  header:      { flexDirection:'row', alignItems:'center', justifyContent:'space-between', padding:16, backgroundColor:'#fff', borderBottomWidth:1, borderColor:'#f0f0f0',paddingVertical: 15,
+    marginVertical: 20, },
   headerTitle: { fontSize:18, fontWeight:'700', color:'#202020' },
   card:        { backgroundColor:'#fff', borderRadius:16, margin:16, paddingHorizontal:16, overflow:'hidden', elevation:2, shadowColor:'#000', shadowOpacity:0.05, shadowRadius:6, shadowOffset:{width:0,height:2} },
   row:         { flexDirection:'row', alignItems:'center', justifyContent:'space-between', paddingVertical:18 },
