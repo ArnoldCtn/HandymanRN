@@ -1,0 +1,23 @@
+{% extends "admin/base.html" %}
+{% load i18n %}
+
+{% block title %}{% if subtitle %}{{ subtitle }} | {% endif %}{{ title }} | {{ site_title|default:_('Django site admin') }}{% endblock %}
+
+{% block branding %}
+<h1 id="site-name"><a href="{% url 'admin:index' %}">{{ site_header|default:_('Django administration') }}</a></h1>
+{% endblock %}
+
+{% block nav-global %}
+  {% if user.is_staff %}
+    <div style="float: right; padding: 10px 20px;">
+        <a href="{% url 'admin:support_dashboard' %}" style="color: #f5dd5d; text-decoration: none; font-weight: bold; position: relative;">
+            <span style="display: inline-block; vertical-align: middle;">Support messages Dashboard</span>
+            {% if support_unread_count > 0 %}
+                <span style="background: #ba2121; color: white; border-radius: 10px; padding: 1px 8px; font-size: 11px; margin-left: 5px; vertical-align: middle; border: 1px solid white;">
+                    {{ support_unread_count }} new
+                </span>
+            {% endif %}
+        </a>
+    </div>
+  {% endif %}
+{% endblock %}

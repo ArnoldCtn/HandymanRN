@@ -35,7 +35,6 @@ const SHIFTS = [
   { key: 'afternoon', label: 'Afternoon', sub: '12 PM – 6 PM', icon: 'partly-sunny-outline' },
   { key: 'evening',   label: 'Evening',   sub: '6 PM – 10 PM', icon: 'moon-outline' },
   { key: 'full_day',  label: 'Full Day',  sub: '6 AM – 10 PM', icon: 'calendar-outline' },
-  // { key: 'flexible',  label: 'Flexible',  sub: 'Negotiable',   icon: 'time-outline' },
 ]
 
 function DismissKeyboard({ children }) {
@@ -100,7 +99,6 @@ export default function HandymanSignUpScreen() {
   const [selServices,  setSelServices] = useState([])     // selected IDs
   const [selLocation,  setSelLocation] = useState(null)   // selected ID
   const [availability, setAvailability] = useState(
-    // Default: all days empty
     Object.fromEntries(DAYS.map(d => [d.key, []]))
   )
 
@@ -108,28 +106,11 @@ export default function HandymanSignUpScreen() {
   const [fetching, setFetching] = useState(false)
   const [toast,    setToast]    = useState({ visible:false, message:'', type:'success' })
 
-  // Add this test to your SignUp component temporarily
-// const testConnection = async () => {
-//   try {
-//     const response = await fetch('http://192.168.43.188:8000/handymen/signup/', {
-//       method: 'POST',
-//       headers: { 'Content-Type': 'application/json' }
-//     });
-//     console.log('Server reachable:', response.status);
-//   } catch (error) {
-//     console.error('Connection failed:', error);
-//   }
-// };
-
-// // Call this before your actual signup
-// testConnection();
-
 
   function showToast(msg, type = 'success') {
     setToast({ visible:true, message:msg, type })
   }
 
-  // ── Load services + locations for step 2 ─────────────
   useEffect(() => {
     if (step === 2) loadOptions()
   }, [step])
@@ -150,7 +131,6 @@ export default function HandymanSignUpScreen() {
     }
   }
 
-  // ── Image picker ──────────────────────────────────────
   async function pickImage() {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync()
     if (status !== 'granted') { Alert.alert('Permission needed'); return }
@@ -161,7 +141,6 @@ export default function HandymanSignUpScreen() {
     if (!result.canceled) setProfilePicture(result.assets[0].uri)
   }
 
-  // ── Validate step 1 ───────────────────────────────────
   function formatBirthDateISO(d) {
     const y = d.getFullYear()
     const m = String(d.getMonth() + 1).padStart(2, '0')
@@ -179,6 +158,10 @@ export default function HandymanSignUpScreen() {
 
   function validateStep1() {
     let ok = true
+    setUsernameError('')
+    setEmailError('')
+    setPasswordError('')
+    
     if (!username.trim()) { setUsernameError('Username required'); ok = false }
     if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       setEmailError('Valid email required'); ok = false
@@ -198,14 +181,12 @@ export default function HandymanSignUpScreen() {
     setStep(2)
   }
 
-  // ── Toggle service selection ──────────────────────────
   function toggleService(id) {
     setSelServices(prev =>
       prev.includes(id) ? prev.filter(s => s !== id) : [...prev, id]
     )
   }
 
-  // ── Toggle shift for a day ────────────────────────────
   function toggleShift(day, shift) {
     setAvailability(prev => {
       const current = prev[day] ?? []
@@ -216,7 +197,6 @@ export default function HandymanSignUpScreen() {
     })
   }
 
-  // ── Submit ────────────────────────────────────────────
   async function onSubmit() {
     if (selServices.length === 0) {
       showToast('Please select at least one service', 'error'); return
@@ -225,7 +205,6 @@ export default function HandymanSignUpScreen() {
       showToast('Please select your location', 'error'); return
     }
 
-    // Check at least one availability slot selected
     const hasAvailability = Object.values(availability).some(v => v.length > 0)
     if (!hasAvailability) {
       showToast('Please set your availability', 'error'); return
@@ -233,11 +212,9 @@ export default function HandymanSignUpScreen() {
 
     setLoading(true)
 
-    // ── Convert image to base64 if selected ─────────────────
     let base64Image = null
     if (profilePicture) {
       try {
-        console.log('Converting profile picture to base64...')
         const imgResponse = await fetch(profilePicture)
         const blob = await imgResponse.blob()
         base64Image = await new Promise((resolve, reject) => {
@@ -246,7 +223,6 @@ export default function HandymanSignUpScreen() {
           reader.onerror = reject
           reader.readAsDataURL(blob)
         })
-        console.log('Profile picture converted to base64')
       } catch (imgErr) {
         console.log('Failed to convert image to base64:', imgErr.message)
       }
@@ -279,6 +255,8 @@ export default function HandymanSignUpScreen() {
       await AsyncStorage.setItem('handyman_access_token',  tokens.access)
       await AsyncStorage.setItem('handyman_refresh_token', tokens.refresh)
       await AsyncStorage.setItem('handyman', JSON.stringify(handyman))
+      
+      // ✅ Update global state
       login(handyman)
 
       showToast('Account created! Welcome.', 'success')
@@ -286,23 +264,33 @@ export default function HandymanSignUpScreen() {
 
     } catch (error) {
       const data = error.response?.data
-      console.log('handyman signup error:', error.message)
       console.log('handyman signup error data:', data)
 
-      if (data?.username)     showToast(data.username[0], 'error')
-      else if (data?.email)   showToast(data.email[0], 'error')
-      else if (data?.birth_date) showToast(Array.isArray(data.birth_date) ? data.birth_date[0] : data.birth_date, 'error')
-      else if (data?.gender)  showToast(Array.isArray(data.gender) ? data.gender[0] : data.gender, 'error')
-      else if (data?.detail)  showToast(typeof data.detail === 'string' ? data.detail : data.detail[0], 'error')
-      else                    showToast(error.message ?? 'Error occurred', 'error')
+      if (data) {
+        if (data.username) {
+           setUsernameError(data.username[0])
+           setStep(1)
+        }
+        if (data.email) {
+           setEmailError(data.email[0])
+           setStep(1)
+        }
+        if (data.password) {
+           setPasswordError(data.password[0])
+           setStep(1)
+        }
+        
+        const firstKey = Object.keys(data)[0]
+        const firstError = Array.isArray(data[firstKey]) ? data[firstKey][0] : data[firstKey]
+        showToast(firstError || 'Error occurred during sign up', 'error')
+      } else {
+        showToast(error.message ?? 'Connection error', 'error')
+      }
     } finally {
       setLoading(false)
     }
   }
 
-  // ─────────────────────────────────────────────────────
-  // RENDER STEP 1
-  // ─────────────────────────────────────────────────────
   if (step === 1) {
     return (
       <ScrollView>
@@ -326,7 +314,6 @@ export default function HandymanSignUpScreen() {
               <StepBar step={1} />
               <Text style={styles.stepTitle}>Basic Information</Text>
 
-              {/* Avatar picker */}
               <TouchableOpacity style={styles.avatarPicker} onPress={pickImage}>
                 {profilePicture ? (
                   <Image source={{ uri: profilePicture }} style={styles.avatar} />
@@ -411,10 +398,10 @@ export default function HandymanSignUpScreen() {
                   Sign In
                 </Text>
               </Text>
-              <Text style={styles.signinLink} onPress={() => router.push('/(auth)/SignUp')}>
+              <Text style={styles.signinLink} onPress={() => router.push('/SignUp')}>
                 Create a Client Account?{' '}
                 <Text style={{ color: '#0b17f5' }}
-                  onPress={() => router.push('/(auth)/SignUp')}>
+                  onPress={() => router.push('/SignUp')}>
                   Sign In
                 </Text>
               </Text>
@@ -427,16 +414,12 @@ export default function HandymanSignUpScreen() {
     )
   }
 
-  // ─────────────────────────────────────────────────────
-  // RENDER STEP 2
-  // ─────────────────────────────────────────────────────
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#fff',paddingTop:20 }}>
       <Toast visible={toast.visible} message={toast.message}
         type={toast.type}
         onHide={() => setToast(t => ({ ...t, visible: false }))} />
 
-      {/* Header with back */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => setStep(1)} style={{ padding: 4 }}>
           <Ionicons name="arrow-back" size={24} color="#202020" />
@@ -453,7 +436,6 @@ export default function HandymanSignUpScreen() {
         <ScrollView contentContainerStyle={styles.scroll2}
           showsVerticalScrollIndicator={false}>
 
-          {/* ── SERVICES ─────────────────────────────── */}
           <Text style={styles.sectionTitle}>
             Your Services
             <Text style={styles.sectionSub}> (select all that apply)</Text>
@@ -485,7 +467,6 @@ export default function HandymanSignUpScreen() {
             })}
           </View>
 
-          {/* ── LOCATION ─────────────────────────────── */}
           <Text style={[styles.sectionTitle, { marginTop: 24 }]}>
             Your Location
             <Text style={styles.sectionSub}> (select one)</Text>
@@ -512,7 +493,6 @@ export default function HandymanSignUpScreen() {
             })}
           </View>
 
-          {/* ── AVAILABILITY ──────────────────────────── */}
           <Text style={[styles.sectionTitle, { marginTop: 24 }]}>
             Availability
             <Text style={styles.sectionSub}> (days + shifts)</Text>
@@ -545,7 +525,6 @@ export default function HandymanSignUpScreen() {
             </View>
           ))}
 
-          {/* ── Availability legend ───────────────────── */}
           <View style={styles.legendBox}>
             {SHIFTS.map(s => (
               <View key={s.key} style={styles.legendRow}>
@@ -557,7 +536,6 @@ export default function HandymanSignUpScreen() {
             ))}
           </View>
 
-          {/* ── Submit ───────────────────────────────── */}
           {loading
             ? <ActivityIndicator size="large" color="#f59e0b"
                 style={{ marginTop: 24 }} />
@@ -575,8 +553,6 @@ export default function HandymanSignUpScreen() {
 const styles = StyleSheet.create({
   scroll:       { flexGrow:1, paddingHorizontal:24, paddingTop:20, paddingBottom:32 },
   scroll2:      { paddingHorizontal:16, paddingTop:8, paddingBottom:32 },
-
-  // Step bar
   stepBar:       { flexDirection:'row', alignItems:'center', justifyContent:'center', marginVertical:16 },
   stepRow:       { flexDirection:'row', alignItems:'center' },
   stepCircle:    { width:32, height:32, borderRadius:16, backgroundColor:'#e5e7eb', alignItems:'center', justifyContent:'center' },
@@ -586,14 +562,11 @@ const styles = StyleSheet.create({
   stepLine:      { width:48, height:2, backgroundColor:'#e5e7eb', marginHorizontal:4 },
   stepLineActive:{ backgroundColor:'#f59e0b' },
   stepTitle:     { fontSize:18, fontWeight:'700', color:'#202020', textAlign:'center', marginBottom:20 },
-
-  // Avatar
   avatarPicker:     { alignSelf:'center', position:'relative', marginBottom:24 },
   avatar:           { width:100, height:100, borderRadius:50 },
   avatarPlaceholder:{ width:100, height:100, borderRadius:50, backgroundColor:'#f3f4f6', alignItems:'center', justifyContent:'center', borderWidth:1.5, borderColor:'#e5e7eb', borderStyle:'dashed' },
   avatarHint:       { color:'#9ca3af', fontSize:11, marginTop:4 },
   avatarBadge:      { position:'absolute', bottom:0, right:0, width:26, height:26, borderRadius:13, backgroundColor:'#f59e0b', alignItems:'center', justifyContent:'center', borderWidth:2, borderColor:'white' },
-
   eye:           { position:'absolute', right:16, top:40, padding:4 },
   signinLink:    { textAlign:'center', marginTop:16, color:'gray', fontSize:13 },
   fieldLabel:    { fontSize:14, fontWeight:'600', color:'#374151', marginTop:12, marginBottom:6 },
@@ -604,24 +577,16 @@ const styles = StyleSheet.create({
   genderChipActive: { backgroundColor:'#f59e0b', borderColor:'#f59e0b' },
   genderChipText: { fontSize:14, fontWeight:'600', color:'#6b7280' },
   genderChipTextActive: { color:'white' },
-
-  // Header (step 2)
   header:        { flexDirection:'row', alignItems:'center', justifyContent:'space-between', paddingHorizontal:16, paddingVertical:15, borderBottomWidth:1, borderColor:'#f0f0f0' },
   headerTitle:   { fontSize:16, fontWeight:'700', color:'#202020' },
-
-  // Sections
   sectionTitle:  { fontSize:16, fontWeight:'700', color:'#202020', marginBottom:10 },
   sectionSub:    { fontSize:12, fontWeight:'400', color:'#9ca3af' },
-
-  // Chips (services + locations)
   chipGrid:      { flexDirection:'row', flexWrap:'wrap', gap:8 },
   chip:          { flexDirection:'row', alignItems:'center', gap:6, paddingVertical:8, paddingHorizontal:12, borderRadius:20, borderWidth:1.5, borderColor:'#e5e7eb', backgroundColor:'#f9fafb' },
   chipSelected:  { backgroundColor:'#f59e0b', borderColor:'#f59e0b' },
   chipText:      { fontSize:13, color:'#374151', fontWeight:'500' },
   chipTextSelected: { color:'white', fontWeight:'700' },
   chipImage:     { width:18, height:18, borderRadius:4 },
-
-  // Availability
   dayRow:        { marginBottom:14 },
   dayLabel:      { fontSize:14, fontWeight:'700', color:'#202020', marginBottom:6 },
   shiftRow:      { flexDirection:'row', flexWrap:'wrap', gap:6 },
@@ -629,8 +594,6 @@ const styles = StyleSheet.create({
   shiftBtnActive:{ backgroundColor:'#f59e0b', borderColor:'#f59e0b' },
   shiftText:     { fontSize:11, color:'#6b7280', fontWeight:'500' },
   shiftTextActive:{ color:'white', fontWeight:'700' },
-
-  // Legend
   legendBox:     { backgroundColor:'#fffbeb', borderRadius:10, padding:12, marginVertical:16, gap:6 },
   legendRow:     { flexDirection:'row', alignItems:'center', gap:8 },
   legendText:    { fontSize:12, color:'#374151', fontWeight:'500' },

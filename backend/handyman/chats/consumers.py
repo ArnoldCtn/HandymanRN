@@ -142,6 +142,7 @@ class SupportChatConsumer(AsyncWebsocketConsumer):
             await self.send(text_data=json.dumps(saved_message))
             return
 
+        # Broadcast to specific room
         await self.channel_layer.group_send(
             self.room_group_name,
             {
@@ -149,6 +150,25 @@ class SupportChatConsumer(AsyncWebsocketConsumer):
                 'message': saved_message,
             }
         )
+
+        # Broadcast to global support room for admin notifications
+        if not self.user.is_staff:
+            await self.channel_layer.group_send(
+                'chat_support_global',
+                {
+                    'type': 'global_notification',
+                    'message': saved_message,
+                    'room_name': self.room_name,
+                }
+            )
+
+    async def global_notification(self, event):
+        """Handler for global notifications (only staff should really care)"""
+        await self.send(text_data=json.dumps({
+            'type': 'global_notification',
+            'message': event['message'],
+            'room_name': event['room_name']
+        }))
 
     async def chat_message(self, event):
         await self.send(text_data=json.dumps({

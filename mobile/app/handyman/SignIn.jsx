@@ -51,7 +51,10 @@ export default function HandymanSignInScreen() {
       await AsyncStorage.setItem('handyman_access_token',  tokens.access)
       await AsyncStorage.setItem('handyman_refresh_token', tokens.refresh)
       await AsyncStorage.setItem('handyman', JSON.stringify(handyman))
+      
+      // ✅ Update global state
       login(handyman)
+      
       router.replace('/handyman/Home')
     } catch (e) {
       router.replace('/handyman/Home')
@@ -92,11 +95,11 @@ export default function HandymanSignInScreen() {
       return
     }
 
-    // ── PIN check — only here, nowhere else ──────────
+    // ── PIN check ──────────────────
     const pinEnabled = await PIN.isEnabled()
     if (pinEnabled) {
       setPendingData(responseData)
-      login(responseData.handyman)
+      // login(responseData.handyman) // Might want to wait for PIN but updating here is safer for "unknown" user
       setShowPIN(true)
       return
     }
@@ -106,7 +109,10 @@ export default function HandymanSignInScreen() {
       await AsyncStorage.setItem('handyman_access_token',  tokens.access)
       await AsyncStorage.setItem('handyman_refresh_token', tokens.refresh)
       await AsyncStorage.setItem('handyman', JSON.stringify(handyman))
+      
+      // ✅ Update global state
       login(handyman)
+      
       showToast('Login successful!', 'success')
       setTimeout(() => router.replace('/handyman/Home'), 1200)
     } catch (e) {
