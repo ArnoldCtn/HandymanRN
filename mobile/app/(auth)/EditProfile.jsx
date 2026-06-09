@@ -184,7 +184,8 @@ export default function EditProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  header:           { flexDirection:'row', alignItems:'center', justifyContent:'space-between', paddingHorizontal:20, paddingVertical:14, borderBottomWidth:1, borderColor:'#f0f0f0' },
+  header:           { flexDirection:'row', alignItems:'center', justifyContent:'space-between', paddingHorizontal:20, paddingVertical: 15,
+    marginVertical: 20, borderBottomWidth:1, borderColor:'#f0f0f0' },
   headerTitle:      { fontSize:18, fontWeight:'700', color:'#202020' },
   scroll:           { paddingHorizontal:24, paddingTop:20, paddingBottom:40 },
   avatarWrapper:    { alignSelf:'center', position:'relative', marginBottom:28 },

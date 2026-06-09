@@ -6,7 +6,7 @@ from django.shortcuts import get_object_or_404
 from handymen.models import Handyman
 from bookings.models import Booking
 from handyman.auth import DualJWTAuthentication
-from .models import BookingMessage
+from .models import BookingMessage, SupportConversation, SupportMessage
 from .serializers import BookingMessageSerializer
 
 
@@ -117,8 +117,63 @@ class MyChatsListView(generics.GenericAPIView):
         
         # Sort by last message time (most recent first)
         chats_data.sort(key=lambda x: x['last_message_time'] or '', reverse=True)
-        
+
         print(f"[MyChats] Returning {len(chats_data)} chats")
         for c in chats_data:
             print(f"  - booking={c['booking_id']}, other={c['other_username']}, thumb={c['other_thumbnail']}")
         return Response(chats_data)
+
+
+class SupportChatHistoryView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+    authentication_classes = [DualJWTAuthentication]
+
+    def get(self, request, conversation_id):
+        user = request.user
+        conv = get_object_or_404(SupportConversation, pk=conversation_id)
+
+        # Verify access
+        if not user.is_staff:
+            if isinstance(user, Handyman):
+                if conv.handyman != user:
+                    return Response({"detail": "Access denied"}, status=status.HTTP_403_FORBIDDEN)
+            else:
+                if conv.user != user:
+                    return Response({"detail": "Access denied"}, status=status.HTTP_403_FORBIDDEN)
+
+        messages = SupportMessage.objects.filter(conversation=conv).order_by('created_at')
+        data = []
+        for msg in messages:
+            sender_name = "Admin" if msg.is_from_admin else (msg.sender_user.username if msg.sender_user else msg.sender_handyman.username)
+            data.append({
+                'id': msg.id,
+                'message': msg.message,
+                'is_from_admin': msg.is_from_admin,
+                'sender_username': sender_name,
+                'created_at': msg.created_at.strftime("%Y-%m-%d %H:%M")
+            })
+
+        # Mark as read
+        if user.is_staff:
+            messages.filter(is_from_admin=False, is_read=False).update(is_read=True)
+        else:
+            messages.filter(is_from_admin=True, is_read=False).update(is_read=True)
+
+        return Response(data)
+
+
+class GetOrCreateSupportConversationView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+    authentication_classes = [DualJWTAuthentication]
+
+    def post(self, request):
+        user = request.user
+        if isinstance(user, Handyman):
+            conv, created = SupportConversation.objects.get_or_create(handyman=user)
+        else:
+            conv, created = SupportConversation.objects.get_or_create(user=user)
+
+        return Response({
+            'conversation_id': conv.id,
+            'room_name': f"support_h_{user.id}" if isinstance(user, Handyman) else f"support_{user.id}"
+        })

@@ -1,4 +1,3 @@
-# payments/models.py
 from django.db import models
 from django.conf import settings
 from handymen.models import Handyman
@@ -80,3 +79,51 @@ class Payment(models.Model):
 
     def __str__(self):
         return f'Payment #{self.id} | {self.gross_amount} FCFA | {self.status}'
+
+class Wallet(models.Model):
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True, blank=True, related_name='wallet')
+    handyman = models.OneToOneField(Handyman, on_delete=models.CASCADE, null=True, blank=True, related_name='wallet')
+    balance = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
+    
+    # Handyman specific fields
+    total_earned_gross = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
+    total_earned_net = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
+    total_app_commissions = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        owner = self.user.username if self.user else self.handyman.username
+        return f"Wallet of {owner} | {self.balance} FCFA"
+
+class Transaction(models.Model):
+    TRANSACTION_TYPE = [
+        ('credit', 'Credit'),
+        ('debit', 'Debit'),
+    ]
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('success', 'Success'),
+        ('failed', 'Failed'),
+    ]
+
+    wallet = models.ForeignKey(Wallet, on_delete=models.CASCADE, related_name='transactions')
+    payment = models.ForeignKey(Payment, on_delete=models.SET_NULL, null=True, blank=True, related_name='transactions')
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    transaction_type = models.CharField(max_length=10, choices=TRANSACTION_TYPE)
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending')
+    description = models.CharField(max_length=255)
+    
+    # For user transactions: which handyman was paid
+    # For handyman transactions: from which user was paid
+    related_user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
+    related_handyman = models.ForeignKey(Handyman, on_delete=models.SET_NULL, null=True, blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.transaction_type} | {self.amount} | {self.status}"

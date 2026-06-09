@@ -77,15 +77,18 @@ class RatingListCreateView(generics.ListCreateAPIView):
         
         print(f"[RATING] Updated handyman aggregates: {handyman.username}, avg={handyman.average_rating}, total={handyman.total_ratings}")
 
+from handyman.auth import DualJWTAuthentication
+
 class RatingPagination(PageNumberPagination):
-    page_size = 5
+    page_size = 15
     page_size_query_param = 'limit'
-    max_page_size = 20
+    max_page_size = 50
 
 
 class HandymanRatingsView(generics.ListAPIView):
     serializer_class = RatingSerializer
     permission_classes = [permissions.IsAuthenticated]
+    authentication_classes = [DualJWTAuthentication]
     pagination_class = RatingPagination
 
     
@@ -93,6 +96,16 @@ class HandymanRatingsView(generics.ListAPIView):
         handyman_id = self.kwargs['handyman_id']
         print(f"[RATING] Fetching ratings for handyman: {handyman_id}")
         return Rating.objects.filter(handyman_id=handyman_id).order_by('-created_at')
+
+
+class RecentRatingsView(generics.ListAPIView):
+    """Get the 5 most recent ratings globally"""
+    serializer_class = RatingSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        print("[RATING] Fetching 5 most recent ratings globally")
+        return Rating.objects.all().order_by('-created_at')[:5]
 
 
 @api_view(['GET'])

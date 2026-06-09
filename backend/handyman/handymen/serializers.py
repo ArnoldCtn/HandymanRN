@@ -210,7 +210,8 @@ class HandymanUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model  = Handyman
         fields = ['username', 'email', 'phone', 'bio', 'availability',
-                  'thumbnail', 'services', 'location', 'is_available', 'password']
+                  'thumbnail', 'services', 'location', 'is_available', 'password',
+                  'birth_date', 'gender']
         extra_kwargs = {
             'password':     {'write_only': True, 'required': False},
             'username':     {'required': False},
@@ -218,6 +219,8 @@ class HandymanUpdateSerializer(serializers.ModelSerializer):
             'phone':        {'required': False},
             'bio':          {'required': False},
             'is_available': {'required': False},
+            'birth_date':   {'required': False},
+            'gender':       {'required': False},
         }
 
     def update(self, instance, validated_data):

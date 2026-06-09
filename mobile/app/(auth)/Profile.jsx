@@ -22,6 +22,15 @@ export default function ProfileScreen() {
 
   return (
     <View style={styles.container}>
+      
+      {/* Support Button at top */}
+      {/* <TouchableOpacity 
+        style={styles.supportTopBtn}
+        onPress={() => router.push('/chat/support')}
+      >
+        <Ionicons name="help-circle-outline" size={20} color="#6366F1" />
+        <Text style={styles.supportTopText}>Contact Support</Text>
+      </TouchableOpacity> */}
 
       {/* Avatar + pencil */}
       <View style={styles.avatarWrapper}>
@@ -55,6 +64,16 @@ export default function ProfileScreen() {
         <Text style={styles.editBtnText}>Edit Profile</Text>
       </TouchableOpacity>
 
+
+      {/* Wallet button */}
+      <TouchableOpacity
+        style={styles.menuRow}
+        onPress={() => router.push('/wallet')}
+      >
+        <Ionicons name="wallet-outline" size={20} color="#6366F1" />
+        <Text style={styles.menuText}>My Wallet</Text>
+        <Ionicons name="chevron-forward" size={18} color="#9ca3af" />
+      </TouchableOpacity>
 
       <TouchableOpacity
   style={styles.menuRow}
@@ -92,4 +111,6 @@ const styles = StyleSheet.create({
   logoutText:       { color:'#d0d0d0', fontWeight:'600' },
   menuRow: { flexDirection:'row', alignItems:'center', gap:12, paddingVertical:14, paddingHorizontal:16, backgroundColor:'#fff', borderRadius:12, marginTop:10 },
 menuText: { flex:1, fontSize:15, fontWeight:'600', color:'#202020' },
+  supportTopBtn: { position: 'absolute', top: 60, right: 20, flexDirection: 'row', alignItems: 'center', backgroundColor: '#f3f4f6', paddingVertical: 8, paddingHorizontal: 12, borderRadius: 20, gap: 6 },
+  supportTopText: { fontSize: 13, fontWeight: '600', color: '#6366F1' },
 })

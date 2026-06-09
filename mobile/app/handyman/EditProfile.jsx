@@ -36,6 +36,8 @@ export default function HandymanEditProfileScreen() {
   const [username,       setUsername]       = useState(handyman?.username ?? '')
   const [email,          setEmail]          = useState(handyman?.email ?? '')
   const [phone,          setPhone]          = useState(handyman?.phone ?? '')
+  const [birthDate,      setBirthDate]      = useState(handyman?.birth_date ?? '')
+  const [gender,         setGender]         = useState(handyman?.gender ?? 'male')
   const [bio,            setBio]            = useState(handyman?.bio ?? '')
   const [password,       setPassword]       = useState('')
   const [showPassword,   setShowPassword]   = useState(false)
@@ -132,6 +134,8 @@ export default function HandymanEditProfileScreen() {
   if (username !== handyman?.username) updateData.username = username;
   if (email !== handyman?.email) updateData.email = email;
   if (phone !== handyman?.phone) updateData.phone = phone;
+  if (birthDate !== handyman?.birth_date) updateData.birth_date = birthDate;
+  if (gender !== handyman?.gender) updateData.gender = gender;
   if (bio !== handyman?.bio) updateData.bio = bio;
   if (password) updateData.password = password;
 
@@ -264,6 +268,28 @@ export default function HandymanEditProfileScreen() {
         <Input title="Bio" value={bio} setValue={setBio}
           error="" setError={() => {}} multiline numberOfLines={3} />
 
+        <Input title="Birth Date (YYYY-MM-DD)" value={birthDate} setValue={setBirthDate}
+          error="" setError={() => {}} placeholder="1990-01-01" />
+
+        <Text style={styles.sectionTitle}>Gender</Text>
+        <View style={styles.chipGrid}>
+          {['male', 'female'].map(g => {
+            const selected = gender === g
+            return (
+              <TouchableOpacity
+                key={g}
+                style={[styles.chip, selected && styles.chipActive]}
+                onPress={() => setGender(g)}
+              >
+                <Text style={[styles.chipText, selected && styles.chipTextActive]}>
+                  {g.charAt(0).toUpperCase() + g.slice(1)}
+                </Text>
+                {selected && <Ionicons name="checkmark" size={13} color="white" />}
+              </TouchableOpacity>
+            )
+          })}
+        </View>
+
           {/* <Text>
             {handyman?.username} && 
             {handyman?.location} &&
@@ -381,7 +407,8 @@ export default function HandymanEditProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  header:            { flexDirection:'row', alignItems:'center', justifyContent:'space-between', paddingHorizontal:20, paddingVertical:14, borderBottomWidth:1, borderColor:'#f0f0f0' },
+  header:            { flexDirection:'row', alignItems:'center', justifyContent:'space-between', paddingHorizontal:20, paddingVertical: 15,
+    marginVertical: 20, borderBottomWidth:1, borderColor:'#f0f0f0' },
   headerTitle:       { fontSize:18, fontWeight:'700', color:'#202020' },
   scroll:            { paddingHorizontal:16, paddingTop:20, paddingBottom:60 },
   avatarWrapper:     { alignSelf:'center', position:'relative', marginBottom:24 },

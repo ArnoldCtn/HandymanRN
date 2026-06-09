@@ -34,6 +34,17 @@ export default function HandymanProfileScreen() {
   return (
     <ScrollView style={styles.root} showsVerticalScrollIndicator={false}>
 
+      {/* Support Button at top */}
+      {/* <View style={styles.supportHeader}>
+        <TouchableOpacity 
+          style={styles.supportTopBtn}
+          onPress={() => router.push('/chat/support?source=handyman')}
+        >
+          <Ionicons name="help-circle-outline" size={20} color="#f59e0b" />
+          <Text style={styles.supportTopText}>Contact Support</Text>
+        </TouchableOpacity>
+      </View> */}
+
       {/* Government ID verification */}
       <TouchableOpacity
           style={[
@@ -86,6 +97,17 @@ export default function HandymanProfileScreen() {
         <Text style={styles.heroName}>{handyman?.username}</Text>
         <Text style={styles.heroEmail}>{handyman?.email}</Text>
 
+        {handyman?.average_rating && (
+          <TouchableOpacity 
+            style={styles.ratingBadge}
+            onPress={() => router.push('/handyman/Reviews')}
+          >
+            <Ionicons name="star" size={16} color="#f59e0b" />
+            <Text style={styles.ratingValue}>{Number(handyman.average_rating).toFixed(1)}</Text>
+            <Text style={styles.ratingCount}>({handyman.total_ratings ?? 0} reviews)</Text>
+          </TouchableOpacity>
+        )}
+
         {/* Verified badge */}
         <View style={[
           styles.verifiedBadge,
@@ -120,6 +142,8 @@ export default function HandymanProfileScreen() {
                 : handyman?.location ?? 'Not set'
             }
           />
+          <InfoRow icon="person-outline"   color="#8b5cf6" label={handyman?.gender ? (handyman.gender.charAt(0).toUpperCase() + handyman.gender.slice(1)) : 'Not set'} />
+          <InfoRow icon="calendar-outline" color="#ec4899" label={handyman?.birth_date ?? 'Not set'} />
         </View>
 
         {/* Bio */}
@@ -181,7 +205,18 @@ export default function HandymanProfileScreen() {
 
         {/* Settings */}
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Settings</Text>
+          <Text style={styles.cardTitle}>Account & Financials</Text>
+
+          <TouchableOpacity
+            style={styles.menuRow}
+            onPress={() => router.push('/wallet?source=handyman')}
+          >
+            <View style={[styles.menuIcon, { backgroundColor:'#ecfdf5' }]}>
+              <Ionicons name="wallet-outline" size={18} color="#10b981" />
+            </View>
+            <Text style={styles.menuLabel}>My Wallet</Text>
+            <Ionicons name="chevron-forward" size={18} color="#9ca3af" />
+          </TouchableOpacity>
 
           <TouchableOpacity
             style={styles.menuRow}
@@ -245,6 +280,9 @@ const styles = StyleSheet.create({
   pencilBtn:        { position:'absolute', bottom:0, right:0, width:28, height:28, borderRadius:14, backgroundColor:'#f59e0b', alignItems:'center', justifyContent:'center', borderWidth:2, borderColor:'#1e293b' },
   heroName:         { fontSize:22, fontWeight:'800', color:'white', marginBottom:4 },
   heroEmail:        { fontSize:14, color:'#94a3b8', marginBottom:10 },
+  ratingBadge:      { flexDirection:'row', alignItems:'center', gap:4, backgroundColor:'#fffbeb', paddingVertical:4, paddingHorizontal:10, borderRadius:12, marginBottom:10, borderWidth:1, borderColor:'#fef3c7' },
+  ratingValue:      { fontSize:14, fontWeight:'700', color:'#92400e' },
+  ratingCount:      { fontSize:12, color:'#d97706', opacity:0.8 },
   verifiedBadge:    { flexDirection:'row', alignItems:'center', gap:6, paddingVertical:4, paddingHorizontal:12, borderRadius:20 },
   verifiedText:     { fontSize:12, fontWeight:'700' },
 
@@ -299,4 +337,7 @@ const styles = StyleSheet.create({
   },
   verifyTitle: { fontSize: 15, fontWeight: '700', color: '#202020' },
   verifySub: { fontSize: 12, color: '#6b7280', marginTop: 2 },
-})
+  supportHeader: { width: '100%', alignItems: 'flex-end', paddingHorizontal: 16, paddingVertical: 10, backgroundColor: '#f9fafb' },
+  supportTopBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', paddingVertical: 8, paddingHorizontal: 12, borderRadius: 20, gap: 6, elevation: 2, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 5, shadowOffset: { width: 0, height: 2 } },
+  supportTopText: { fontSize: 13, fontWeight: '600', color: '#f59e0b' },
+  })

@@ -20,13 +20,16 @@ export default function AllServicesScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
+  const [minRating, setMinRating] = useState(0);
+
   // Fetch both Services and Handymen
   const fetchAllData = async () => {
     try {
       setLoading(true);
+      const ratingQuery = minRating > 0 ? `?min_rating=${minRating}` : '';
       const [servicesRes, handymenRes] = await Promise.all([
         api.get('/services/'),
-        handymanApi.get(`/handymen/search/`)
+        handymanApi.get(`/handymen/search/${ratingQuery}`)
       ]);
 
       const services = servicesRes.data.map(item => ({
@@ -35,16 +38,18 @@ export default function AllServicesScreen() {
         searchKey: item.name.toLowerCase()
       }));
 
-      const handymen = handymenRes.data.map(item => ({
-        ...item,
-        type: 'handyman',
-        searchKey: `${item.username.toLowerCase() || ''} ${item.location.toLowerCase() || ''}`
-      }));
-      
+      const handymen = handymenRes.data.map(item => {
+        const serviceNames = (item.services || []).map(s => (s.name || s).toLowerCase()).join(' ');
+        return {
+          ...item,
+          type: 'handyman',
+          searchKey: `${item.username.toLowerCase() || ''} ${item.location?.toLowerCase() || ''} ${serviceNames}`
+        };
+      });
 
       const combined = [...services, ...handymen];
       setAllData(combined);
-      setFiltered(combined);
+      setFiltered([]); // Start empty
     } catch (e) {
       console.error('[AllServicesScreen] Fetch Error:', e);
     } finally {
@@ -53,6 +58,11 @@ export default function AllServicesScreen() {
     }
   };
 
+  // Re-fetch when minRating changes
+  useEffect(() => {
+    fetchAllData();
+  }, [minRating]);
+
   // Initial fetch
   useEffect(() => {
     fetchAllData();
@@ -60,17 +70,23 @@ export default function AllServicesScreen() {
 
   // Live Search
   useEffect(() => {
-    if (!search.trim()) {
-      setFiltered(allData);
+    if (!search.trim() && minRating === 0) {
+      setFiltered([]); // Show nothing when empty
     } else {
       const term = search.toLowerCase().trim();
-      const results = allData.filter(item =>
-        item.searchKey.includes(term) ||
-        (item.description && item.description.toLowerCase().includes(term))
-      );
+      const results = allData.filter(item => {
+        const matchesTerm = !term || item.searchKey.includes(term) ||
+          (item.description && item.description.toLowerCase().includes(term));
+        
+        if (item.type === 'handyman') {
+          const rating = parseFloat(item.average_rating) || 0;
+          return matchesTerm && rating >= minRating;
+        }
+        return matchesTerm;
+      });
       setFiltered(results);
     }
-  }, [search, allData]);
+  }, [search, allData, minRating]);
 
   const renderCard = ({ item }) => {
     const isHandyman = item.type === 'handyman';
@@ -199,7 +215,8 @@ const styles = StyleSheet.create({
     alignItems: 'center', 
     justifyContent: 'space-between', 
     paddingHorizontal: 16, 
-    paddingVertical: 34, 
+    paddingVertical: 15,
+    marginVertical: 20,
     backgroundColor: '#fff', 
     borderBottomWidth: 1, 
     borderColor: '#f0f0f0' 

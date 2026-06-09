@@ -24,22 +24,37 @@ class DualJWTAuthentication(BaseAuthentication):
         try:
             decoded = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
             user_id = decoded.get('user_id')
+            user_type = decoded.get('user_type')
             if not user_id:
                 return None
 
-            # Try User first
-            try:
-                user = User.objects.get(pk=user_id)
-                return (user, None)
-            except User.DoesNotExist:
-                pass
+            if user_type == 'client':
+                try:
+                    user = User.objects.get(pk=user_id)
+                    return (user, None)
+                except User.DoesNotExist:
+                    return None
+            elif user_type == 'handyman':
+                try:
+                    handyman = Handyman.objects.get(pk=user_id)
+                    return (handyman, None)
+                except Handyman.DoesNotExist:
+                    return None
+            else:
+                # Fallback for old tokens or if user_type is missing
+                # Try User first
+                try:
+                    user = User.objects.get(pk=user_id)
+                    return (user, None)
+                except User.DoesNotExist:
+                    pass
 
-            # Try Handyman
-            try:
-                handyman = Handyman.objects.get(pk=user_id)
-                return (handyman, None)
-            except Handyman.DoesNotExist:
-                return None
+                # Try Handyman
+                try:
+                    handyman = Handyman.objects.get(pk=user_id)
+                    return (handyman, None)
+                except Handyman.DoesNotExist:
+                    return None
 
         except jwt.ExpiredSignatureError:
             return None

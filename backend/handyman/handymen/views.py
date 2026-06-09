@@ -52,6 +52,7 @@ class NoAuthentication(BaseAuthentication):
 def get_tokens_for_handyman(handyman, request=None):
     tokens = RefreshToken.for_user(handyman)
     tokens['user_id'] = str(handyman.pk)
+    tokens['user_type'] = 'handyman'
     return {
         'handyman': HandymanSerializer(handyman, context={'request': request}).data,
         'tokens': {
@@ -414,6 +415,8 @@ class HandymanListView(APIView):
     authentication_classes = [NoAuthentication]   # public endpoint
 
     def get(self, request):
+        min_rating = request.query_params.get('min_rating')
+        username = request.query_params.get('username')
         
         # Efficient query: filter handymen who offer this service
         handymen = Handyman.objects.filter(
@@ -421,8 +424,14 @@ class HandymanListView(APIView):
             is_verified=True,
         ).select_related('location').prefetch_related('services')
 
-        # print(
-        #     f"[HandymenByService] Service {service_id} → {handymen.count()} handymen found")
+        if min_rating:
+            try:
+                handymen = handymen.filter(average_rating__gte=float(min_rating))
+            except ValueError:
+                pass
+        
+        if username:
+            handymen = handymen.filter(username__icontains=username)
 
         serializer = HandymanSerializer(
             handymen,

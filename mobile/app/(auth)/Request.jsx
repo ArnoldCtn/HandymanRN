@@ -8,19 +8,25 @@ import api from '@/services/api'
 import ServiceCarousel from '@/components/ServiceCarousel'
 import useGlobal from '@/services/global'
 import Ionicons from '@expo/vector-icons/Ionicons'
+import { useRouter } from 'expo-router'
 
 export default function RequestScreen() {
-  const [services,   setServices]   = useState([])
-  const [loading,    setLoading]    = useState(true)
-  const [refreshing, setRefreshing] = useState(false)
+  const [services,       setServices]       = useState([])
+  const [recentReviews,  setRecentReviews]  = useState([])
+  const [loading,        setLoading]        = useState(true)
+  const [refreshing,     setRefreshing]     = useState(false)
 
   const user = useGlobal(s => s.user)
-
+  const router = useRouter()
 
   async function fetchServices() {
     try {
-      const res = await api.get('/services/')
-      setServices(res.data)
+      const [sRes, rRes] = await Promise.all([
+        api.get('/services/'),
+        api.get('/ratings/recent/')
+      ])
+      setServices(sRes.data)
+      setRecentReviews(rRes.data.results || rRes.data || [])
     } catch (e) {
       console.log('[Request] fetch:', e.message)
     } finally {
@@ -59,6 +65,8 @@ export default function RequestScreen() {
       <View style={{ marginTop: 20 }}>
         <ServiceCarousel services={services} />
       </View>
+
+      
 
       <View style={styles.aboutSection}>
         <View style={styles.aboutHeader}>
@@ -110,6 +118,40 @@ export default function RequestScreen() {
           <TouchableOpacity style={styles.ctaButton}>
             <Ionicons name="arrow-forward" size={20} color="white" style={{ marginRight: 8 }} />
             <Text style={styles.ctaText}>Explore Services</Text>
+          </TouchableOpacity>
+        </View>
+
+
+        {/* ── Recent Community Reviews ──────────────── */}
+      <View style={styles.reviewSection}>
+        <Text style={styles.sectionLabel}>Recent Community Reviews</Text>
+        {recentReviews.length > 0 ? (
+          recentReviews.map((item, i) => (
+            <View key={item.id} style={styles.reviewCardSmall}>
+              <View style={styles.reviewTop}>
+                <Ionicons name="star" size={14} color="#f59e0b" />
+                <Text style={styles.reviewRating}>{item.rating}/10</Text>
+                <Text style={styles.reviewTarget}>for handyman: {item.handyman_info?.username}</Text>
+              </View>
+              <Text style={styles.reviewTextSmall} numberOfLines={2}>
+                "{item.review || 'No comment left'}"
+              </Text>
+              <Text style={styles.reviewAuthor}>By user: {item.user_info?.username}</Text>
+            </View>
+          ))
+        ) : (
+          <Text style={styles.noReviewsText}>No reviews yet</Text>
+        )}
+      </View>
+
+        {/* Support Button at Bottom */}
+        <View style={styles.supportContainer}>
+          <TouchableOpacity 
+            style={styles.supportBtn}
+            onPress={() => router.push('/chat/support')}
+          >
+            <Ionicons name="headset-outline" size={24} color="white" />
+            <Text style={styles.supportBtnText}>Need Help? Contact Admin</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -317,5 +359,19 @@ const styles = StyleSheet.create({
     color: '#64748b', 
     fontSize: 12,
     textAlign: 'center'
-  }
-})
+  },
+  supportContainer: { paddingHorizontal: 0, marginTop: 30, marginBottom: 10 },
+  supportBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, backgroundColor: '#1e40af', paddingVertical: 16, borderRadius: 14, elevation: 4, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 10, shadowOffset: { width: 0, height: 4 } },
+  supportBtnText: { color: 'white', fontSize: 16, fontWeight: '700' },
+
+  // Reviews
+  reviewSection: { paddingHorizontal: 20, marginTop: 24 },
+  sectionLabel: { fontSize: 16, fontWeight: '800', color: '#1e293b', marginBottom: 16, textTransform: 'uppercase', letterSpacing: 0.5 },
+  reviewCardSmall: { backgroundColor: 'white', borderRadius: 14, padding: 14, marginBottom: 12, borderLeftWidth: 4, borderLeftColor: '#f59e0b', elevation: 2, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 5, shadowOffset: { width: 0, height: 2 } },
+  reviewTop: { flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 6 },
+  reviewRating: { fontSize: 13, fontWeight: '800', color: '#92400e' },
+  reviewTarget: { fontSize: 12, color: '#64748b' },
+  reviewTextSmall: { fontSize: 13, color: '#4b5563', lineHeight: 18, fontStyle: 'italic' },
+  reviewAuthor: { fontSize: 11, fontWeight: '700', color: '#94a3b8', textAlign: 'right', marginTop: 4 },
+  noReviewsText: { textAlign: 'center', color: '#94a3b8', fontSize: 14, marginVertical: 20 },
+  })
