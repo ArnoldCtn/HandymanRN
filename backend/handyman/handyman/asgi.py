@@ -8,10 +8,13 @@ from channels.routing import ProtocolTypeRouter, URLRouter
 
 from chats.routing import websocket_urlpatterns
 from chats.middleware import JWTQueryParamAuthMiddleware
+from channels.auth import AuthMiddlewareStack
 
 application = ProtocolTypeRouter({
     "http": get_asgi_application(),
-    "websocket": JWTQueryParamAuthMiddleware(
-        URLRouter(websocket_urlpatterns)
+    "websocket": AuthMiddlewareStack(
+        JWTQueryParamAuthMiddleware(
+            URLRouter(websocket_urlpatterns)
+        )
     ),
 })

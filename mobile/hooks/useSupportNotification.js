@@ -16,7 +16,13 @@ export const useSupportNotification = (isHandyman) => {
         if (!token || !userStr) return;
 
         const user = JSON.parse(userStr);
-        const room = isHandyman ? `support_h_${user.id}` : `support_${user.id}`;
+        const userId = user.id || user.pk;
+        if (!userId) {
+          console.log('[SupportNotif] User ID not found');
+          return;
+        }
+
+        const room = isHandyman ? `support_h_${userId}` : `support_${userId}`;
 
         const baseUrl = process.env.EXPO_PUBLIC_API_URL || '';
         const wsProtocol = baseUrl.startsWith('https') ? 'wss' : 'ws';

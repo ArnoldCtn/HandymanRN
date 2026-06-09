@@ -25,11 +25,7 @@ class JWTQueryParamAuthMiddleware(BaseMiddleware):
             user = await self.get_user_from_token(token)
             if user:
                 scope['user'] = user
-            else:
-                scope['user'] = AnonymousUser()
-        else:
-            scope['user'] = AnonymousUser()
-
+        
         return await super().__call__(scope, receive, send)
 
     @database_sync_to_async
