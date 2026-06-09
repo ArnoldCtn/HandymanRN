@@ -67,10 +67,8 @@ class MyChatsListView(generics.GenericAPIView):
         # Get all bookings where user is involved and status is accepted
         if isinstance(user, Handyman):
             bookings = Booking.objects.filter(handyman=user, status='accepted')
-            print(f"[MyChats] Handyman bookings found: {bookings.count()}")
         else:
             bookings = Booking.objects.filter(user=user, status='accepted')
-            print(f"[MyChats] User bookings found: {bookings.count()}")
         
         chats_data = []
         
@@ -80,24 +78,21 @@ class MyChatsListView(generics.GenericAPIView):
             
             # Check if there are unread messages
             if isinstance(user, Handyman):
-                # For handyman, messages sent by user are unread
                 unread_count = BookingMessage.objects.filter(
                     booking=booking, 
-                    sender_user__isnull=False,  # Sent by user
+                    sender_user__isnull=False,
                     is_read=False
                 ).count()
             else:
-                # For user, messages sent by handyman are unread
                 unread_count = BookingMessage.objects.filter(
                     booking=booking, 
-                    sender_handyman__isnull=False,  # Sent by handyman
+                    sender_handyman__isnull=False,
                     is_read=False
                 ).count()
             
             # Get the other person's info
             other_person = booking.user if isinstance(user, Handyman) else booking.handyman
             
-            # Build absolute URL for thumbnail (prevents ImageFieldFile serialization error)
             if other_person.thumbnail and hasattr(other_person.thumbnail, 'url'):
                 other_thumbnail_url = request.build_absolute_uri(other_person.thumbnail.url)
             else:
@@ -115,12 +110,7 @@ class MyChatsListView(generics.GenericAPIView):
             
             chats_data.append(chat_data)
         
-        # Sort by last message time (most recent first)
         chats_data.sort(key=lambda x: x['last_message_time'] or '', reverse=True)
-
-        print(f"[MyChats] Returning {len(chats_data)} chats")
-        for c in chats_data:
-            print(f"  - booking={c['booking_id']}, other={c['other_username']}, thumb={c['other_thumbnail']}")
         return Response(chats_data)
 
 
@@ -168,10 +158,20 @@ class GetOrCreateSupportConversationView(APIView):
 
     def post(self, request):
         user = request.user
-        if isinstance(user, Handyman):
-            conv, created = SupportConversation.objects.get_or_create(handyman=user)
-        else:
-            conv, created = SupportConversation.objects.get_or_create(user=user)
+        try:
+            if isinstance(user, Handyman):
+                conv, created = SupportConversation.objects.get_or_create(handyman=user)
+            else:
+                conv, created = SupportConversation.objects.get_or_create(user=user)
+        except Exception as e:
+            print(f"[SupportInit] Multiple conversations or error: {e}")
+            if isinstance(user, Handyman):
+                conv = SupportConversation.objects.filter(handyman=user).first()
+            else:
+                conv = SupportConversation.objects.filter(user=user).first()
+            
+            if not conv:
+                return Response({"detail": "Could not initialize support conversation"}, status=500)
 
         return Response({
             'conversation_id': conv.id,
