@@ -26,13 +26,14 @@ class BookingChatConsumer(AsyncWebsocketConsumer):
 
     async def receive(self, text_data):
         data = json.loads(text_data)
-        message = data.get('message')
+        message = data.get('message', '')
+        image_url = data.get('image_url')
 
-        if not message:
+        if not message and not image_url:
             return
 
         # Save message to database
-        saved_message = await self.save_message(message)
+        saved_message = await self.save_message(message, image_url)
 
         # Broadcast to group
         await self.channel_layer.group_send(
@@ -60,7 +61,7 @@ class BookingChatConsumer(AsyncWebsocketConsumer):
             return False
 
     @database_sync_to_async
-    def save_message(self, message_text):
+    def save_message(self, message_text, image_url):
         user = self.scope['user']
         booking = Booking.objects.get(id=self.booking_id)
 
@@ -71,16 +72,26 @@ class BookingChatConsumer(AsyncWebsocketConsumer):
             sender_handyman = None
             sender_user = user
 
+        image_path = None
+        if image_url:
+            from urllib.parse import urlparse
+            path = urlparse(image_url).path
+            image_path = path.lstrip('/')
+            if image_path.startswith('media/'):
+                image_path = image_path[len('media/'):].lstrip('/')
+
         msg = BookingMessage.objects.create(
             booking=booking,
             sender_user=sender_user,
             sender_handyman=sender_handyman,
-            message=message_text
+            message=message_text,
+            image=image_path if image_path else None
         )
 
         return {
             'id': msg.id,
             'message': msg.message,
+            'image_url': image_url,
             'sender_username': user.username,
             'is_handyman': sender_handyman is not None,
             'created_at': msg.created_at.strftime("%Y-%m-%d %H:%M")
@@ -134,10 +145,12 @@ class SupportChatConsumer(AsyncWebsocketConsumer):
 
     async def receive(self, text_data):
         data = json.loads(text_data)
-        message = data.get('message')
-        if not message: return
+        message = data.get('message', '')
+        image_url = data.get('image_url')
 
-        saved_message = await self.save_support_message(message)
+        if not message and not image_url: return
+
+        saved_message = await self.save_support_message(message, image_url)
         if 'error' in saved_message:
             await self.send(text_data=json.dumps(saved_message))
             return
@@ -176,7 +189,7 @@ class SupportChatConsumer(AsyncWebsocketConsumer):
         }))
 
     @database_sync_to_async
-    def save_support_message(self, message_text):
+    def save_support_message(self, message_text, image_url):
         try:
             # Admin sending: Need to extract the correct room to find conversation
             if self.user.is_staff:
@@ -200,13 +213,20 @@ class SupportChatConsumer(AsyncWebsocketConsumer):
                     conv = SupportConversation.objects.filter(user=self.user).first()
                     if not conv: conv = SupportConversation.objects.create(user=self.user)
 
+            # Extract image path
+            image_path = None
+            if image_url:
+                from django.conf import settings
+                image_path = image_url.replace(settings.MEDIA_URL, '').lstrip('/')
+
             # Create the message
             msg = SupportMessage.objects.create(
                 conversation=conv,
                 sender_user=self.user if not self.user.is_staff and not isinstance(self.user, Handyman) else None,
                 sender_handyman=self.user if not self.user.is_staff and isinstance(self.user, Handyman) else None,
                 is_from_admin=self.user.is_staff,
-                message=message_text
+                message=message_text,
+                image=image_path if image_path else None
             )
             conv.save() # Update updated_at
 
@@ -226,6 +246,7 @@ class SupportChatConsumer(AsyncWebsocketConsumer):
             return {
                 'id': msg.id,
                 'message': msg.message,
+                'image_url': image_url,
                 'sender_username': "Admin" if self.user.is_staff else self.user.username,
                 'is_from_admin': self.user.is_staff,
                 'created_at': msg.created_at.strftime("%Y-%m-%d %H:%M")
