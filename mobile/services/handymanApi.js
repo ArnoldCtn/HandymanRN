@@ -18,89 +18,34 @@ const handymanApi = axios.create({
 
 // ── Attach token ────────────────────────────
 handymanApi.interceptors.request.use(async config => {
-  // Use the same keys that SignIn.jsx uses
   const token = await AsyncStorage.getItem('handyman_access_token')
-  console.log('[API] Token from storage:', token ? 'present' : 'MISSING');
   if (token){
      config.headers.Authorization = `Bearer ${token}`
   }
-  // 2. ✅ KEY FIX — if data is FormData, delete the JSON Content-Type
-  //    so axios auto-sets multipart/form-data with the correct boundary
+
+  // ✅ DEBUG + FIX FormData
   if (config.data instanceof FormData) {
-    console.log('[API] Detected FormData, setting up for multipart');
-    delete config.headers['Content-Type']
-    // On Android, axios needs this to not re-serialize FormData
-    if (Platform.OS !== 'web') {
-      // config.transformRequest = [(data) => data]
-      
-      config.transformRequest = (data) => data
-      console.log('[API] Detected FormData, on android');
-      console.log('[API] Transform function:', config.transformRequest);
-    }
+    console.log('[API] Detected FormData, preparing multipart...');
+    delete config.headers['Content-Type']; // Let axios set it
+    config.transformRequest = [(data) => data]; // Do not serialize
+    console.log('[API] Request URL:', config.baseURL + config.url);
+    console.log('[API] Request Data entries:', config.data._parts); // Log contents
   }
-  console.log('[API] Request config:', {
-    url: config.url,
-    method: config.method,
-    hasAuth: !!config.headers.Authorization,
-    dataType: config.data?.constructor?.name
-  });
+  
   return config
 })
 
-// ── Auto-refresh handyman token ──────────────────────
-let isRefreshing = false
-let failedQueue  = []
-
-function processQueue(error, token = null) {
-  failedQueue.forEach(p => error ? p.reject(error) : p.resolve(token))
-  failedQueue = []
-}
-
+// ── Debug Response ────────────────────────────
 handymanApi.interceptors.response.use(
   res => {
-    console.log('[API] Response:', res.status, res.config.url);
+    console.log('[API] Response Success:', res.status, res.config.url);
     return res;
   },
   async error => {
-    console.log('[API] Error:', error.code, error.message);
-    console.log('[API] Error config:', error.config?.url);
-    const original = error.config
-    if (error.response?.status === 401 && !original._retry) {
-      if (isRefreshing) {
-        return new Promise((resolve, reject) => {
-          failedQueue.push({ resolve, reject })
-        }).then(token => {
-          original.headers.Authorization = `Bearer ${token}`
-          return handymanApi(original)
-        })
-      }
-      original._retry = true
-      isRefreshing    = true
-      try {
-        // Use the same keys that SignIn.jsx uses
-        const refresh = await AsyncStorage.getItem('handyman_refresh_token')
-        if (!refresh) throw new Error('No refresh token')
-        const res = await axios.post(`${getBaseURL()}/handymen/token/refresh/`, { refresh })
-        const newAccess = res.data.access
-        await AsyncStorage.setItem('handyman_access_token', newAccess)
-        if (res.data.refresh) {
-          await AsyncStorage.setItem('handyman_refresh_token', res.data.refresh)
-        }
-        processQueue(null, newAccess)
-        original.headers.Authorization = `Bearer ${newAccess}`
-        return handymanApi(original)
-      } catch (e) {
-        processQueue(e, null)
-        await AsyncStorage.multiRemove([
-          'handyman_access_token', 'handyman_refresh_token', 'handyman'
-        ])
-        if (typeof global.__forceHandymanLogout === 'function') {
-          global.__forceHandymanLogout()
-        }
-        return Promise.reject(e)
-      } finally {
-        isRefreshing = false
-      }
+    console.error('[API] Response Error:', error.message);
+    if (error.response) {
+      console.error('[API] Response Data:', error.response.data);
+      console.error('[API] Response Status:', error.response.status);
     }
     return Promise.reject(error)
   }

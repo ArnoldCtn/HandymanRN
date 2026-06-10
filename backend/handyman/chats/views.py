@@ -2,6 +2,7 @@
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.authentication import SessionAuthentication
 from django.shortcuts import get_object_or_404
 from handymen.models import Handyman
@@ -9,6 +10,76 @@ from bookings.models import Booking
 from handyman.auth import DualJWTAuthentication
 from .models import BookingMessage, SupportConversation, SupportMessage
 from .serializers import BookingMessageSerializer
+
+class ChatImageUploadView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+    authentication_classes = [DualJWTAuthentication, SessionAuthentication]
+    parser_classes = [MultiPartParser, FormParser]
+
+    def post(self, request):
+        if not request.user.is_authenticated:
+             return Response({"detail": "Authentication credentials were not provided."}, status=status.HTTP_401_UNAUTHORIZED)
+             
+        if 'image' not in request.FILES:
+            return Response({"detail": "No image provided"}, status=status.HTTP_400_BAD_REQUEST)
+
+        image = request.FILES['image']
+        booking_id = request.data.get('booking_id')
+        is_support = request.data.get('is_support') == 'true'
+
+        if is_support:
+            # Handle support image
+            user = request.user
+            if user.is_staff:
+                return Response({"detail": "Admin image upload not implemented yet"}, status=status.HTTP_400_BAD_REQUEST)
+
+            if isinstance(user, Handyman):
+                conv = SupportConversation.objects.filter(handyman=user).first()
+                if not conv: conv = SupportConversation.objects.create(handyman=user)
+                msg = SupportMessage.objects.create(conversation=conv, sender_handyman=user, image=image)
+            else:
+                conv = SupportConversation.objects.filter(user=user).first()
+                if not conv: conv = SupportConversation.objects.create(user=user)
+                msg = SupportMessage.objects.create(conversation=conv, sender_user=user, image=image)
+
+            # Return the relative URL
+            return Response({'image_url': msg.image.url}, status=status.HTTP_201_CREATED)
+
+        else:
+            # Handle booking image
+            if not booking_id:
+                return Response({"detail": "Booking ID required"}, status=status.HTTP_400_BAD_REQUEST)
+
+            booking = get_object_or_404(Booking, pk=booking_id)
+            user = request.user
+
+            # Just save the image to the model's image field without creating a full message yet
+            # Actually, the consumer needs a way to link the image to the message.
+            # Let's create a temporary object or simply return the URL.
+
+            # Since the consumer needs the image to exist, let's save the image 
+            # to a temporary 'unassociated' object or just handle it differently.
+            # Easiest: Keep the current logic but ensure consumer doesn't double-save.
+
+            # Actually, the best way:
+            # 1. API: Save image, return URL.
+            # 2. WebSocket: Send URL, consumer saves message + associates image.
+
+            # Current issue: API saves message, WS saves message.
+            # FIX: Change API to only return URL, not save BookingMessage.
+
+            # Generate a unique path for the image
+            from django.core.files.storage import default_storage
+            import uuid
+            import os
+
+            ext = os.path.splitext(image.name)[1]
+            filename = f"chat_images/{uuid.uuid4()}{ext}"
+            saved_path = default_storage.save(filename, image)
+            image_url = request.build_absolute_uri(default_storage.url(saved_path))
+
+            print(f"[ChatImageUpload] Saved image to: {saved_path}")
+            return Response({'image_url': image_url}, status=status.HTTP_201_CREATED)
 
 
 class BookingMessageListView(generics.ListAPIView):
@@ -63,7 +134,6 @@ class MyChatsListView(generics.GenericAPIView):
 
     def get(self, request):
         user = request.user
-        print(f"[MyChats] user={user}, type={type(user).__name__}, auth={request.auth}")
         
         # Get all bookings where user is involved and status is accepted
         if isinstance(user, Handyman):
@@ -99,11 +169,21 @@ class MyChatsListView(generics.GenericAPIView):
             else:
                 other_thumbnail_url = None
             
+            # Determine last message text
+            last_msg_text = None
+            if last_message:
+                if last_message.message:
+                    last_msg_text = last_message.message
+                elif last_message.image:
+                    sender = last_message.sender_user or last_message.sender_handyman
+                    sender_name = sender.username if sender else "Unknown"
+                    last_msg_text = f"{sender_name} sent a photo"
+            
             chat_data = {
                 'booking_id': booking.id,
                 'other_username': other_person.username,
                 'other_thumbnail': other_thumbnail_url,
-                'last_message': last_message.message if last_message else None,
+                'last_message': last_msg_text,
                 'last_message_time': last_message.created_at.isoformat() if last_message else None,
                 'has_unread_messages': unread_count > 0,
                 'unread_count': unread_count,

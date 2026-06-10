@@ -1,13 +1,10 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { Platform } from 'react-native';
-// import Constants from 'expo-constants';
-// import AsyncStorage from '@react-native-async-storage/async-storage'
-
 
 // ─── CONFIG ──────────────────────────────────────────────
 const DJANGO_PORT = 8000;
-const YOUR_LAN_IP = process.env.EXPO_PUBLIC_API_URL; // <-- Replace with your PC's IPv4 from Step 1
+const YOUR_LAN_IP = process.env.EXPO_PUBLIC_API_URL; 
 // ─────────────────────────────────────────────────────────
 
 function getBaseURL() {
@@ -30,13 +27,13 @@ api.interceptors.request.use(async config => {
     config.headers.Authorization = `Bearer ${token}` 
   }
 
-  // ✅ Same FormData fix for client api
+  // ✅ IMPROVED FormData handling
   if (config.data instanceof FormData) {
     console.log('[User API] Detected FormData, setting up for multipart');
-    // For Android, completely remove Content-Type and let axios set it
-    delete config.headers['Content-Type']
-    // Also remove transformRequest if it exists
-    delete config.transformRequest
+    // Remove default Content-Type so axios can set it with the correct boundary
+    delete config.headers['Content-Type'];
+    // This is the crucial fix for React Native FormData
+    config.transformRequest = [(data) => data];
   }
 
   console.log('[User API] Request config:', {
@@ -44,7 +41,6 @@ api.interceptors.request.use(async config => {
     method: config.method,
     hasAuth: !!config.headers.Authorization,
     baseURL: config.baseURL,
-    dataType: config.data?.constructor?.name
   });
 
   return config
@@ -61,12 +57,9 @@ function processQueue(error, token = null) {
 
 api.interceptors.response.use(
   res => {
-    console.log('[User API] Response:', res.status, res.config.url);
     return res;
   },
   async error => {
-    console.log('[User API] Error:', error.code, error.message);
-    console.log('[User API] Error config:', error.config?.url);
     const original = error.config
     // Don't try to refresh if we're on a sign-in endpoint
     const isSignIn = original.url.includes('/signin/') || original.url.includes('/signup/')
@@ -110,8 +103,5 @@ api.interceptors.response.use(
     return Promise.reject(error)
   }
 )
-
-// Optional: log which URL is being used (helps debugging)
-console.log('[API] baseURL:', getBaseURL());
 
 export default api;

@@ -2,7 +2,7 @@
 from django.urls import path
 from .views import (
     BookingMessageListView, MarkMessagesReadView, MyChatsListView,
-    SupportChatHistoryView, GetOrCreateSupportConversationView
+    SupportChatHistoryView, GetOrCreateSupportConversationView, ChatImageUploadView
 )
 
 urlpatterns = [
@@ -11,4 +11,5 @@ urlpatterns = [
     path('my-chats/', MyChatsListView.as_view(), name='my-chats'),
     path('support/history/<int:conversation_id>/', SupportChatHistoryView.as_view(), name='support-history'),
     path('support/init/', GetOrCreateSupportConversationView.as_view(), name='support-init'),
+    path('upload-image/', ChatImageUploadView.as_view(), name='upload-image'),
 ]

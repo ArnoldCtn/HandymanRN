@@ -21,7 +21,8 @@ class BookingMessage(models.Model):
         related_name='sent_messages'
     )
 
-    message = models.TextField()
+    message = models.TextField(blank=True)
+    image = models.ImageField(upload_to='chat_images/', null=True, blank=True)
     is_read = models.BooleanField(default=False)
 
     created_at = models.DateTimeField(auto_now_add=True)
@@ -83,7 +84,8 @@ class SupportMessage(models.Model):
     )
 
     is_from_admin = models.BooleanField(default=False)
-    message = models.TextField()
+    message = models.TextField(blank=True)
+    image = models.ImageField(upload_to='support_images/', null=True, blank=True)
     is_read = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
