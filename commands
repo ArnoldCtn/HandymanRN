@@ -130,4 +130,26 @@ Gold  Peace of Mind 7,000 XAF     1 Free Inspection + Emergency Priority
 
 
 
+The text you are seeing, like 2026-06-10T03:29:28.561641Z, represents the timestamp of when
+  that specific message was created and saved in the database.
+
+  Here is the breakdown of that format:
+
+   * 2026-06-10: The Date (Year-Month-Day).
+   * T: A separator between the date and the time.
+   * 03:29:28: The Time (Hours:Minutes:Seconds) in UTC (Coordinated Universal Time).
+   * .561641: The fractional seconds (microseconds), providing high precision.
+   * Z: Stands for "Zulu time," which is another way of indicating that the time is in UTC.
+
+  Why is it appearing on images?
+  The code I implemented for rendering messages currently displays the created_at timestamp for
+  every message bubble. When an image is sent, it is treated as a message object that includes
+  its image_url and this created_at timestamp.
+
+  If you don't want this raw timestamp appearing under the images, I can easily modify the
+  renderMessage function in [booking_id].jsx to format it more nicely (e.g., just showing the
+  time, like "03:29 AM") or hide the timestamp specifically for image messages. Let me know if
+  you would like me to adjust that display!
+
+
  perform a simple favorites functionality, such that  a user goes in [@[id].jsx](file:///C:/Users/ArnoldCtn/Desktop/Handyman%20RN/HandymanRN/mobile/app/(auth)/handyman-Profile/[id].jsx) , hanydman profile page where they perform booking, add a heart icon such that once clicked it toggle added to favorites simply. and in side bar and profile views a Favorites button to go to a favorites page with all what they added if actually having.(handyman name, profile picture, services, location,age,gender etc all neccesary info) and when clicking each handyman card there, they are liniked corresponding page for booking. and in handyman side still in side bar and profile pages, a favorites butoon where they will go and see all people who added them as favorites just. without interactions. and the admin a view of each favorite relation.  ensure correct database setting.  ACT AS AN EXPERT AND DONT MODIFY UNRELATED STUFFS. do all simply. just create the favorites django app.
