@@ -63,7 +63,7 @@ export default function HandymanSignInScreen() {
 
   async function onSignIn() {
     const failUsername = !username.trim()
-    if (failUsername) setUsernameError('Username not provided')
+    if (failUsername) setUsernameError('Username/Email not provided')
     const failPassword = !password
     if (failPassword) setPasswordError('Password not provided')
     if (failUsername || failPassword) return
@@ -83,7 +83,7 @@ export default function HandymanSignInScreen() {
         setPasswordError(msg ?? 'Account locked.')
       } else if (error.response?.status === 401) {
         showToast(msg ?? 'Invalid credentials.', 'error')
-        setPasswordError(msg ?? 'Invalid username or password.')
+        setPasswordError(msg ?? 'Invalid username/email or password.')
       } else if (error.response?.status === 400) {
         showToast(msg ?? 'Fill in all fields.', 'error')
         setUsernameError(msg ?? 'Invalid request.')
@@ -152,7 +152,7 @@ export default function HandymanSignInScreen() {
                 type={toast.type}
                 onHide={() => setToast(t => ({ ...t, visible:false }))} />
 
-              <Input title='Username' value={username}
+              <Input title='Username or Email' value={username}
                 setValue={setUsername} error={usernameError}
                 setError={setUsernameError} />
 

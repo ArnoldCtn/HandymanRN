@@ -188,12 +188,11 @@ const PinEnabled = await HANDYMAN_PIN.isEnabled()
                       <Text style={{textAlign:'center',marginBottom:20, fontSize:36,fontWeight:'black',color:'gray'}}>Sign In Here</Text>
         
 
-          <Input title='Username'
+          <Input title='Username or Email'
           value={username}
-          setValue={setUsername} 
+          setValue={setUsername}
           error={usernameError}
           setError={setUsernameError} />
-
           <View style={{position:'relative'}}>
                         <Input title='Password' 
                          value={password}
