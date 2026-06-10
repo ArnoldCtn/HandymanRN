@@ -74,13 +74,21 @@ export default function AllServicesScreen() {
       setFiltered([]); // Show nothing when empty
     } else {
       const term = search.toLowerCase().trim();
+      const isNumber = !isNaN(parseFloat(term)) && isFinite(term);
+      const ratingThreshold = isNumber ? parseFloat(term) : minRating;
+
       const results = allData.filter(item => {
         const matchesTerm = !term || item.searchKey.includes(term) ||
           (item.description && item.description.toLowerCase().includes(term));
         
         if (item.type === 'handyman') {
           const rating = parseFloat(item.average_rating) || 0;
-          return matchesTerm && rating >= minRating;
+          const matchesRating = rating >= ratingThreshold;
+          
+          if (isNumber) {
+            return matchesRating;
+          }
+          return matchesTerm && matchesRating;
         }
         return matchesTerm;
       });

@@ -5,7 +5,7 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.authentication import BaseAuthentication
 
-from django.contrib.auth import authenticate
+from django.contrib.auth import authenticate, get_user_model
 from .serializers import UserSerializer, SignUpSerializer, UserUpdateSerializer
 from axes.handlers.proxy import AxesProxyHandler
 from django.conf import settings
@@ -18,6 +18,7 @@ from axes.models import AccessAttempt
 
 FAILURE_LIMIT = 5
 COOLOFF_HOURS = 1
+User = get_user_model()
 
 
 class NoAuthentication(BaseAuthentication):
@@ -63,18 +64,26 @@ def get_auth_for_user(user, request=None):
 class SignInView(APIView):
     permission_classes = [AllowAny]
     authentication_classes = [NoAuthentication]   # public endpoint
-    print(f"post start")
-
 
     def post(self, request):
-        username = request.data.get('username', '').strip().lower()
+        username_or_email = request.data.get('username', '').strip().lower()
         password = request.data.get('password', '')
 
-        if not username or not password:
+        if not username_or_email or not password:
             return Response(
-                {'detail': 'Username and password are required.'},
+                {'detail': 'Username/Email and password are required.'},
                 status=400
             )
+
+        # Resolve username from email if necessary
+        username = username_or_email
+        if '@' in username_or_email:
+            try:
+                user = User.objects.get(email=username_or_email)
+                username = user.username
+            except User.DoesNotExist:
+                # User not found by email, authenticate will fail later
+                pass
 
         # ── Check lockout BEFORE attempting auth ─────────
         is_locked = AxesProxyHandler.is_locked(
@@ -102,7 +111,6 @@ class SignInView(APIView):
 
         if not user:
             # ── Read failure count AFTER authenticate()
-            #    because Axes records the failure inside authenticate()
             try:
                 attempt = (AccessAttempt.objects
                            .filter(username=username)
@@ -121,7 +129,6 @@ class SignInView(APIView):
                 msg = 'Invalid username or password.'
 
             return Response({'detail': msg}, status=401)
-        print(f"post done")
 
         # ── Success ──────────────────────────────────────
         user.mark_online()

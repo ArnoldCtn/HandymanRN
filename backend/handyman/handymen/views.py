@@ -99,18 +99,28 @@ class HandymanSignInView(APIView):
     authentication_classes = [NoAuthentication]   # ← skip global JWT
 
     def post(self, request):
-        username = request.data.get('username', '').strip().lower()
+        username_or_email = request.data.get('username', '').strip().lower()
         password = request.data.get('password', '')
 
         # ── Debug: log what we received ─────────────────
-        print(f'[HandymanSignIn] Attempting login for username: "{username}"')
+        print(f'[HandymanSignIn] Attempting login for username/email: "{username_or_email}"')
 
-        if not username or not password:
-            print('[HandymanSignIn] Missing username or password')
+        if not username_or_email or not password:
+            print('[HandymanSignIn] Missing username/email or password')
             return Response(
-                {'detail': 'Username and password required.'},
+                {'detail': 'Username/Email and password required.'},
                 status=400
             )
+
+        # Resolve username from email if necessary
+        username = username_or_email
+        if '@' in username_or_email:
+            try:
+                handyman = Handyman.objects.get(email=username_or_email)
+                username = handyman.username
+            except Handyman.DoesNotExist:
+                # Handyman not found by email, will fail later
+                pass
 
         # ── Lockout check ────────────────────────────────
         is_locked = AxesProxyHandler.is_locked(
@@ -138,9 +148,7 @@ class HandymanSignInView(APIView):
         except Handyman.DoesNotExist:
             print(
                 f'[HandymanSignIn] No handyman found with username: "{username}"')
-            print(
-                f'[HandymanSignIn] All handymen in DB: {list(Handyman.objects.values_list("username", flat=True))}')
-            return Response({'detail': 'Invalid username or password.'}, status=401)
+            return Response({'detail': 'Invalid username/email or password.'}, status=401)
 
         # ── Check password ───────────────────────────────
         if not handyman.check_password(password):
@@ -153,7 +161,7 @@ class HandymanSignInView(APIView):
                 msg = (f'Invalid credentials. {remaining} attempt(s) remaining.'
                        if remaining > 0 else 'Account locked.')
             except Exception:
-                msg = 'Invalid username or password.'
+                msg = 'Invalid username/email or password.'
 
             from django.contrib.auth.signals import user_login_failed
             user_login_failed.send(
