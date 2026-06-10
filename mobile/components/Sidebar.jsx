@@ -46,6 +46,7 @@ export default function Sidebar({ visible, onClose, user, isHandyman, onLogout }
     { label: 'Dashboard', icon: 'grid-outline', route: '/handyman/Home' },
     { label: 'Bookings', icon: 'calendar-outline', route: '/handyman/Bookings' },
     { label: 'My Services', icon: 'briefcase-outline', route: '/handyman/Myservices' },
+    { label: 'Favorited By', icon: 'heart-outline', route: '/handyman/FavoritedBy' },
     { label: 'Reviews', icon: 'star-outline', route: '/handyman/Reviews' },
     { label: 'Notifications', icon: 'notifications-outline', route: '/handyman/Notifications' },
     { label: 'Messages', icon: 'chatbubbles-outline', route: '/handyman/ChatsList' },
@@ -55,6 +56,7 @@ export default function Sidebar({ visible, onClose, user, isHandyman, onLogout }
   ] : [
     { label: 'Home', icon: 'grid-outline', route: '/(auth)/Home' },
     { label: 'My Bookings', icon: 'book-outline', route: '/(auth)/Mybookings' },
+    { label: 'Favorites', icon: 'heart-outline', route: '/(auth)/Favorites' },
     { label: 'Notifications', icon: 'notifications-outline', route: '/(auth)/Notifications' },
     { label: 'Messages', icon: 'chatbubbles-outline', route: '/(auth)/ChatsList' },
     { label: 'Wallet', icon: 'wallet-outline', route: '/wallet' },

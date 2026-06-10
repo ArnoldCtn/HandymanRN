@@ -1,27 +1,41 @@
-import { Redirect, Stack } from 'expo-router'
-import { useState } from 'react';
-import useGlobal from '@/services/global'
-import useOnlineStatus from '@/services/useOnlineStatus'    // ← import
+import { Redirect, Stack } from 'expo-router';
+import { useAuth } from '@/hooks/useAuth';
+import { ActivityIndicator, View } from 'react-native';
 
-export default function AuthRoutesLayout() {
-  // const { isSignedIn } = useState();
-  //chek is user is sign In
+export default function AuthLayout() {
+  const { isAuthenticated, isLoading } = useAuth();
 
-    const authenticated = useGlobal(state => state.authenticated)
+  if (isLoading) {
+    return <ActivityIndicator style={{ flex: 1 }} />;
+  }
 
-  // ── Single line — handles everything automatically ──
-  useOnlineStatus(authenticated)
+  // If NOT authenticated, ONLY allow access to SignIn/SignUp
+  if (!isAuthenticated) {
+    return (
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="SignIn" />
+        <Stack.Screen name="SignUp" />
+        {/* Redirect any other attempt to SignIn */}
+        <Stack.Screen name="*" redirect />
+      </Stack>
+    );
+  }
 
-  
-
-  return <Stack screenOptions={{
-    headerShown:false
-  }}>
-<Stack.Screen name='SignIn' />
-<Stack.Screen name='SignUp' />
-<Stack.Screen name='Home' />
-<Stack.Screen name='ChatsList' />
-  </Stack>
-
-  
+  // If authenticated, allow access to all other pages
+  return (
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="Home" />
+      <Stack.Screen name="Mybookings" />
+      <Stack.Screen name="Favorites" />
+      <Stack.Screen name="Notifications" />
+      <Stack.Screen name="Profile" />
+      <Stack.Screen name="ChatsList" />
+      <Stack.Screen name="EditProfile" />
+      <Stack.Screen name="Request" />
+      <Stack.Screen name="PINSettings" />
+      <Stack.Screen name="search" />
+      <Stack.Screen name="verifyEmail" />
+      <Stack.Screen name="handyman-Profile" />
+    </Stack>
+  );
 }

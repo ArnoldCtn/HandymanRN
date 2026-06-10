@@ -130,7 +130,4 @@ Gold  Peace of Mind 7,000 XAF     1 Free Inspection + Emergency Priority
 
 
 
- the user side send but the admin still has loading messages. while the handyman cant send     
-   message.  ensure they ,manage to send correct messages. and make sure the search bar can      
-   be well clicked and the page itself adjust well to screen. and remove finally the tabar       
-   support, only keep it  in side bar and home pages
+ perform a simple favorites functionality, such that  a user goes in [@[id].jsx](file:///C:/Users/ArnoldCtn/Desktop/Handyman%20RN/HandymanRN/mobile/app/(auth)/handyman-Profile/[id].jsx) , hanydman profile page where they perform booking, add a heart icon such that once clicked it toggle added to favorites simply. and in side bar and profile views a Favorites button to go to a favorites page with all what they added if actually having.(handyman name, profile picture, services, location,age,gender etc all neccesary info) and when clicking each handyman card there, they are liniked corresponding page for booking. and in handyman side still in side bar and profile pages, a favorites butoon where they will go and see all people who added them as favorites just. without interactions. and the admin a view of each favorite relation.  ensure correct database setting.  ACT AS AN EXPERT AND DONT MODIFY UNRELATED STUFFS. do all simply. just create the favorites django app.
