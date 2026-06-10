@@ -138,6 +138,7 @@ INSTALLED_APPS = [
     'payments',
     'notifications.apps.NotificationsConfig',
     'ratings',
+    'favorites',
 ]
 
 SITE_ID = 1 

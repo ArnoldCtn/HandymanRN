@@ -7,6 +7,7 @@ import {
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import api from '@/services/api';
+import { addFavorite, removeFavorite, getFavorites } from '@/services/favorites';
 
 
 const DAYS = [
@@ -28,6 +29,7 @@ export default function HandymanProfileScreen() {
 
   const [handyman, setHandyman] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [isFavorite, setIsFavorite] = useState(false);
   const [availability, setAvailability] = useState(
       handyman?.availability ?? Object.fromEntries(DAYS.map(d => [d.key, []]))
     )
@@ -126,8 +128,34 @@ const REVIEWS_PER_PAGE = 5;
       }
     };
 
+    const checkFavorite = async () => {
+      try {
+          const res = await getFavorites();
+          const fav = res.data.find(f => f.handyman.id === parseInt(id));
+          setIsFavorite(!!fav);
+      } catch (e) {
+          console.error("Error checking favorites", e);
+      }
+    }
+
     fetchProfile();
+    checkFavorite();
   }, [id]);
+
+  const toggleFavorite = async () => {
+    try {
+        if (isFavorite) {
+            await removeFavorite(id);
+            setIsFavorite(false);
+        } else {
+            await addFavorite(id);
+            setIsFavorite(true);
+        }
+    } catch (e) {
+        console.error(e);
+        Alert.alert("Error", "Failed to update favorites");
+    }
+  }
 
   if (loading) {
     return (
@@ -154,11 +182,16 @@ const REVIEWS_PER_PAGE = 5;
   return (
     <ScrollView style={{ flex: 1, backgroundColor: '#f9fafb' }}>
       {/* Back Button + Header */}
-      <View style={{ padding: 20,paddingTop:40, flexDirection: 'row', alignItems: 'center' }}>
-        <TouchableOpacity onPress={() => router.back()} style={{ marginRight: 12 }}>
-          <Ionicons name="arrow-back" size={28} color="#202020" />
+      <View style={{ padding: 20,paddingTop:40, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+        <View style={{flexDirection: 'row', alignItems: 'center'}}>
+            <TouchableOpacity onPress={() => router.back()} style={{ marginRight: 12 }}>
+            <Ionicons name="arrow-back" size={28} color="#202020" />
+            </TouchableOpacity>
+            <Text style={{ fontSize: 20, fontWeight: '700' }}>Handyman Profile</Text>
+        </View>
+        <TouchableOpacity onPress={toggleFavorite}>
+            <Ionicons name={isFavorite ? "heart" : "heart-outline"} size={28} color={isFavorite ? "#ef4444" : "#202020"} />
         </TouchableOpacity>
-        <Text style={{ fontSize: 20, fontWeight: '700' }}>Handyman Profile</Text>
       </View>
 
       {/* Profile Info */}
