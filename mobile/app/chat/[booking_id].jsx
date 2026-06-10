@@ -170,6 +170,13 @@ export default function ChatScreen() {
     // Prevent rendering empty bubbles
     if (!item.message && !item.image_url) return null;
     
+    // Simple time formatter
+    const formatTime = (timeString) => {
+        const date = new Date(timeString);
+        if (isNaN(date.getTime())) return timeString; // Return original if parsing fails
+        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    };
+
     const isMyMessage = item.sender_username === myUsername;
     return (
       <View style={[styles.messageBubble, isMyMessage ? styles.myMessage : styles.theirMessage]}>
@@ -183,7 +190,7 @@ export default function ChatScreen() {
             {item.message}
           </Text>
         ) : null}
-        <Text style={styles.time}>{item.created_at}</Text>
+        <Text style={styles.time}>{formatTime(item.created_at)}</Text>
       </View>
     );
   };
