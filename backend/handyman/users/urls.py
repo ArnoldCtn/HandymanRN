@@ -1,5 +1,6 @@
 from django.urls import path
-from .views import SignInView, SignUpView, UserUpdateView, MarkOnlineView, MarkOfflineView
+from .views import (SignInView, SignUpView, UserUpdateView, MarkOnlineView, MarkOfflineView,
+                    PasswordResetRequestView, PasswordResetVerifyView, PasswordResetConfirmView)
 from .oauth_views import google_oauth_login
 from rest_framework_simplejwt.views import TokenRefreshView
 
@@ -11,4 +12,7 @@ urlpatterns = [
      path('me/online/', MarkOnlineView.as_view()),
      path('me/offline/', MarkOfflineView.as_view()),
      path('token/refresh/', TokenRefreshView.as_view()),
+     path('password-reset/request/', PasswordResetRequestView.as_view()),
+     path('password-reset/verify/', PasswordResetVerifyView.as_view()),
+     path('password-reset/confirm/', PasswordResetConfirmView.as_view()),
 ]

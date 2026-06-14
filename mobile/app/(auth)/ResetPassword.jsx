@@ -11,24 +11,22 @@ import { useAppTheme } from '@/hooks/use-theme-color';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 
-export default function VerifyEmailScreen() {
+export default function ResetPasswordScreen() {
   const { t } = useTranslation();
   const theme = useAppTheme();
   const router = useRouter();
-  const { email } = useLocalSearchParams();
-  const [otp_code, setOtpCode] = useState('');
+  const { email, otp_code } = useLocalSearchParams();
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState({ visible: false, message: '', type: 'success' });
 
-  async function onVerify() {
-    if (!otp_code.trim()) return;
+  async function onReset() {
+    if (!password.trim()) return;
     setLoading(true);
     try {
-      await api.post('/users/password-reset/verify/', { email, otp_code });
-      router.push({
-        pathname: '/(auth)/ResetPassword',
-        params: { email, otp_code }
-      });
+      await api.post('/users/password-reset/confirm/', { email, otp_code, password });
+      setToast({ visible: true, message: t('auth.password_updated', 'Password updated!'), type: 'success' });
+      setTimeout(() => router.replace('/(auth)/SignIn'), 1500);
     } catch (e) {
       setToast({ visible: true, message: e.response?.data?.detail || t('common.error'), type: 'error' });
     } finally {
@@ -37,7 +35,7 @@ export default function VerifyEmailScreen() {
   }
 
   return (
-    <ThemedView style={styles.container} pointerEvents="box-none">
+    <ThemedView style={styles.container}>
       <SafeAreaView style={{ flex: 1 }}>
         <Toast visible={toast.visible} message={toast.message} type={toast.type} onHide={() => setToast(t => ({...t, visible:false}))} />
         
@@ -50,23 +48,21 @@ export default function VerifyEmailScreen() {
               <Ionicons name="arrow-back" size={24} color={theme.text} />
             </TouchableOpacity>
 
-            <ThemedText type="title" style={styles.title}>{t('auth.verify_otp', 'Verify OTP')}</ThemedText>
-            <ThemedText type="secondary" style={styles.subtitle}>{t('auth.otp_desc', 'Enter the 6-digit code sent to your email')}</ThemedText>
+            <ThemedText type="title" style={styles.title}>{t('auth.reset_password', 'Reset Password')}</ThemedText>
 
             <Input 
-              title={t('auth.otp_code', 'OTP Code')} 
-              value={otp_code} 
-              setValue={setOtpCode} 
-              placeholder="123456" 
-              keyboardType="numeric" 
-              maxLength={6} 
+              title={t('auth.new_password', 'New Password')} 
+              value={password} 
+              setValue={setPassword} 
+              placeholder={t('auth.password_placeholder')} 
+              secureTextEntry 
               autoFocus={true}
             />
             
             {loading ? (
               <ActivityIndicator size="large" color={theme.primary} style={{ marginTop: 20 }} />
             ) : (
-              <Button title={t('common.confirm')} onPress={onVerify} />
+              <Button title={t('common.save')} onPress={onReset} />
             )}
           </ScrollView>
         </KeyboardAvoidingView>
@@ -79,6 +75,5 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   scrollContent: { padding: 24, paddingTop: 20 },
   backBtn: { marginBottom: 20 },
-  title: { textAlign: 'center', marginBottom: 10 },
-  subtitle: { textAlign: 'center', marginBottom: 30 }
+  title: { textAlign: 'center', marginBottom: 30 }
 });
