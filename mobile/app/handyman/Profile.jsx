@@ -5,6 +5,9 @@ import {
 import Ionicons from '@expo/vector-icons/Ionicons'
 import useHandymanGlobal from '@/services/handymanGlobal'
 import { useRouter } from 'expo-router'
+import { useTranslation } from 'react-i18next'
+import { useAppTheme } from '@/hooks/use-theme-color'
+import useSettingsStore from '@/services/settingsStore'
 
 const SHIFTS = {
   morning:   { label: 'Morning',   icon: 'sunny-outline',         color: '#f59e0b' },
@@ -15,14 +18,18 @@ const SHIFTS = {
 }
 
 export default function HandymanProfileScreen() {
+  const { t, i18n } = useTranslation()
+  const theme = useAppTheme()
   const router   = useRouter()
   const logout   = useHandymanGlobal(s => s.logout)
   const handyman = useHandymanGlobal(s => s.handyman)
 
+  const { theme: themePref, setTheme, language: langPref, setLanguage } = useSettingsStore()
+
   function resolveAvatar(thumbnail) {
     if (!thumbnail) return null
     if (thumbnail.startsWith('http')) return thumbnail
-    return `http://192.168.1.XXX:8000/media/${thumbnail}`
+    return thumbnail
   }
   const avatarUrl = resolveAvatar(handyman?.thumbnail)
 
@@ -31,19 +38,10 @@ export default function HandymanProfileScreen() {
     router.replace('/handyman/SignIn')
   }
 
+  const styles = createStyles(theme)
+
   return (
     <ScrollView style={styles.root} showsVerticalScrollIndicator={false}>
-
-      {/* Support Button at top */}
-      {/* <View style={styles.supportHeader}>
-        <TouchableOpacity 
-          style={styles.supportTopBtn}
-          onPress={() => router.push('/chat/support?source=handyman')}
-        >
-          <Ionicons name="help-circle-outline" size={20} color="#f59e0b" />
-          <Text style={styles.supportTopText}>Contact Support</Text>
-        </TouchableOpacity>
-      </View> */}
 
       {/* Government ID verification */}
       <TouchableOpacity
@@ -59,19 +57,19 @@ export default function HandymanProfileScreen() {
           <Ionicons
             name={handyman?.is_verified ? 'shield-checkmark' : 'id-card-outline'}
             size={28}
-            color={handyman?.is_verified ? '#059669' : '#f59e0b'}
+            color={handyman?.is_verified ? theme.success : theme.accent}
           />
           <View style={{ flex: 1, marginLeft: 12 }}>
             <Text style={styles.verifyTitle}>
-              {handyman?.is_verified ? 'Government ID verified' : 'Verify government ID'}
+              {handyman?.is_verified ? t('handyman_profile.id_verified', 'Government ID verified') : t('handyman_profile.verify_id', 'Verify government ID')}
             </Text>
             <Text style={styles.verifySub}>
               {handyman?.is_verified
-                ? 'Your identity has been confirmed.'
-                : 'Required to appear in search and accept bookings.'}
+                ? t('handyman_profile.id_confirmed', 'Your identity has been confirmed.')
+                : t('handyman_profile.id_required', 'Required to appear in search and accept bookings.')}
             </Text>
           </View>
-          <Ionicons name="chevron-forward" size={22} color="#9ca3af" />
+          <Ionicons name="chevron-forward" size={22} color={theme.textSecondary} />
         </TouchableOpacity>
 
       {/* ── Hero ──────────────────────────────────── */}
@@ -102,27 +100,27 @@ export default function HandymanProfileScreen() {
             style={styles.ratingBadge}
             onPress={() => router.push('/handyman/Reviews')}
           >
-            <Ionicons name="star" size={16} color="#f59e0b" />
+            <Ionicons name="star" size={16} color={theme.accent} />
             <Text style={styles.ratingValue}>{Number(handyman.average_rating).toFixed(1)}</Text>
-            <Text style={styles.ratingCount}>({handyman.total_ratings ?? 0} reviews)</Text>
+            <Text style={styles.ratingCount}>({handyman.total_ratings ?? 0} {t('handyman_profile.reviews', 'reviews')})</Text>
           </TouchableOpacity>
         )}
 
         {/* Verified badge */}
         <View style={[
           styles.verifiedBadge,
-          { backgroundColor: handyman?.is_verified ? '#d1fae5' : '#fef3c7' }
+          { backgroundColor: handyman?.is_verified ? theme.success + '22' : theme.accent + '22' }
         ]}>
           <Ionicons
             name={handyman?.is_verified ? 'shield-checkmark' : 'shield-outline'}
             size={14}
-            color={handyman?.is_verified ? '#065f46' : '#92400e'}
+            color={handyman?.is_verified ? theme.success : theme.accent}
           />
           <Text style={[
             styles.verifiedText,
-            { color: handyman?.is_verified ? '#065f46' : '#92400e' }
+            { color: handyman?.is_verified ? theme.success : theme.accent }
           ]}>
-            {handyman?.is_verified ? 'Verified' : 'Pending Verification'}
+            {handyman?.is_verified ? t('handyman_profile.verified', 'Verified') : t('handyman_profile.pending', 'Pending Verification')}
           </Text>
         </View>
       </View>
@@ -132,48 +130,48 @@ export default function HandymanProfileScreen() {
 
         {/* Contact */}
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Contact Info</Text>
-          <InfoRow icon="call-outline"     color="#6366F1" label={handyman?.phone    ?? 'Not set'} />
-          <InfoRow icon="mail-outline"     color="#10b981" label={handyman?.email    ?? 'Not set'} />
-          <InfoRow icon="location-outline" color="#f59e0b"
+          <Text style={styles.cardTitle}>{t('handyman_profile.contact_info', 'Contact Info')}</Text>
+          <InfoRow theme={theme} icon="call-outline"     color={theme.primary} label={handyman?.phone    ?? t('common.not_set')} />
+          <InfoRow theme={theme} icon="mail-outline"     color={theme.success} label={handyman?.email    ?? t('common.not_set')} />
+          <InfoRow theme={theme} icon="location-outline" color={theme.accent}
             label={
               typeof handyman?.location === 'object'
-                ? handyman?.location?.location ?? 'Not set'
-                : handyman?.location ?? 'Not set'
+                ? handyman?.location?.location ?? t('common.not_set')
+                : handyman?.location ?? t('common.not_set')
             }
           />
-          <InfoRow icon="person-outline"   color="#8b5cf6" label={handyman?.gender ? (handyman.gender.charAt(0).toUpperCase() + handyman.gender.slice(1)) : 'Not set'} />
-          <InfoRow icon="calendar-outline" color="#ec4899" label={handyman?.birth_date ?? 'Not set'} />
+          <InfoRow theme={theme} icon="person-outline"   color="#8b5cf6" label={handyman?.gender ? (handyman.gender.charAt(0).toUpperCase() + handyman.gender.slice(1)) : t('common.not_set')} />
+          <InfoRow theme={theme} icon="calendar-outline" color="#ec4899" label={handyman?.birth_date ?? t('common.not_set')} />
         </View>
 
         {/* Bio */}
         {handyman?.bio && (
           <View style={styles.card}>
-            <Text style={styles.cardTitle}>About</Text>
+            <Text style={styles.cardTitle}>{t('handyman_profile.about', 'About')}</Text>
             <Text style={styles.bioText}>{handyman.bio}</Text>
           </View>
         )}
 
         {/* Services */}
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Services Offered</Text>
+          <Text style={styles.cardTitle}>{t('handyman_profile.services', 'Services Offered')}</Text>
           {handyman?.services?.length > 0 ? (
             <View style={styles.chipRow}>
               {handyman.services.map((s, i) => (
                 <View key={i} style={styles.chip}>
-                  <Ionicons name="construct-outline" size={13} color="#6366F1" />
+                  <Ionicons name="construct-outline" size={13} color={theme.primary} />
                   <Text style={styles.chipText}>{s.name ?? s}</Text>
                 </View>
               ))}
             </View>
           ) : (
-            <EmptyRow text="No services added yet" />
+            <EmptyRow theme={theme} text={t('handyman_profile.no_services', 'No services added yet')} />
           )}
         </View>
 
         {/* Availability */}
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Availability</Text>
+          <Text style={styles.cardTitle}>{t('handyman_profile.availability', 'Availability')}</Text>
           {handyman?.availability &&
           Object.values(handyman.availability).some(v => v.length > 0) ? (
             Object.entries(handyman.availability)
@@ -185,7 +183,7 @@ export default function HandymanProfileScreen() {
                   </Text>
                   <View style={styles.shiftChips}>
                     {shifts.map((shift, i) => {
-                      const s = SHIFTS[shift] ?? { label: shift, icon:'time-outline', color:'#9ca3af' }
+                      const s = SHIFTS[shift] ?? { label: shift, icon:'time-outline', color:theme.textSecondary }
                       return (
                         <View key={i} style={[styles.shiftChip, { backgroundColor: s.color + '22' }]}>
                           <Ionicons name={s.icon} size={12} color={s.color} />
@@ -199,65 +197,111 @@ export default function HandymanProfileScreen() {
                 </View>
               ))
           ) : (
-            <EmptyRow text="No availability set" />
+            <EmptyRow theme={theme} text={t('handyman_profile.no_availability', 'No availability set')} />
           )}
         </View>
 
         {/* Job Pictures Button and Prompt */}
         <View style={styles.card}>
-           <Text style={styles.cardTitle}>Portfolio</Text>
-           <Text style={styles.glowingText}>Provide clean, clear pics of you working</Text>
+           <Text style={styles.cardTitle}>{t('handyman_profile.portfolio', 'Portfolio')}</Text>
+           <Text style={styles.glowingText}>{t('handyman_profile.glowing_prompt', 'Provide clean, clear pics of you working')}</Text>
            <TouchableOpacity
             style={styles.jobPicsBtn}
             onPress={() => router.push('/handyman/JobPictures')}
           >
             <Ionicons name="images-outline" size={20} color="white" />
-            <Text style={styles.jobPicsBtnText}>Manage Job Pictures</Text>
+            <Text style={styles.jobPicsBtnText}>{t('handyman_profile.manage_pics', 'Manage Job Pictures')}</Text>
           </TouchableOpacity>
+        </View>
+
+        {/* App Preferences */}
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>{t('settings.preferences', 'Preferences')}</Text>
+          
+          <Text style={styles.settingLabel}>{t('settings.language', 'Language')}</Text>
+          <View style={styles.settingRow}>
+            <TouchableOpacity 
+              style={[styles.settingBtn, langPref === 'en' && styles.settingBtnActive]}
+              onPress={() => setLanguage('en')}
+            >
+              <Text style={[styles.settingBtnText, langPref === 'en' && styles.settingBtnTextActive]}>{t('settings.english', 'English')}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={[styles.settingBtn, langPref === 'fr' && styles.settingBtnActive]}
+              onPress={() => setLanguage('fr')}
+            >
+              <Text style={[styles.settingBtnText, langPref === 'fr' && styles.settingBtnTextActive]}>{t('settings.french', 'French')}</Text>
+            </TouchableOpacity>
+          </View>
+
+          <Text style={[styles.settingLabel, { marginTop: 16 }]}>{t('settings.display_mode', 'Display Mode')}</Text>
+          <View style={styles.settingRow}>
+            <TouchableOpacity 
+              style={[styles.settingBtn, themePref === 'light' && styles.settingBtnActive]}
+              onPress={() => setTheme('light')}
+            >
+              <Ionicons name="sunny-outline" size={16} color={themePref === 'light' ? 'white' : theme.textSecondary} />
+              <Text style={[styles.settingBtnText, themePref === 'light' && styles.settingBtnTextActive]}>{t('settings.light', 'Light')}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={[styles.settingBtn, themePref === 'dark' && styles.settingBtnActive]}
+              onPress={() => setTheme('dark')}
+            >
+              <Ionicons name="moon-outline" size={16} color={themePref === 'dark' ? 'white' : theme.textSecondary} />
+              <Text style={[styles.settingBtnText, themePref === 'dark' && styles.settingBtnTextActive]}>{t('settings.dark', 'Dark')}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={[styles.settingBtn, themePref === 'system' && styles.settingBtnActive]}
+              onPress={() => setTheme('system')}
+            >
+              <Ionicons name="settings-outline" size={16} color={themePref === 'system' ? 'white' : theme.textSecondary} />
+              <Text style={[styles.settingBtnText, themePref === 'system' && styles.settingBtnTextActive]}>{t('settings.system', 'System')}</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Settings */}
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Account & Financials</Text>
+          <Text style={styles.cardTitle}>{t('handyman_profile.account', 'Account & Financials')}</Text>
 
           <TouchableOpacity
             style={styles.menuRow}
             onPress={() => router.push('/wallet?source=handyman')}
           >
-            <View style={[styles.menuIcon, { backgroundColor:'#ecfdf5' }]}>
-              <Ionicons name="wallet-outline" size={18} color="#10b981" />
+            <View style={[styles.menuIcon, { backgroundColor: theme.success + '22' }]}>
+              <Ionicons name="wallet-outline" size={18} color={theme.success} />
             </View>
-            <Text style={styles.menuLabel}>My Wallet</Text>
-            <Ionicons name="chevron-forward" size={18} color="#9ca3af" />
+            <Text style={styles.menuLabel}>{t('handyman_profile.wallet', 'My Wallet')}</Text>
+            <Ionicons name="chevron-forward" size={18} color={theme.textSecondary} />
           </TouchableOpacity>
 
           <TouchableOpacity
             style={styles.menuRow}
             onPress={() => router.push('/handyman/EditProfile')}
           >
-            <View style={[styles.menuIcon, { backgroundColor:'#e0e7ff' }]}>
-              <Ionicons name="create-outline" size={18} color="#6366F1" />
+            <View style={[styles.menuIcon, { backgroundColor: theme.primary + '22' }]}>
+              <Ionicons name="create-outline" size={18} color={theme.primary} />
             </View>
-            <Text style={styles.menuLabel}>Edit Profile</Text>
-            <Ionicons name="chevron-forward" size={18} color="#9ca3af" />
+            <Text style={styles.menuLabel}>{t('handyman_profile.edit_profile', 'Edit Profile')}</Text>
+            <Ionicons name="chevron-forward" size={18} color={theme.textSecondary} />
           </TouchableOpacity>
 
           <TouchableOpacity
             style={styles.menuRow}
             onPress={() => router.push('/handyman/PINSettings')}
           >
-            <View style={[styles.menuIcon, { backgroundColor:'#fee2e2' }]}>
-              <Ionicons name="keypad-outline" size={18} color="#ef4444" />
+            <View style={[styles.menuIcon, { backgroundColor: theme.error + '22' }]}>
+              <Ionicons name="keypad-outline" size={18} color={theme.error} />
             </View>
-            <Text style={styles.menuLabel}>App PIN Lock</Text>
-            <Ionicons name="chevron-forward" size={18} color="#9ca3af" />
+            <Text style={styles.menuLabel}>{t('handyman_profile.pin_lock', 'App PIN Lock')}</Text>
+            <Ionicons name="chevron-forward" size={18} color={theme.textSecondary} />
           </TouchableOpacity>
         </View>
 
         {/* Logout */}
         <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
           <Ionicons name="log-out-outline" size={20} color="white" />
-          <Text style={styles.logoutText}>Sign Out</Text>
+          <Text style={styles.logoutText}>{t('auth.logout', 'Sign Out')}</Text>
         </TouchableOpacity>
 
         <View style={{ height: 40 }} />
@@ -266,36 +310,36 @@ export default function HandymanProfileScreen() {
   )
 }
 
-function InfoRow({ icon, color, label }) {
+function InfoRow({ theme, icon, color, label }) {
   return (
-    <View style={styles.infoRow}>
+    <View style={{ flexDirection:'row', alignItems:'center', gap:10, marginBottom:10 }}>
       <Ionicons name={icon} size={16} color={color} />
-      <Text style={styles.infoText}>{label}</Text>
+      <Text style={{ fontSize:14, color: theme.text, flex:1 }}>{label}</Text>
     </View>
   )
 }
 
-function EmptyRow({ text }) {
+function EmptyRow({ theme, text }) {
   return (
-    <Text style={{ color:'#9ca3af', fontSize:13, marginTop:4 }}>{text}</Text>
+    <Text style={{ color: theme.textSecondary, fontSize:13, marginTop:4 }}>{text}</Text>
   )
 }
 
-const styles = StyleSheet.create({
-  root: { flex:1, backgroundColor:'#f9fafb' },
+const createStyles = (theme) => StyleSheet.create({
+  root: { flex:1, backgroundColor: theme.background },
 
   // Hero
-  hero:             { backgroundColor:'#1e293b', alignItems:'center', paddingTop:52, paddingBottom:28, paddingHorizontal:24 },
+  hero:             { backgroundColor: theme.surface, alignItems:'center', paddingTop:52, paddingBottom:28, paddingHorizontal:24, borderBottomWidth: 1, borderColor: theme.border },
   avatarWrapper:    { position:'relative', marginBottom:14 },
-  avatar:           { width:100, height:100, borderRadius:50, borderWidth:3, borderColor:'#f59e0b' },
-  avatarPlaceholder:{ backgroundColor:'#334155', alignItems:'center', justifyContent:'center' },
-  avatarInitial:    { color:'white', fontSize:36, fontWeight:'bold' },
-  pencilBtn:        { position:'absolute', bottom:0, right:0, width:28, height:28, borderRadius:14, backgroundColor:'#f59e0b', alignItems:'center', justifyContent:'center', borderWidth:2, borderColor:'#1e293b' },
-  heroName:         { fontSize:22, fontWeight:'800', color:'white', marginBottom:4 },
-  heroEmail:        { fontSize:14, color:'#94a3b8', marginBottom:10 },
-  ratingBadge:      { flexDirection:'row', alignItems:'center', gap:4, backgroundColor:'#fffbeb', paddingVertical:4, paddingHorizontal:10, borderRadius:12, marginBottom:10, borderWidth:1, borderColor:'#fef3c7' },
-  ratingValue:      { fontSize:14, fontWeight:'700', color:'#92400e' },
-  ratingCount:      { fontSize:12, color:'#d97706', opacity:0.8 },
+  avatar:           { width:100, height:100, borderRadius:50, borderWidth:3, borderColor: theme.accent },
+  avatarPlaceholder:{ backgroundColor: theme.border, alignItems:'center', justifyContent:'center' },
+  avatarInitial:    { color: theme.text, fontSize:36, fontWeight:'bold' },
+  pencilBtn:        { position:'absolute', bottom:0, right:0, width:28, height:28, borderRadius:14, backgroundColor: theme.accent, alignItems:'center', justifyContent:'center', borderWidth:2, borderColor: theme.surface },
+  heroName:         { fontSize:22, fontWeight:'800', color: theme.text, marginBottom:4 },
+  heroEmail:        { fontSize:14, color: theme.textSecondary, marginBottom:10 },
+  ratingBadge:      { flexDirection:'row', alignItems:'center', gap:4, backgroundColor: theme.accent + '11', paddingVertical:4, paddingHorizontal:10, borderRadius:12, marginBottom:10, borderWidth:1, borderColor: theme.accent + '22' },
+  ratingValue:      { fontSize:14, fontWeight:'700', color: theme.accent },
+  ratingCount:      { fontSize:12, color: theme.accent, opacity:0.8 },
   verifiedBadge:    { flexDirection:'row', alignItems:'center', gap:6, paddingVertical:4, paddingHorizontal:12, borderRadius:20 },
   verifiedText:     { fontSize:12, fontWeight:'700' },
 
@@ -303,35 +347,35 @@ const styles = StyleSheet.create({
   body:     { paddingHorizontal:16, paddingTop:16 },
 
   // Cards
-  card:      { backgroundColor:'white', borderRadius:16, padding:16, marginBottom:14, elevation:2, shadowColor:'#000', shadowOpacity:0.05, shadowRadius:8, shadowOffset:{width:0,height:2} },
-  cardTitle: { fontSize:15, fontWeight:'700', color:'#202020', marginBottom:12, borderBottomWidth:1, borderColor:'#f0f0f0', paddingBottom:8 },
+  card:      { backgroundColor: theme.card, borderRadius:16, padding:16, marginBottom:14, elevation:2, shadowColor: theme.shadow, shadowOpacity:0.05, shadowRadius:8, shadowOffset:{width:0,height:2} },
+  cardTitle: { fontSize:15, fontWeight:'700', color: theme.text, marginBottom:12, borderBottomWidth:1, borderColor: theme.border, paddingBottom:8 },
 
   // Info rows
   infoRow:   { flexDirection:'row', alignItems:'center', gap:10, marginBottom:10 },
-  infoText:  { fontSize:14, color:'#374151', flex:1 },
+  infoText:  { fontSize:14, color: theme.text, flex:1 },
 
   // Bio
-  bioText:   { fontSize:14, color:'#374151', lineHeight:22 },
+  bioText:   { fontSize:14, color: theme.text, lineHeight:22 },
 
   // Service chips
   chipRow:   { flexDirection:'row', flexWrap:'wrap', gap:8 },
-  chip:      { flexDirection:'row', alignItems:'center', gap:5, backgroundColor:'#e0e7ff', paddingVertical:5, paddingHorizontal:10, borderRadius:20 },
-  chipText:  { fontSize:12, color:'#6366F1', fontWeight:'600' },
+  chip:      { flexDirection:'row', alignItems:'center', gap:5, backgroundColor: theme.primary + '11', paddingVertical:5, paddingHorizontal:10, borderRadius:20 },
+  chipText:  { fontSize:12, color: theme.primary, fontWeight:'600' },
 
   // Availability
   availRow:   { flexDirection:'row', alignItems:'center', gap:10, marginBottom:10 },
-  availDay:   { fontSize:12, fontWeight:'800', color:'#374151', width:36 },
+  availDay:   { fontSize:12, fontWeight:'800', color: theme.text, width:36 },
   shiftChips: { flexDirection:'row', flexWrap:'wrap', gap:6, flex:1 },
   shiftChip:  { flexDirection:'row', alignItems:'center', gap:4, paddingVertical:3, paddingHorizontal:8, borderRadius:12 },
   shiftChipText: { fontSize:11, fontWeight:'600' },
 
   // Settings menu
-  menuRow:   { flexDirection:'row', alignItems:'center', gap:12, paddingVertical:12, borderBottomWidth:1, borderColor:'#f9fafb' },
+  menuRow:   { flexDirection:'row', alignItems:'center', gap:12, paddingVertical:12, borderBottomWidth:1, borderColor: theme.border },
   menuIcon:  { width:36, height:36, borderRadius:10, alignItems:'center', justifyContent:'center' },
-  menuLabel: { flex:1, fontSize:14, fontWeight:'600', color:'#202020' },
+  menuLabel: { flex:1, fontSize:14, fontWeight:'600', color: theme.text },
 
   // Logout
-  logoutBtn:  { flexDirection:'row', alignItems:'center', justifyContent:'center', gap:8, backgroundColor:'#1e293b', paddingVertical:14, borderRadius:14, marginBottom:10 },
+  logoutBtn:  { flexDirection:'row', alignItems:'center', justifyContent:'center', gap:8, backgroundColor: theme.primary, paddingVertical:14, borderRadius:14, marginBottom:10 },
   logoutText: { color:'white', fontSize:15, fontWeight:'700' },
 
   verifyCard: {
@@ -341,26 +385,23 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     borderRadius: 12,
     borderWidth: 1.5,
-    borderColor: '#fde68a',
-    backgroundColor: '#fffbeb',
+    borderColor: theme.accent + '44',
+    backgroundColor: theme.accent + '11',
   },
   verifyCardDone: {
-    borderColor: '#a7f3d0',
-    backgroundColor: '#ecfdf5',
+    borderColor: theme.success + '44',
+    backgroundColor: theme.success + '11',
   },
-  verifyTitle: { fontSize: 15, fontWeight: '700', color: '#202020' },
-  verifySub: { fontSize: 12, color: '#6b7280', marginTop: 2 },
-  supportHeader: { width: '100%', alignItems: 'flex-end', paddingHorizontal: 16, paddingVertical: 10, backgroundColor: '#f9fafb' },
-  supportTopBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', paddingVertical: 8, paddingHorizontal: 12, borderRadius: 20, gap: 6, elevation: 2, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 5, shadowOffset: { width: 0, height: 2 } },
-  supportTopText: { fontSize: 13, fontWeight: '600', color: '#f59e0b' },
+  verifyTitle: { fontSize: 15, fontWeight: '700', color: theme.text },
+  verifySub: { fontSize: 12, color: theme.textSecondary, marginTop: 2 },
 
   glowingText: {
     fontSize: 14,
-    color: '#f59e0b',
+    color: theme.accent,
     fontWeight: '600',
     marginBottom: 10,
     textAlign: 'center',
-    textShadowColor: '#fde68a',
+    textShadowColor: theme.accent,
     textShadowOffset: { width: 0, height: 0 },
     textShadowRadius: 10,
   },
@@ -369,7 +410,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: '#6366F1',
+    backgroundColor: theme.primary,
     paddingVertical: 12,
     borderRadius: 12,
     marginBottom: 5,
@@ -379,4 +420,11 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '700',
   },
+
+  settingLabel: { fontSize: 13, fontWeight: '600', color: theme.textSecondary, marginBottom: 8 },
+  settingRow: { flexDirection: 'row', gap: 10, flexWrap: 'wrap' },
+  settingBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 8, paddingHorizontal: 12, borderRadius: 10, backgroundColor: theme.background, borderWidth: 1, borderColor: theme.border },
+  settingBtnActive: { backgroundColor: theme.primary, borderColor: theme.primary },
+  settingBtnText: { fontSize: 13, color: theme.text, fontWeight: '500' },
+  settingBtnTextActive: { color: 'white', fontWeight: '700' },
 })

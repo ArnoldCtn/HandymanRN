@@ -7,11 +7,15 @@ import { useRouter } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import api from '@/services/api';   // Use authenticated api
 import handymanApi from '@/services/handymanApi';   // Use authenticated api
+import { useTranslation } from 'react-i18next';
+import { useAppTheme } from '@/hooks/use-theme-color';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_W = (SCREEN_WIDTH - 48) / 2;
 
 export default function AllServicesScreen() {
+  const { t } = useTranslation();
+  const theme = useAppTheme();
   const router = useRouter();
 
   const [allData, setAllData] = useState([]);        // Combined services + handymen
@@ -80,11 +84,11 @@ export default function AllServicesScreen() {
       const results = allData.filter(item => {
         const matchesTerm = !term || item.searchKey.includes(term) ||
           (item.description && item.description.toLowerCase().includes(term));
-        
+
         if (item.type === 'handyman') {
           const rating = parseFloat(item.average_rating) || 0;
           const matchesRating = rating >= ratingThreshold;
-          
+
           if (isNumber) {
             return matchesRating;
           }
@@ -129,7 +133,7 @@ export default function AllServicesScreen() {
             <Ionicons 
               name={isHandyman ? "person-outline" : "construct-outline"} 
               size={32} 
-              color="#9ca3af" 
+              color={theme.textSecondary} 
             />
           </View>
         )}
@@ -138,46 +142,52 @@ export default function AllServicesScreen() {
           <Text style={styles.cardName} numberOfLines={1}>
             {isHandyman ? item.username : item.name}
           </Text>
-          {isHandyman ? <Text>
+          {isHandyman ? <Text style={{ color: theme.textSecondary }}>
             {(item.location && isHandyman) ? item.location : ''}
           </Text> : ''}
 
           {isHandyman ? <Text style={styles.cardDesc} numberOfLines={1}>
-            {(item.average_rating && isHandyman)  ? item.average_rating : ( isHandyman ? 'no ratings yet' : '')}
-        { (item.average_rating && isHandyman) ?  < Ionicons  name="star" size={18} color="#daea01" /> : ''}
+            {(item.average_rating && isHandyman)  ? item.average_rating : ( isHandyman ? t('search.no_ratings') : '')}
+        { (item.average_rating && isHandyman) ?  < Ionicons  name="star" size={18} color={theme.accent} /> : ''}
           </Text> : ''}
           <Text style={styles.cardDesc} numberOfLines={2}>
-            {isHandyman ? (item.bio || 'Handyman') : (item.description || '')}
+            {isHandyman ? (item.bio || t('search.type_handyman')) : (item.description || '')}
           </Text>
           <Text style={styles.typeBadge}>
-            {isHandyman ? 'Handyman' : 'Service'}
+            {isHandyman ? t('search.type_handyman') : t('search.type_service')}
           </Text>
         </View>
       </TouchableOpacity>
     );
   };
 
+  const styles = createStyles(theme);
+
   if (loading) {
-    return <ActivityIndicator style={{ flex: 1 }} size="large" color="#6366F1" />;
+    return (
+      <View style={[styles.centered, { backgroundColor: theme.background }]}>
+        <ActivityIndicator size="large" color={theme.primary} />
+      </View>
+    );
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#f9fafb' }}>
+    <View style={styles.root}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <Ionicons name="arrow-back" size={24} color="#202020" />
+          <Ionicons name="arrow-back" size={24} color={theme.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Discover</Text>
+        <Text style={styles.headerTitle}>{t('search.discover')}</Text>
         <View style={{ width: 24 }} />
       </View>
 
       {/* Search Bar */}
       <View style={styles.searchBox}>
-        <Ionicons name="search-outline" size={20} color="#9ca3af" style={{ marginRight: 8 }} />
+        <Ionicons name="search-outline" size={20} color={theme.textSecondary} style={{ marginRight: 8 }} />
         <TextInput
-          placeholder="Search services or handymen..."
-          placeholderTextColor="#9ca3af"
+          placeholder={t('search.placeholder')}
+          placeholderTextColor={theme.textSecondary}
           value={search}
           onChangeText={setSearch}
           style={styles.searchInput}
@@ -185,7 +195,7 @@ export default function AllServicesScreen() {
         />
         {search.length > 0 && (
           <TouchableOpacity onPress={() => setSearch('')}>
-            <Ionicons name="close-circle" size={20} color="#9ca3af" />
+            <Ionicons name="close-circle" size={20} color={theme.textSecondary} />
           </TouchableOpacity>
         )}
       </View>
@@ -208,8 +218,8 @@ export default function AllServicesScreen() {
         }
         ListEmptyComponent={
           <View style={styles.empty}>
-            <Ionicons name="search-outline" size={60} color="#d1d5db" />
-            <Text style={styles.emptyText}>No results found</Text>
+            <Ionicons name="search-outline" size={60} color={theme.border} />
+            <Text style={styles.emptyText}>{t('search.no_results')}</Text>
           </View>
         }
       />
@@ -217,65 +227,69 @@ export default function AllServicesScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme) => StyleSheet.create({
+  root: { flex: 1, backgroundColor: theme.background },
+  centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   header: { 
     flexDirection: 'row', 
     alignItems: 'center', 
     justifyContent: 'space-between', 
     paddingHorizontal: 16, 
     paddingVertical: 15,
-    marginVertical: 20,
-    backgroundColor: '#fff', 
+    marginTop: 40,
+    backgroundColor: theme.surface, 
     borderBottomWidth: 1, 
-    borderColor: '#f0f0f0' 
+    borderColor: theme.border 
   },
   backBtn: { padding: 4 },
-  headerTitle: { fontSize: 20, fontWeight: '700', color: '#202020' },
+  headerTitle: { fontSize: 20, fontWeight: '700', color: theme.text },
 
   searchBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: theme.surface,
     marginHorizontal: 16,
     marginVertical: 12,
     paddingHorizontal: 14,
     paddingVertical: 12,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: theme.border,
   },
-  searchInput: { flex: 1, fontSize: 16, color: '#202020' },
+  searchInput: { flex: 1, fontSize: 16, color: theme.text },
 
   card: {
     width: CARD_W,
-    backgroundColor: '#fff',
+    backgroundColor: theme.card,
     borderRadius: 14,
     marginBottom: 16,
     overflow: 'hidden',
     elevation: 3,
-    shadowColor: '#000',
+    shadowColor: theme.shadow,
     shadowOpacity: 0.07,
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 2 },
+    borderWidth: 1,
+    borderColor: theme.border
   },
   cardImage: { width: '100%', height: 120 },
   cardImagePlaceholder: {
     width: '100%', 
     height: 120, 
-    backgroundColor: '#f3f4f6', 
+    backgroundColor: theme.border, 
     alignItems: 'center', 
     justifyContent: 'center' 
   },
   cardBody: { padding: 12 },
-  cardName: { fontSize: 15, fontWeight: '700', color: '#202020' },
-  cardDesc: { fontSize: 12, color: '#6b7280', marginTop: 4, lineHeight: 16 },
+  cardName: { fontSize: 15, fontWeight: '700', color: theme.text },
+  cardDesc: { fontSize: 12, color: theme.textSecondary, marginTop: 4, lineHeight: 16 },
   typeBadge: {
     fontSize: 11,
-    color: '#6366f1',
+    color: theme.primary,
     fontWeight: '600',
     marginTop: 6,
     alignSelf: 'flex-start',
-    backgroundColor: '#e0e7ff',
+    backgroundColor: theme.primary + '11',
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 6,
@@ -285,7 +299,7 @@ const styles = StyleSheet.create({
     marginTop: 100 
   },
   emptyText: { 
-    color: '#9ca3af', 
+    color: theme.textSecondary, 
     marginTop: 12, 
     fontSize: 16 
   },

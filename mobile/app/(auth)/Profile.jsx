@@ -1,17 +1,24 @@
-import { Image, Text, View, StyleSheet, TouchableOpacity } from 'react-native'
+import { Image, Text, View, StyleSheet, TouchableOpacity, ScrollView } from 'react-native'
 import Ionicons from '@expo/vector-icons/Ionicons'
 import useGlobal from '@/services/global'
 import { useRouter } from 'expo-router'
+import { useTranslation } from 'react-i18next'
+import { useAppTheme } from '@/hooks/use-theme-color'
+import useSettingsStore from '@/services/settingsStore'
 
 export default function ProfileScreen() {
+  const { t } = useTranslation()
+  const theme = useAppTheme()
   const router  = useRouter()
   const logout  = useGlobal(state => state.logout)
-  const user    = useGlobal(state => state.user)   // ← Zustand only, no AsyncStorage
+  const user    = useGlobal(state => state.user)
+
+  const { theme: themePref, setTheme, language: langPref, setLanguage } = useSettingsStore()
 
   function resolveAvatar(thumbnail) {
     if (!thumbnail) return null
     if (thumbnail.startsWith('http')) return thumbnail
-    return `http://192.168.1.XXX:8000/media/${thumbnail}`
+    return thumbnail
   }
   const avatarUrl = resolveAvatar(user?.thumbnail)
 
@@ -20,18 +27,11 @@ export default function ProfileScreen() {
     router.replace('/(auth)/SignIn')
   }
 
-  return (
-    <View style={styles.container}>
-      
-      {/* Support Button at top */}
-      {/* <TouchableOpacity 
-        style={styles.supportTopBtn}
-        onPress={() => router.push('/chat/support')}
-      >
-        <Ionicons name="help-circle-outline" size={20} color="#6366F1" />
-        <Text style={styles.supportTopText}>Contact Support</Text>
-      </TouchableOpacity> */}
+  const styles = createStyles(theme)
 
+  return (
+    <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
+      
       {/* Avatar + pencil */}
       <View style={styles.avatarWrapper}>
         {avatarUrl ? (
@@ -45,7 +45,7 @@ export default function ProfileScreen() {
         )}
         <TouchableOpacity
           style={styles.pencilBtn}
-          onPress={() => router.push('/(auth)/Home/EditProfile')}
+          onPress={() => router.push('/(auth)/EditProfile')}
         >
           <Ionicons name="pencil" size={15} color="white" />
         </TouchableOpacity>
@@ -60,57 +60,119 @@ export default function ProfileScreen() {
         style={styles.editBtn}
         onPress={() => router.push('/(auth)/EditProfile')}
       >
-        <Ionicons name="create-outline" size={20} color="#6366F1" />
-        <Text style={styles.editBtnText}>Edit Profile</Text>
+        <Ionicons name="create-outline" size={20} color={theme.primary} />
+        <Text style={styles.editBtnText}>{t('handyman_profile.edit_profile')}</Text>
       </TouchableOpacity>
 
+      <View style={styles.menuSection}>
+        {/* Wallet button */}
+        <TouchableOpacity
+          style={styles.menuRow}
+          onPress={() => router.push('/wallet')}
+        >
+          <View style={[styles.menuIconContainer, { backgroundColor: theme.primary + '11' }]}>
+            <Ionicons name="wallet-outline" size={20} color={theme.primary} />
+          </View>
+          <Text style={styles.menuText}>{t('handyman_profile.wallet')}</Text>
+          <Ionicons name="chevron-forward" size={18} color={theme.textSecondary} />
+        </TouchableOpacity>
 
-      {/* Wallet button */}
-      <TouchableOpacity
-        style={styles.menuRow}
-        onPress={() => router.push('/wallet')}
-      >
-        <Ionicons name="wallet-outline" size={20} color="#6366F1" />
-        <Text style={styles.menuText}>My Wallet</Text>
-        <Ionicons name="chevron-forward" size={18} color="#9ca3af" />
-      </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.menuRow}
+          onPress={() => router.push('/(auth)/PINSettings')}
+        >
+          <View style={[styles.menuIconContainer, { backgroundColor: theme.error + '11' }]}>
+            <Ionicons name="keypad-outline" size={20} color={theme.error} />
+          </View>
+          <Text style={styles.menuText}>{t('handyman_profile.pin_lock')}</Text>
+          <Ionicons name="chevron-forward" size={18} color={theme.textSecondary} />
+        </TouchableOpacity>
+      </View>
 
-      <TouchableOpacity
-  style={styles.menuRow}
-  onPress={() => router.push('/(auth)/PINSettings')}
->
-  <Ionicons name="keypad-outline" size={20} color="#6366F1" />
-  <Text style={styles.menuText}>App PIN Lock</Text>
-  <Ionicons name="chevron-forward" size={18} color="#9ca3af" />
-</TouchableOpacity>
+      {/* App Preferences */}
+      <View style={styles.settingsCard}>
+        <Text style={styles.settingsTitle}>{t('settings.preferences')}</Text>
+        
+        <Text style={styles.settingLabel}>{t('settings.language')}</Text>
+        <View style={styles.settingRow}>
+          <TouchableOpacity 
+            style={[styles.settingBtn, langPref === 'en' && styles.settingBtnActive]}
+            onPress={() => setLanguage('en')}
+          >
+            <Text style={[styles.settingBtnText, langPref === 'en' && styles.settingBtnTextActive]}>{t('settings.english')}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={[styles.settingBtn, langPref === 'fr' && styles.settingBtnActive]}
+            onPress={() => setLanguage('fr')}
+          >
+            <Text style={[styles.settingBtnText, langPref === 'fr' && styles.settingBtnTextActive]}>{t('settings.french')}</Text>
+          </TouchableOpacity>
+        </View>
 
+        <Text style={[styles.settingLabel, { marginTop: 16 }]}>{t('settings.display_mode')}</Text>
+        <View style={styles.settingRow}>
+          <TouchableOpacity 
+            style={[styles.settingBtn, themePref === 'light' && styles.settingBtnActive]}
+            onPress={() => setTheme('light')}
+          >
+            <Ionicons name="sunny-outline" size={16} color={themePref === 'light' ? 'white' : theme.textSecondary} />
+            <Text style={[styles.settingBtnText, themePref === 'light' && styles.settingBtnTextActive]}>{t('settings.light')}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={[styles.settingBtn, themePref === 'dark' && styles.settingBtnActive]}
+            onPress={() => setTheme('dark')}
+          >
+            <Ionicons name="moon-outline" size={16} color={themePref === 'dark' ? 'white' : theme.textSecondary} />
+            <Text style={[styles.settingBtnText, themePref === 'dark' && styles.settingBtnTextActive]}>{t('settings.dark')}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={[styles.settingBtn, themePref === 'system' && styles.settingBtnActive]}
+            onPress={() => setTheme('system')}
+          >
+            <Ionicons name="settings-outline" size={16} color={themePref === 'system' ? 'white' : theme.textSecondary} />
+            <Text style={[styles.settingBtnText, themePref === 'system' && styles.settingBtnTextActive]}>{t('settings.system')}</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
 
       {/* Logout */}
       <TouchableOpacity style={styles.logout} onPress={handleLogout}>
-        <Ionicons name="log-out-outline" size={22} color="#d0d0d0" />
-        <Text style={styles.logoutText}> Logout</Text>
+        <Ionicons name="log-out-outline" size={22} color="white" />
+        <Text style={styles.logoutText}> {t('auth.logout')}</Text>
       </TouchableOpacity>
 
-    </View>
+      <View style={{ height: 40 }} />
+    </ScrollView>
   )
 }
 
-const styles = StyleSheet.create({
-  container:        { flex:1, alignItems:'center', justifyContent:'center', backgroundColor:'#fff' },
+const createStyles = (theme) => StyleSheet.create({
+  container:        { alignItems:'center', paddingVertical: 60, backgroundColor: theme.background },
   avatarWrapper:    { position:'relative', marginBottom:16 },
-  avatar:           { width:110, height:110, borderRadius:55 },
-  avatarPlaceholder:{ width:110, height:110, borderRadius:55, backgroundColor:'#6366F1', alignItems:'center', justifyContent:'center' },
+  avatar:           { width:110, height:110, borderRadius:55, borderWidth: 3, borderColor: theme.surface },
+  avatarPlaceholder:{ width:110, height:110, borderRadius:55, backgroundColor: theme.primary, alignItems:'center', justifyContent:'center', borderWidth: 3, borderColor: theme.surface },
   avatarInitial:    { color:'white', fontSize:36, fontWeight:'bold' },
-  pencilBtn:        { position:'absolute', bottom:0, right:0, width:30, height:30, borderRadius:15, backgroundColor:'#6366F1', alignItems:'center', justifyContent:'center', borderWidth:2, borderColor:'white' },
-  username:         { fontSize:26, fontWeight:'700', color:'#202020' },
-  email:            { fontSize:15, color:'gray', marginTop:4 },
-  phone:            { fontSize:14, color:'#9ca3af', marginTop:2 },
-  editBtn:          { flexDirection:'row', alignItems:'center', marginTop:20, paddingVertical:10, paddingHorizontal:24, borderRadius:20, borderWidth:1.5, borderColor:'#6366F1' },
-  editBtnText:      { color:'#6366F1', fontWeight:'600', marginLeft:6 },
-  logout:           { flexDirection:'row', height:50, borderRadius:25, alignItems:'center', justifyContent:'center', paddingHorizontal:28, backgroundColor:'#202020', marginTop:14 },
-  logoutText:       { color:'#d0d0d0', fontWeight:'600' },
-  menuRow: { flexDirection:'row', alignItems:'center', gap:12, paddingVertical:14, paddingHorizontal:16, backgroundColor:'#fff', borderRadius:12, marginTop:10 },
-menuText: { flex:1, fontSize:15, fontWeight:'600', color:'#202020' },
-  supportTopBtn: { position: 'absolute', top: 60, right: 20, flexDirection: 'row', alignItems: 'center', backgroundColor: '#f3f4f6', paddingVertical: 8, paddingHorizontal: 12, borderRadius: 20, gap: 6 },
-  supportTopText: { fontSize: 13, fontWeight: '600', color: '#6366F1' },
+  pencilBtn:        { position:'absolute', bottom:0, right:0, width:30, height:30, borderRadius:15, backgroundColor: theme.primary, alignItems:'center', justifyContent:'center', borderWidth:2, borderColor: theme.surface },
+  username:         { fontSize:26, fontWeight:'700', color: theme.text },
+  email:            { fontSize:15, color: theme.textSecondary, marginTop:4 },
+  phone:            { fontSize:14, color: theme.textSecondary, marginTop:2 },
+  editBtn:          { flexDirection:'row', alignItems:'center', marginTop:20, paddingVertical:10, paddingHorizontal:24, borderRadius:20, borderWidth:1.5, borderColor: theme.primary, backgroundColor: theme.surface },
+  editBtnText:      { color: theme.primary, fontWeight:'600', marginLeft:6 },
+  
+  menuSection: { width: '100%', paddingHorizontal: 20, marginTop: 30 },
+  menuRow: { flexDirection:'row', alignItems:'center', gap:12, paddingVertical:14, paddingHorizontal:16, backgroundColor: theme.surface, borderRadius: 16, marginBottom: 10, borderWidth: 1, borderColor: theme.border },
+  menuIconContainer: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  menuText: { flex:1, fontSize:15, fontWeight:'600', color: theme.text },
+  
+  settingsCard: { width: '90%', backgroundColor: theme.card, borderRadius: 20, padding: 20, marginTop: 20, borderWidth: 1, borderColor: theme.border },
+  settingsTitle: { fontSize: 16, fontWeight: '700', color: theme.text, marginBottom: 16, borderBottomWidth: 1, borderBottomColor: theme.border, paddingBottom: 8 },
+  settingLabel: { fontSize: 13, fontWeight: '600', color: theme.textSecondary, marginBottom: 8 },
+  settingRow: { flexDirection: 'row', gap: 10, flexWrap: 'wrap' },
+  settingBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 8, paddingHorizontal: 12, borderRadius: 10, backgroundColor: theme.background, borderWidth: 1, borderColor: theme.border },
+  settingBtnActive: { backgroundColor: theme.primary, borderColor: theme.primary },
+  settingBtnText: { fontSize: 13, color: theme.text, fontWeight: '500' },
+  settingBtnTextActive: { color: 'white', fontWeight: '700' },
+
+  logout:           { flexDirection:'row', height:50, borderRadius:25, alignItems:'center', justifyContent:'center', paddingHorizontal:28, backgroundColor: theme.primary, marginTop: 30, elevation: 4, shadowColor: theme.shadow, shadowOpacity: 0.2, shadowRadius: 4, shadowOffset: { width: 0, height: 4 } },
+  logoutText:       { color: 'white', fontWeight:'600' },
 })

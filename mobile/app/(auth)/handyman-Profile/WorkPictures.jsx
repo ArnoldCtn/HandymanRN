@@ -6,12 +6,16 @@ import {
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import api from '@/services/api';
+import { useTranslation } from 'react-i18next';
+import { useAppTheme } from '@/hooks/use-theme-color';
 
 const { width, height } = Dimensions.get('window');
 const COLUMN_COUNT = 2;
 const ITEM_SIZE = (width - 48) / COLUMN_COUNT;
 
 export default function WorkPicturesScreen() {
+  const { t } = useTranslation();
+  const theme = useAppTheme();
   const { id, name } = useLocalSearchParams();
   const router = useRouter();
   const [pictures, setPictures] = useState([]);
@@ -37,41 +41,43 @@ export default function WorkPicturesScreen() {
 
   if (loading) {
     return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#6366F1" />
+      <View style={[styles.centered, { backgroundColor: theme.background }]}>
+        <ActivityIndicator size="large" color={theme.primary} />
       </View>
     );
   }
 
+  const screenStyles = createStyles(theme);
+
   return (
-    <View style={styles.root}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <Ionicons name="arrow-back" size={24} color="#202020" />
+    <View style={screenStyles.root}>
+      <View style={screenStyles.header}>
+        <TouchableOpacity onPress={() => router.back()} style={screenStyles.backBtn}>
+          <Ionicons name="arrow-back" size={24} color={theme.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>{name}'s Work</Text>
+        <Text style={screenStyles.headerTitle}>{name}{t('work_pictures.possessive', "'s")} {t('work_pictures.work', 'Work')}</Text>
         <View style={{ width: 40 }} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.subtitle}>Previous jobs and completed projects</Text>
+      <ScrollView contentContainerStyle={screenStyles.content}>
+        <Text style={screenStyles.subtitle}>{t('work_pictures.subtitle', 'Previous jobs and completed projects')}</Text>
         
-        <View style={styles.grid}>
+        <View style={screenStyles.grid}>
           {pictures.map((item) => (
             <TouchableOpacity 
               key={item.id} 
-              style={styles.imageWrapper}
+              style={screenStyles.imageWrapper}
               onPress={() => setSelectedImage(item.image)}
             >
-              <Image source={{ uri: item.image }} style={styles.image} resizeMode="cover" />
+              <Image source={{ uri: item.image }} style={screenStyles.image} resizeMode="cover" />
             </TouchableOpacity>
           ))}
         </View>
 
         {pictures.length === 0 && (
-          <View style={styles.emptyState}>
-            <Ionicons name="images-outline" size={64} color="#e5e7eb" />
-            <Text style={styles.emptyText}>No work pictures available.</Text>
+          <View style={screenStyles.emptyState}>
+            <Ionicons name="images-outline" size={64} color={theme.border} />
+            <Text style={screenStyles.emptyText}>{t('work_pictures.no_pics', 'No work pictures available.')}</Text>
           </View>
         )}
       </ScrollView>
@@ -83,9 +89,9 @@ export default function WorkPicturesScreen() {
         animationType="fade"
         onRequestClose={() => setSelectedImage(null)}
       >
-        <View style={styles.modalRoot}>
+        <View style={screenStyles.modalRoot}>
           <TouchableOpacity 
-            style={styles.modalCloseBtn}
+            style={screenStyles.modalCloseBtn}
             onPress={() => setSelectedImage(null)}
           >
             <Ionicons name="close" size={32} color="white" />
@@ -93,7 +99,7 @@ export default function WorkPicturesScreen() {
           
           <Image 
             source={{ uri: selectedImage }} 
-            style={styles.fullImage} 
+            style={screenStyles.fullImage} 
             resizeMode="contain"
           />
         </View>
@@ -102,8 +108,8 @@ export default function WorkPicturesScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#f9fafb' },
+const createStyles = (theme) => StyleSheet.create({
+  root: { flex: 1, backgroundColor: theme.background },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   header: { 
     flexDirection: 'row', 
@@ -112,15 +118,15 @@ const styles = StyleSheet.create({
     paddingTop: 50, 
     paddingBottom: 15, 
     paddingHorizontal: 16, 
-    backgroundColor: 'white',
+    backgroundColor: theme.surface,
     borderBottomWidth: 1,
-    borderColor: '#f0f0f0'
+    borderColor: theme.border
   },
-  headerTitle: { fontSize: 18, fontWeight: '700', color: '#202020' },
+  headerTitle: { fontSize: 18, fontWeight: '700', color: theme.text },
   backBtn: { padding: 4 },
   
   content: { padding: 16 },
-  subtitle: { fontSize: 14, color: '#6b7280', marginBottom: 20 },
+  subtitle: { fontSize: 14, color: theme.textSecondary, marginBottom: 20 },
   
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 16 },
   imageWrapper: { 
@@ -128,9 +134,9 @@ const styles = StyleSheet.create({
     height: ITEM_SIZE, 
     borderRadius: 12, 
     overflow: 'hidden',
-    backgroundColor: '#e5e7eb',
+    backgroundColor: theme.border,
     elevation: 2,
-    shadowColor: '#000',
+    shadowColor: theme.shadow,
     shadowOpacity: 0.1,
     shadowRadius: 4,
     shadowOffset: { width: 0, height: 2 }
@@ -143,7 +149,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center', 
     paddingVertical: 100 
   },
-  emptyText: { fontSize: 16, fontWeight: '700', color: '#9ca3af', marginTop: 12 },
+  emptyText: { fontSize: 16, fontWeight: '700', color: theme.textSecondary, marginTop: 12 },
 
   // Modal Styles
   modalRoot: {
