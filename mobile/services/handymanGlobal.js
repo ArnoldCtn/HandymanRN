@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import handymanApi from './handymanApi'
 
-const useHandymanGlobal = create((set) => ({
+const useHandymanGlobal = create((set, get) => ({
 
   initialized:   false,
   authenticated: false,
@@ -25,7 +25,22 @@ const useHandymanGlobal = create((set) => ({
 
   login: (handyman) => set({ authenticated:true, handyman }),
 
-  updateHandyman: (data) => set({ handyman: data }),
+  updateHandyman: (data) => {
+    set({ handyman: data });
+    AsyncStorage.setItem('handyman', JSON.stringify(data));
+  },
+
+  refreshHandyman: async () => {
+    try {
+      const res = await handymanApi.get('/handymen/me/update/');
+      set({ handyman: res.data });
+      await AsyncStorage.setItem('handyman', JSON.stringify(res.data));
+      return res.data;
+    } catch (e) {
+      console.error('[HandymanGlobal] refresh error:', e.message);
+      throw e;
+    }
+  },
 
   logout: async () => {
     try {

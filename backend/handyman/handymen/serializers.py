@@ -4,7 +4,7 @@ import base64
 from rest_framework import serializers
 from django.utils import timezone
 from datetime import timedelta
-from .models import Handyman
+from .models import Handyman, JobPicture
 from services.models import Service
 from locations.models import Location
 from services.serializers import ServiceSerializer
@@ -153,12 +153,51 @@ class HandymanSignUpSerializer(serializers.ModelSerializer):
         return handyman
 
 
+class JobPictureSerializer(serializers.ModelSerializer):
+    image = serializers.SerializerMethodField()
+
+    class Meta:
+        model = JobPicture
+        fields = ['id', 'image', 'description', 'created_at']
+
+    def get_image(self, obj):
+        if obj.image:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.image.url)
+            return obj.image.url
+        return None
+
+class JobPictureUploadSerializer(serializers.ModelSerializer):
+    image = Base64ImageField(required=True)
+
+    class Meta:
+        model = JobPicture
+        fields = ['image', 'description']
+
+    def validate(self, data):
+        handyman = self.context['request'].user
+        limit = 2
+        if handyman.subscription_level == 'pro':
+            limit = 6
+        elif handyman.subscription_level == 'premium':
+            limit = float('inf')
+        
+        if handyman.job_pictures.count() >= limit:
+            raise serializers.ValidationError(f"Your current subscription ({handyman.subscription_level}) allows a maximum of {limit} pictures.")
+        return data
+
+    def create(self, validated_data):
+        validated_data['handyman'] = self.context['request'].user
+        return super().create(validated_data)
+
+
 class HandymanSerializer(serializers.ModelSerializer):
     thumbnail = serializers.SerializerMethodField()
     last_seen = serializers.SerializerMethodField()
     services  = ServiceSerializer(many=True, read_only=True)
     location  = serializers.StringRelatedField()
-    # location = serializers.SerializerMethodField()
+    job_pictures = serializers.SerializerMethodField()
 
     class Meta:
         model  = Handyman
@@ -167,7 +206,8 @@ class HandymanSerializer(serializers.ModelSerializer):
                   'id_verification_status', 'id_verified_at',
                   'thumbnail', 'availability', 'services', 'location',
                   'is_online', 'last_seen', 'is_verified', 'is_available',
-                  'average_rating', 'total_ratings']
+                  'average_rating', 'total_ratings', 'job_pictures',
+                  'subscription_level']
 
     def get_thumbnail(self, obj):
         if obj.thumbnail:
@@ -177,14 +217,18 @@ class HandymanSerializer(serializers.ModelSerializer):
             return obj.thumbnail.url
         return None
     
-
-    # def get_location(self, obj):
-    #     if obj.location:
-    #         return {
-    #             'id': obj.location.id,
-    #             'name': str(obj.location)
-    #         }
-    #     return None
+    def get_job_pictures(self, obj):
+        limit = 2
+        if obj.subscription_level == 'pro':
+            limit = 6
+        elif obj.subscription_level == 'premium':
+            limit = None
+        
+        pics = obj.job_pictures.all()
+        if limit is not None:
+            pics = pics[:limit]
+        
+        return JobPictureSerializer(pics, many=True, context=self.context).data
 
     def get_last_seen(self, obj):
         if not obj.last_seen: return None

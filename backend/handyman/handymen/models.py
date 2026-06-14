@@ -185,3 +185,23 @@ class Handyman(AbstractBaseUser, PermissionsMixin):
         self.is_online = False
         self.last_seen = timezone.now()
         self.save(update_fields=['is_online', 'last_seen'])
+
+
+def upload_job_picture(instance, filename):
+    path = f"job_pictures/{instance.handyman.username}"
+    timestamp = timezone.now().strftime("%Y%m%d_%H%M%S")
+    extension = filename.split('.')[-1]
+    return f"{path}/{timestamp}.{extension}" if extension else f"{path}/{timestamp}"
+
+
+class JobPicture(models.Model):
+    handyman = models.ForeignKey(Handyman, on_delete=models.CASCADE, related_name='job_pictures')
+    image = models.ImageField(upload_to=upload_job_picture)
+    description = models.CharField(max_length=255, blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Job pic for {self.handyman.username} at {self.created_at}"

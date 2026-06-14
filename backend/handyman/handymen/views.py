@@ -13,9 +13,10 @@ from django.utils import timezone
 from axes.handlers.proxy import AxesProxyHandler
 from axes.models import AccessAttempt
 
-from .models import Handyman
+from .models import Handyman, JobPicture
 from .serializers import (HandymanSerializer, HandymanSignUpSerializer,
-                          HandymanUpdateSerializer, HandymanIdVerificationSerializer)
+                          HandymanUpdateSerializer, HandymanIdVerificationSerializer,
+                          JobPictureSerializer, JobPictureUploadSerializer)
 
 from services.serializers import ServiceSerializer
 from services.models import Service
@@ -328,6 +329,10 @@ class HandymanUpdateView(APIView):
     parser_classes = [MultiPartParser, FormParser,
                       JSONParser]  # ← Added JSONParser
 
+    def get(self, request):
+        serializer = HandymanSerializer(request.user, context={'request': request})
+        return Response(serializer.data)
+
     def patch(self, request):
         print(
             f'[HandymanUpdate] User: {request.user}, Data keys: {list(request.data.keys())}')
@@ -466,3 +471,27 @@ class HandymanDetailView(APIView):
 
         serializer = HandymanSerializer(handyman, context={'request': request})
         return Response(serializer.data)
+
+class JobPictureUploadView(APIView):
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [HandymanJWTAuthentication]
+    parser_classes = [JSONParser, MultiPartParser, FormParser]
+
+    def post(self, request):
+        s = JobPictureUploadSerializer(data=request.data, context={'request': request})
+        if s.is_valid():
+            pic = s.save()
+            return Response(JobPictureSerializer(pic, context={'request': request}).data, status=201)
+        return Response(s.errors, status=400)
+
+class JobPictureDeleteView(APIView):
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [HandymanJWTAuthentication]
+
+    def delete(self, request, pk):
+        try:
+            pic = JobPicture.objects.get(pk=pk, handyman=request.user)
+            pic.delete()
+            return Response(status=204)
+        except JobPicture.DoesNotExist:
+            return Response({'detail': 'Not found'}, status=404)

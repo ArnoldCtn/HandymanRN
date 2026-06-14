@@ -12,6 +12,9 @@ qrcode = {extras = ["pil"], version = "*"}
 pyotp = "*"
 google-genai = "*"
 python-dotenv = "*"
+gunicorn = "*"
+whitenoise = "*"
+dj-database-url = "*"
 
 [dev-packages]
 

@@ -308,6 +308,32 @@ const REVIEWS_PER_PAGE = 5;
         ))}
       </View>
 
+      {/* View Pictures Button */}
+      <TouchableOpacity 
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: '#fff',
+          marginHorizontal: 16,
+          marginBottom: 10,
+          padding: 15,
+          borderRadius: 16,
+          borderWidth: 1,
+          borderColor: '#6366F1',
+          gap: 10
+        }}
+        onPress={() => router.push({
+          pathname: `/(auth)/handyman-Profile/WorkPictures`,
+          params: { id: handyman.id, name: handyman.username }
+        })}
+      >
+        <Ionicons name="images-outline" size={22} color="#6366F1" />
+        <Text style={{ color: '#6366F1', fontWeight: 'bold', fontSize: 16 }}>
+          View Handyman Work Pictures
+        </Text>
+      </TouchableOpacity>
+
       {/* Book Button */}
       <TouchableOpacity 
         style={{
