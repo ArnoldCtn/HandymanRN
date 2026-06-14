@@ -12,7 +12,8 @@
     "done": "Terminé",
     "not_set": "Non défini",
     "confirm": "Confirmer",
-    "guest": "Invité"
+    "guest": "Invité",
+    "view_all": "Voir tout"
   },
   "auth": {
     "sign_in": "Se connecter",
@@ -243,5 +244,9 @@
     "dark": "Sombre",
     "system": "Défaut système",
     "app_settings": "Paramètres de l'application"
+  },
+  "dashboard": {
+    "security_notice": "Pour des raisons de sécurité et de traçabilité, communiquez avec le bricoleur uniquement via l'application. Signalez-nous immédiatement si un bricoleur tente d'imposer un contact en dehors de la plateforme. Votre sécurité est notre priorité.",
+    "handyman_security_notice": "Communiquez avec vos clients uniquement via l'application. Signalez-nous si un client tente d'imposer un contact en dehors de la plateforme. Le professionnalisme est notre priorité absolue. De plus, consultez régulièrement les nouveaux services ajoutés afin de les ajouter à votre profil. N'oubliez pas de mettre à jour votre biographie pour vous décrire aux clients."
   }
 }

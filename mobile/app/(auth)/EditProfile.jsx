@@ -15,13 +15,16 @@ import Button from '@/components/Button'
 import Toast from '@/components/Toast'
 import { useTranslation } from 'react-i18next'
 import { useAppTheme } from '@/hooks/use-theme-color'
+import useSettingsStore from '@/services/settingsStore'
 
 export default function EditProfileScreen() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const theme = useAppTheme()
   const router     = useRouter()
   const user       = useGlobal(state => state.user)
   const updateUser = useGlobal(state => state.updateUser)
+  
+  const { theme: themePref, setTheme, language: langPref, setLanguage } = useSettingsStore()
 
   const [username,       setUsername]       = useState(user?.username ?? '')
   const [email,          setEmail]          = useState(user?.email    ?? '')
@@ -160,6 +163,52 @@ export default function EditProfileScreen() {
               </TouchableOpacity>
             </View>
 
+            {/* App Preferences */}
+            <View style={styles.card}>
+              <Text style={styles.cardTitle}>{t('settings.preferences', 'Preferences')}</Text>
+              
+              <Text style={styles.settingLabel}>{t('settings.language', 'Language')}</Text>
+              <View style={styles.settingRow}>
+                <TouchableOpacity 
+                  style={[styles.settingBtn, langPref === 'en' && styles.settingBtnActive]}
+                  onPress={() => setLanguage('en')}
+                >
+                  <Text style={[styles.settingBtnText, langPref === 'en' && styles.settingBtnTextActive]}>{t('settings.english', 'English')}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={[styles.settingBtn, langPref === 'fr' && styles.settingBtnActive]}
+                  onPress={() => setLanguage('fr')}
+                >
+                  <Text style={[styles.settingBtnText, langPref === 'fr' && styles.settingBtnTextActive]}>{t('settings.french', 'French')}</Text>
+                </TouchableOpacity>
+              </View>
+
+              <Text style={[styles.settingLabel, { marginTop: 16 }]}>{t('settings.display_mode', 'Display Mode')}</Text>
+              <View style={styles.settingRow}>
+                <TouchableOpacity 
+                  style={[styles.settingBtn, themePref === 'light' && styles.settingBtnActive]}
+                  onPress={() => setTheme('light')}
+                >
+                  <Ionicons name="sunny-outline" size={16} color={themePref === 'light' ? 'white' : theme.textSecondary} />
+                  <Text style={[styles.settingBtnText, themePref === 'light' && styles.settingBtnTextActive]}>{t('settings.light', 'Light')}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={[styles.settingBtn, themePref === 'dark' && styles.settingBtnActive]}
+                  onPress={() => setTheme('dark')}
+                >
+                  <Ionicons name="moon-outline" size={16} color={themePref === 'dark' ? 'white' : theme.textSecondary} />
+                  <Text style={[styles.settingBtnText, themePref === 'dark' && styles.settingBtnTextActive]}>{t('settings.dark', 'Dark')}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={[styles.settingBtn, themePref === 'system' && styles.settingBtnActive]}
+                  onPress={() => setTheme('system')}
+                >
+                  <Ionicons name="settings-outline" size={16} color={themePref === 'system' ? 'white' : theme.textSecondary} />
+                  <Text style={[styles.settingBtnText, themePref === 'system' && styles.settingBtnTextActive]}>{t('settings.system', 'System')}</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
             {loading
               ? <ActivityIndicator size="large" color={theme.primary} style={{ marginTop:20 }} />
               : <Button title={t('common.save')} onPress={onSave} />
@@ -183,4 +232,14 @@ const createStyles = (theme) => StyleSheet.create({
   avatarInitial:    { color:'white', fontSize:36, fontWeight:'bold' },
   pencilBtn:        { position:'absolute', bottom:0, right:0, width:30, height:30, borderRadius:15, backgroundColor: theme.primary, alignItems:'center', justifyContent:'center', borderWidth:2, borderColor: theme.surface },
   eyeBtn:           { position:'absolute', right:16, top:40, padding:4 },
+  
+  card: { backgroundColor: theme.card, borderRadius:16, padding:16, marginTop: 20, elevation:2, shadowColor: theme.shadow, shadowOpacity:0.05, shadowRadius:8, shadowOffset:{width:0,height:2}, borderWidth: 1, borderColor: theme.border },
+  cardTitle: { fontSize:15, fontWeight:'700', color: theme.text, marginBottom:12, borderBottomWidth:1, borderColor: theme.border, paddingBottom:8 },
+  
+  settingLabel: { fontSize: 13, fontWeight: '600', color: theme.textSecondary, marginBottom: 8 },
+  settingRow: { flexDirection: 'row', gap: 10, flexWrap: 'wrap' },
+  settingBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 8, paddingHorizontal: 12, borderRadius: 10, backgroundColor: theme.background, borderWidth: 1, borderColor: theme.border },
+  settingBtnActive: { backgroundColor: theme.primary, borderColor: theme.primary },
+  settingBtnText: { fontSize: 13, color: theme.text, fontWeight: '500' },
+  settingBtnTextActive: { color: 'white', fontWeight: '700' },
 })

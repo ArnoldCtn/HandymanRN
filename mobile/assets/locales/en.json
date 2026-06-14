@@ -12,7 +12,8 @@
     "done": "Done",
     "not_set": "Not set",
     "confirm": "Confirm",
-    "guest": "Guest"
+    "guest": "Guest",
+    "view_all": "View All"
   },
   "auth": {
     "sign_in": "Sign In",
@@ -232,16 +233,8 @@
     "my_bookings": "My Bookings",
     "favorites": "Favorites"
   },
-  "settings": {
-    "title": "Settings",
-    "preferences": "Preferences",
-    "language": "Language",
-    "english": "English",
-    "french": "French",
-    "display_mode": "Display Mode",
-    "light": "Light",
-    "dark": "Dark",
-    "system": "System Default",
-    "app_settings": "App Settings"
+  "dashboard": {
+    "security_notice": "For security and traceability, communicate with the Handyman only via the application. Notify us immediately if any Handyman tries to force contact out of the platform. Your Security is our Priority.",
+    "handyman_security_notice": "Communicate with clients only via the application. Notify us if any client attempts to force contact outside the platform. Professionalism is our top priority. Also, check back constantly for new services added so as to add them to your profile. Don't forget to update your Bio to describe yourself to clients."
   }
 }
