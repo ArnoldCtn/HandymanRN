@@ -207,6 +207,10 @@ export default function SignInScreen() {
 
                     </View>
 
+                    <TouchableOpacity style={{ marginTop: -5, marginBottom: 5, alignSelf: 'flex-end' }} onPress={() => router.push('/(auth)/ForgotPassword')}>
+                      <ThemedText type="link">{t('auth.forgot_password')}</ThemedText>
+                    </TouchableOpacity>
+
 
                     <View style={{ marginVertical: 15, alignItems: 'center' }}>
                       <ThemedText type="secondary">

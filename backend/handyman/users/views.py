@@ -9,6 +9,10 @@ from django.contrib.auth import authenticate, get_user_model
 from .serializers import UserSerializer, SignUpSerializer, UserUpdateSerializer
 from axes.handlers.proxy import AxesProxyHandler
 from django.conf import settings
+from django.core.mail import send_mail
+from django.utils import timezone
+from .models import PasswordResetOTP
+from handymen.models import Handyman
 
 
 from datetime import timedelta
@@ -186,41 +190,89 @@ class MarkOfflineView(APIView):
         request.user.mark_offline()
         return Response({'status': 'offline'})
 
-    # def login_view(request):
-    # form = LoginForm(request.POST or None)
+class PasswordResetRequestView(APIView):
+    permission_classes = [AllowAny]
 
-    # if request.method == "POST":
-    #     username = request.POST.get("username", "").strip()
-    #     failures, locked, mins = _lockout_info(username)
+    def post(self, request):
+        email = request.data.get('email')
+        if not email: return Response({'detail': 'Email required'}, status=400)
+        
+        email = email.strip().lower()
+        print(f"[DEBUG] PasswordReset for email: '{email}'")
 
-    #     if locked:
-    #         messages.error(
-    #             request, f"🔒 Too many attempts. Try again in {mins} minute(s).")
-    #         return render(request, "accounts/login.html", {"form": form})
+        # Check users
+        user_matches = User.objects.filter(email__iexact=email)
+        # Check handymen
+        handyman_matches = Handyman.objects.filter(email__iexact=email)
 
-    #     if form.is_valid():
-    #         user = authenticate(
-    #             request,
-    #             username=form.cleaned_data["username"],
-    #             password=form.cleaned_data["password"],
-    #         )
-    #         if user is not None:
-    #             if user.profile.is_2fa_enabled:
-    #                 request.session["pending_uid"] = user.pk
-    #                 return redirect("accounts:verify_otp")
-    #             login(request, user)
-    #             return redirect("accounts:dashboard")
-    #         else:
-    #             failures, locked, mins = _lockout_info(
-    #                 form.cleaned_data["username"])
-    #             remaining = max(0, FAILURE_LIMIT - failures)
-    #             if locked:
-    #                 messages.error(
-    #                     request, f"🔒 Account locked for {mins} minute(s).")
-    #             else:
-    #                 messages.error(
-    #                     request, f"Wrong username or password. {remaining} attempt(s) left.")
-    #     else:
-    #         messages.error(request, "Please fill in both fields.")
+        print(f"[DEBUG] Found {user_matches.count()} users matching email.")
+        print(f"[DEBUG] Found {handyman_matches.count()} handymen matching email.")
+        
+        if user_matches.exists():
+            print(f"[DEBUG] Email '{email}' found in Users.")
+        elif handyman_matches.exists():
+            print(f"[DEBUG] Email '{email}' found in Handymen.")
+        else:
+            print(f"[DEBUG] Email '{email}' NOT found in DB.")
+            return Response({'detail': 'This email does not exist.'}, status=404)
+        
+        # Determine which one exists to create the OTP for
+        target_email = email 
+        
+        otp = PasswordResetOTP.objects.create(email=target_email)
+        
+        send_mail(
+            'Password Reset OTP',
+            f'Your OTP code is {otp.otp_code}. It expires in 5 minutes.',
+            settings.DEFAULT_FROM_EMAIL,
+            [target_email],
+            fail_silently=False,
+            html_message=f"""
+                <div style="font-family: Arial, sans-serif; text-align: center;">
+                    <h2 style="color: #6366F1;">Password Reset</h2>
+                    <p>Your OTP code is:</p>
+                    <h1 style="color: #6366F1; font-size: 32px;">{otp.otp_code}</h1>
+                    <p>It expires in 5 minutes.</p>
+                </div>
+            """
+        )
+        return Response({'detail': 'OTP sent'})
 
-    # return render(request, "accounts/login.html", {"form": form})
+class PasswordResetVerifyView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        email = request.data.get('email')
+        code = request.data.get('otp_code')
+        otp = PasswordResetOTP.objects.filter(email=email, otp_code=code).last()
+        
+        if not otp or otp.is_expired():
+            return Response({'detail': 'Invalid or expired OTP'}, status=400)
+        return Response({'detail': 'Verified'})
+
+class PasswordResetConfirmView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        email = request.data.get('email')
+        code = request.data.get('otp_code')
+        password = request.data.get('password')
+        
+        otp = PasswordResetOTP.objects.filter(email=email, otp_code=code).last()
+        if not otp or otp.is_expired():
+            return Response({'detail': 'Invalid or expired OTP'}, status=400)
+            
+        user = User.objects.filter(email=email).first()
+        if user:
+            user.set_password(password)
+            user.save()
+        else:
+            handyman = Handyman.objects.filter(email=email).first()
+            if handyman:
+                handyman.set_password(password)
+                handyman.save()
+            else:
+                return Response({'detail': 'User not found'}, status=404)
+        
+        otp.delete()
+        return Response({'detail': 'Password updated'})

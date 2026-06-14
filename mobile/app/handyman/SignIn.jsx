@@ -181,6 +181,10 @@ export default function HandymanSignInScreen() {
                   </TouchableOpacity>
                 </View>
 
+                <TouchableOpacity style={{ marginTop: -5, marginBottom: 5, alignSelf: 'flex-end' }} onPress={() => router.push('/(auth)/ForgotPassword')}>
+                  <ThemedText type="link">{t('auth.forgot_password')}</ThemedText>
+                </TouchableOpacity>
+
                 <ThemedText style={{ textAlign:'center', marginVertical:15 }}>
                   {t('auth.dont_have_account')}
                   <ThemedText style={{ color: theme.accent }}

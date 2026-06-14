@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.utils import timezone
+import random
 
 # Create your models here.
 
@@ -55,3 +56,21 @@ class User(AbstractUser):
         self.is_online = False
         self.last_seen = timezone.now()
         self.save(update_fields=['is_online', 'last_seen'])
+
+
+class PasswordResetOTP(models.Model):
+    email = models.EmailField()
+    otp_code = models.CharField(max_length=6)
+    expires_at = models.DateTimeField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    def is_expired(self):
+        return timezone.now() > self.expires_at
+
+    def save(self, *args, **kwargs):
+        if not self.otp_code:
+            self.otp_code = str(random.randint(100000, 999999))
+        if not self.expires_at:
+            self.expires_at = timezone.now() + timezone.timedelta(minutes=5)
+        super().save(*args, **kwargs)
+

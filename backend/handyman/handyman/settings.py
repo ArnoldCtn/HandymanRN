@@ -75,9 +75,14 @@ DATA_UPLOAD_MAX_MEMORY_SIZE = 25 * 1024 * 1024  # 25 MB
 
 AUTH_USER_MODEL = 'users.User'
 
-# ── Google OAuth Configuration ───────────────────────────────────
-GOOGLE_OAUTH_CLIENT_ID = os.getenv('GOOGLE_OAUTH_CLIENT_ID', '')
-GOOGLE_OAUTH_CLIENT_SECRET = os.getenv('GOOGLE_OAUTH_CLIENT_SECRET', '')
+# ── Email Configuration ──────────────────────────────────────────
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = os.getenv('MAIL_HOST')
+EMAIL_PORT = int(os.getenv('MAIL_PORT', 587))
+EMAIL_USE_TLS = os.getenv('MAIL_USE_TLS', 'true').lower() == 'true'
+EMAIL_HOST_USER = os.getenv('MAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = os.getenv('MAIL_HOST_PASSWORD')
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES':(
