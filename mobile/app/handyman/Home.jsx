@@ -1,9 +1,10 @@
 import Ionicons from '@expo/vector-icons/Ionicons'
 import useHandymanGlobal from '@/services/handymanGlobal'
-import { useEffect, useRef, useState } from 'react'
-import { AppState, Image, StyleSheet, Text, View, TouchableOpacity, PanResponder } from 'react-native'
+import { useEffect, useRef, useState, useMemo, useCallback } from 'react'
+import { AppState, Image, StyleSheet, Text, View, TouchableOpacity, PanResponder, ScrollView } from 'react-native'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import handymanApi from '@/services/handymanApi'
+import api from '@/services/api' // Assuming this is the global api for all services
 import HandymanDashboard from '@/app/handyman/Dashboard'
 import ProfileScreen from '@/app/handyman/Profile'
 import Myservices from '@/app/handyman/Myservices'
@@ -12,9 +13,15 @@ import NotificationsScreen from '@/app/handyman/Notifications'
 import SubscriptionScreen from '@/app/handyman/Subscription'
 import SupportChatScreen from '@/app/chat/support'
 import Sidebar from '@/components/Sidebar'
+import PulseView from '@/components/PulseView'
+import ServiceCarousel from '@/components/ServiceCarousel'
+import { useTranslation } from 'react-i18next'
+import { useAppTheme } from '@/hooks/use-theme-color'
+import { ThemedText } from '@/components/themed-text'
+import { ThemedView } from '@/components/themed-view'
 
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
-import { useNavigation } from '@react-navigation/core'
+import { useNavigation, useFocusEffect } from '@react-navigation/native'
 import { useRouter } from 'expo-router'
 
 async function callStatus(endpoint) {
@@ -29,7 +36,45 @@ async function callStatus(endpoint) {
 
 const Tab = createBottomTabNavigator()
 
+// ... imports
+import HandymanServiceCarousel from '@/components/HandymanServiceCarousel'
+// ...
+
+function DashboardWrapper({ theme, t, router }) {
+    const [services, setServices] = useState([])
+    
+    const fetchServices = useCallback(() => {
+        // Fetch all platform services
+        api.get('/services/').then(res => setServices(res.data))
+    }, [])
+
+    useFocusEffect(fetchServices)
+    
+    const styles = createStyles(theme);
+    
+    return (
+        <ThemedView style={{flex:1}}>
+          <ScrollView contentContainerStyle={{paddingBottom: 20}}>
+            <HandymanDashboard />
+            <View style={styles.serviceHeader}>
+                <ThemedText type="defaultSemiBold" style={{margin:16, marginBottom:0}}>{t('dashboard.all_services', 'All Services')}</ThemedText>
+                <TouchableOpacity onPress={() => router.push('/handyman/AllServices')}>
+                    <ThemedText type="link" style={{margin:16, marginBottom:0}}>{t('common.view_all', 'View All')}</ThemedText>
+                </TouchableOpacity>
+            </View>
+            <HandymanServiceCarousel services={services} />
+            <PulseView style={styles.securityNotice}>
+                <Ionicons name="shield-alert-outline" size={20} color={theme.accent} />
+                <Text style={styles.securityNoticeText}>{t('dashboard.handyman_security_notice')}</Text>
+            </PulseView>
+          </ScrollView>
+        </ThemedView>
+    )
+}
+
 export default function HandymanHomeLayout() {
+  const { t } = useTranslation()
+  const theme = useAppTheme()
   const navigation = useNavigation();
   const router = useRouter();
 
@@ -105,12 +150,16 @@ export default function HandymanHomeLayout() {
   function resolveAvatar(thumbnail) {
     if (!thumbnail) return null
     if (thumbnail.startsWith('http')) return thumbnail
-    return `http://192.168.43.188:8000/media/${thumbnail}`
+    return thumbnail
   }
   const avatarUrl = resolveAvatar(handyman?.thumbnail)
 
+  const styles = createStyles(theme)
+
+  const DashboardScreen = useMemo(() => () => <DashboardWrapper theme={theme} t={t} router={router} />, [theme, t, router]);
+
   return (
-    <View style={{ flex: 1 }} {...panResponder.panHandlers}>
+    <View style={{ flex: 1, backgroundColor: theme.background }} {...panResponder.panHandlers}>
       <Sidebar 
         visible={sidebarVisible} 
         onClose={() => setSidebarVisible(false)} 
@@ -119,16 +168,22 @@ export default function HandymanHomeLayout() {
         onLogout={handleLogout} 
       />
       <Tab.Navigator screenOptions={{
-        tabBarActiveTintColor: '#f59e0b',
-        tabBarInactiveTintColor: '#9ca3af',
+        tabBarActiveTintColor: theme.accent,
+        tabBarInactiveTintColor: theme.textSecondary,
         tabBarStyle: {
-          backgroundColor: "#FFFFFF",
-          borderTopColor: "#B3E5FC",
-          borderTopWidth: 2,
+          backgroundColor: theme.surface,
+          borderTopColor: theme.border,
+          borderTopWidth: 1,
           paddingBottom: 8,
           paddingTop: 8,
           height: 70
         },
+        headerStyle: {
+          backgroundColor: theme.surface,
+          borderBottomWidth: 1,
+          borderBottomColor: theme.border,
+        },
+        headerTintColor: theme.text,
         headerLeft: () => (
           <TouchableOpacity style={styles.headerLeftBtn} onPress={() => setSidebarVisible(true)}>
             {handyman?.thumbnail ? (
@@ -145,14 +200,14 @@ export default function HandymanHomeLayout() {
         headerRight: () => (
           <View style={styles.headerRightContainer}>
             <TouchableOpacity onPress={() => router.push('/chat/support?source=handyman')} style={{ marginRight: 15 }}>
-              <Ionicons name="help-circle-outline" size={28} color="#333" />
+              <Ionicons name="help-circle-outline" size={28} color={theme.text} />
             </TouchableOpacity>
 
             <TouchableOpacity 
               onPress={() => navigation.navigate('ChatsList')}
               style={styles.notificationButton}
             >
-              <Ionicons name="send-outline" size={24} color="#333" />
+              <Ionicons name="send-outline" size={24} color={theme.text} />
               {chatUnreadCount > 0 && (
                 <View style={styles.badge}>
                   <Text style={styles.badgeText}>{chatUnreadCount > 9 ? '9+' : chatUnreadCount}</Text>
@@ -164,7 +219,7 @@ export default function HandymanHomeLayout() {
               onPress={() => navigation.navigate('Notifications')}
               style={styles.notificationButton}
             >
-              <Ionicons name="notifications-outline" size={24} color="#333" />
+              <Ionicons name="notifications-outline" size={24} color={theme.text} />
               {unreadCount > 0 && (
                 <View style={styles.badge}>
                   <Text style={styles.badgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
@@ -174,48 +229,57 @@ export default function HandymanHomeLayout() {
           </View>
         ), 
       }}>
-        <Tab.Screen name="Dashboard" component={HandymanDashboard}
-          options={{ title:'Dashboard', tabBarIcon: ({color,size}) =>
+        <Tab.Screen name="Dashboard" component={DashboardScreen}
+          options={{ title: t('sidebar.dashboard'), tabBarIcon: ({color,size}) =>
             <Ionicons name="grid-outline" size={size} color={color} /> }} />
         <Tab.Screen name="Bookings" component={BookingsScreen}
-          options={{ title:'Bookings', tabBarIcon: ({color,size}) =>
+          options={{ title: t('sidebar.bookings'), tabBarIcon: ({color,size}) =>
             <Ionicons name="calendar-outline" size={size} color={color} /> }} />
         <Tab.Screen name="Subscription" component={SubscriptionScreen}
           options={{ 
-            title:'Subscription',  
+            title: t('sidebar.subscription'),  
             tabBarIcon: ({color,size}) =>
               <Ionicons name="card-outline" size={size} color={color} />
           }} />
         <Tab.Screen name="Myservices" component={Myservices}
-          options={{ title:'My Services',  tabBarIcon: ({color,size}) =>
+          options={{ title: t('sidebar.my_services'),  tabBarIcon: ({color,size}) =>
             <Ionicons name="briefcase-outline" size={size} color={color} /> }} />
         <Tab.Screen name="Profile" component={ProfileScreen}
-          options={{ title:'Profile',  tabBarIcon: ({color,size}) =>
+          options={{ title: t('tabs.profile'),  tabBarIcon: ({color,size}) =>
             <Ionicons name="person-outline" size={size} color={color} /> }} />
-        {/* <Tab.Screen name="Support" component={SupportChatScreen}
-          initialParams={{ source: 'handyman' }}
-          options={{ title:'Support',  tabBarIcon: ({color,size}) =>
-            <Ionicons name="help-circle-outline" size={size} color={color} /> }} /> */}
       </Tab.Navigator>
     </View>
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme) => StyleSheet.create({
   headerLeftBtn: { marginLeft: 15 },
   headerRightContainer: { flexDirection: 'row', alignItems: 'center' },
   avatar: { width: 36, height: 36, borderRadius: 18 },
   avatarPlaceholder: {
     width: 36, height: 36, borderRadius: 18,
-    backgroundColor: '#6366F1',
+    backgroundColor: theme.primary,
     alignItems: 'center', justifyContent: 'center'
   },
   avatarInitial: { color: 'white', fontSize: 16, fontWeight: 'bold' },
   notificationButton: { marginRight: 15, padding: 5 },
   badge: {
     position: 'absolute', right: -6, top: -3,
-    backgroundColor: '#ef4444', borderRadius: 10,
+    backgroundColor: theme.error, borderRadius: 10,
     width: 18, height: 18, justifyContent: 'center', alignItems: 'center'
   },
   badgeText: { color: 'white', fontSize: 10, fontWeight: 'bold' },
+  securityNotice: {
+    backgroundColor: theme.accent + '22',
+    padding: 12,
+    margin: 16,
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    borderWidth: 1,
+    borderColor: theme.accent + '44'
+  },
+  securityNoticeText: { fontSize: 12, color: theme.text, flex: 1, fontWeight: '500' },
+  serviceHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingRight: 16 }
 })

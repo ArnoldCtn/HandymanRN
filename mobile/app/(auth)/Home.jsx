@@ -6,6 +6,9 @@ import Feather from '@expo/vector-icons/Feather';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useTranslation } from 'react-i18next'
 import { useAppTheme } from '@/hooks/use-theme-color'
+import { ThemedText } from '@/components/themed-text'
+import { ThemedView } from '@/components/themed-view'
+import PulseView from '@/components/PulseView'
 
 import RequestScreen from '@/app/(auth)/Request';
 import ProfileScreen from '@/app/(auth)/Profile';
@@ -153,7 +156,15 @@ export default function Home() {
       }}>
         <Tab.Screen 
           name='Request' 
-          component={RequestScreen}
+          component={(props) => (
+            <View style={{flex:1}}>
+              <PulseView style={styles.securityNotice}>
+                <Ionicons name="shield-alert-outline" size={20} color={theme.accent} />
+                <Text style={styles.securityNoticeText}>{t('dashboard.security_notice')}</Text>
+              </PulseView>
+              <RequestScreen {...props} />
+            </View>
+          )}
           options={{
             title: t('tabs.home', 'Home'),
             tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
@@ -207,4 +218,16 @@ const createStyles = (theme) => StyleSheet.create({
     width: 18, height: 18, justifyContent: 'center', alignItems: 'center'
   },
   chatBadgeText: { color: 'white', fontSize: 10, fontWeight: 'bold' },
+  securityNotice: {
+    backgroundColor: theme.accent + '22',
+    padding: 12,
+    margin: 16,
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    borderWidth: 1,
+    borderColor: theme.accent + '44'
+  },
+  securityNoticeText: { fontSize: 12, color: theme.text, flex: 1, fontWeight: '500' }
 })
