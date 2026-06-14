@@ -203,6 +203,19 @@ export default function HandymanProfileScreen() {
           )}
         </View>
 
+        {/* Job Pictures Button and Prompt */}
+        <View style={styles.card}>
+           <Text style={styles.cardTitle}>Portfolio</Text>
+           <Text style={styles.glowingText}>Provide clean, clear pics of you working</Text>
+           <TouchableOpacity
+            style={styles.jobPicsBtn}
+            onPress={() => router.push('/handyman/JobPictures')}
+          >
+            <Ionicons name="images-outline" size={20} color="white" />
+            <Text style={styles.jobPicsBtnText}>Manage Job Pictures</Text>
+          </TouchableOpacity>
+        </View>
+
         {/* Settings */}
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Account & Financials</Text>
@@ -340,4 +353,30 @@ const styles = StyleSheet.create({
   supportHeader: { width: '100%', alignItems: 'flex-end', paddingHorizontal: 16, paddingVertical: 10, backgroundColor: '#f9fafb' },
   supportTopBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', paddingVertical: 8, paddingHorizontal: 12, borderRadius: 20, gap: 6, elevation: 2, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 5, shadowOffset: { width: 0, height: 2 } },
   supportTopText: { fontSize: 13, fontWeight: '600', color: '#f59e0b' },
-  })
+
+  glowingText: {
+    fontSize: 14,
+    color: '#f59e0b',
+    fontWeight: '600',
+    marginBottom: 10,
+    textAlign: 'center',
+    textShadowColor: '#fde68a',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 10,
+  },
+  jobPicsBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#6366F1',
+    paddingVertical: 12,
+    borderRadius: 12,
+    marginBottom: 5,
+  },
+  jobPicsBtnText: {
+    color: 'white',
+    fontSize: 15,
+    fontWeight: '700',
+  },
+})
