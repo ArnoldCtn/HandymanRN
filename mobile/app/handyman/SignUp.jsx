@@ -17,6 +17,10 @@ import Toast from '@/components/Toast'
 import handymanApi from '@/services/handymanApi'
 import useHandymanGlobal from '@/services/handymanGlobal'
 import favicon from '@/assets/images/FullLogo.jpg'
+import { useTranslation } from 'react-i18next'
+import { useAppTheme } from '@/hooks/use-theme-color'
+import { ThemedText } from '@/components/themed-text'
+import { ThemedView } from '@/components/themed-view'
 
 
 // ── Constants ────────────────────────────────────────────
@@ -47,19 +51,19 @@ function DismissKeyboard({ children }) {
 }
 
 // ── Step indicator ────────────────────────────────────────
-function StepBar({ step }) {
+function StepBar({ step, theme }) {
   return (
     <View style={styles.stepBar}>
       {[1, 2].map(n => (
         <View key={n} style={styles.stepRow}>
-          <View style={[styles.stepCircle, step >= n && styles.stepCircleActive]}>
+          <View style={[styles.stepCircle, { backgroundColor: theme.border }, step >= n && { backgroundColor: theme.accent }]}>
             {step > n
               ? <Ionicons name="checkmark" size={14} color="white" />
               : <Text style={[styles.stepNum, step >= n && styles.stepNumActive]}>{n}</Text>
             }
           </View>
           {n < 2 && (
-            <View style={[styles.stepLine, step > n && styles.stepLineActive]} />
+            <View style={[styles.stepLine, { backgroundColor: theme.border }, step > n && { backgroundColor: theme.accent }]} />
           )}
         </View>
       ))}
@@ -68,6 +72,8 @@ function StepBar({ step }) {
 }
 
 export default function HandymanSignUpScreen() {
+  const { t } = useTranslation()
+  const theme = useAppTheme()
   const router = useRouter()
   const login  = useHandymanGlobal(s => s.login)
 
@@ -125,7 +131,7 @@ export default function HandymanSignUpScreen() {
       setServices(sRes.data)
       setLocations(lRes.data)
     } catch (e) {
-      showToast('Could not load options. Check connection.', 'error')
+      showToast(t('common.error'), 'error')
     } finally {
       setFetching(false)
     }
@@ -133,7 +139,7 @@ export default function HandymanSignUpScreen() {
 
   async function pickImage() {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync()
-    if (status !== 'granted') { Alert.alert('Permission needed'); return }
+    if (status !== 'granted') { Alert.alert(t('auth.permission_needed')); return }
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true, aspect: [1, 1], quality: 0.5
@@ -162,15 +168,15 @@ export default function HandymanSignUpScreen() {
     setEmailError('')
     setPasswordError('')
     
-    if (!username.trim()) { setUsernameError('Username required'); ok = false }
+    if (!username.trim()) { setUsernameError(t('auth.username_required')); ok = false }
     if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      setEmailError('Valid email required'); ok = false
+      setEmailError(t('auth.email_invalid')); ok = false
     }
     if (!password || password.length < 6) {
-      setPasswordError('Password must be at least 6 characters'); ok = false
+      setPasswordError(t('auth.password_too_short')); ok = false
     }
     if (ageFromBirthDate(birthDate) < 18) {
-      showToast('You must be at least 18 years old.', 'error')
+      showToast(t('auth.age_limit_error', 'You must be at least 18 years old.'), 'error')
       ok = false
     }
     return ok
@@ -199,15 +205,15 @@ export default function HandymanSignUpScreen() {
 
   async function onSubmit() {
     if (selServices.length === 0) {
-      showToast('Please select at least one service', 'error'); return
+      showToast(t('auth.select_service_error'), 'error'); return
     }
     if (!selLocation) {
-      showToast('Please select your location', 'error'); return
+      showToast(t('auth.select_location_error'), 'error'); return
     }
 
     const hasAvailability = Object.values(availability).some(v => v.length > 0)
     if (!hasAvailability) {
-      showToast('Please set your availability', 'error'); return
+      showToast(t('auth.set_availability_error'), 'error'); return
     }
 
     setLoading(true)
@@ -256,10 +262,9 @@ export default function HandymanSignUpScreen() {
       await AsyncStorage.setItem('handyman_refresh_token', tokens.refresh)
       await AsyncStorage.setItem('handyman', JSON.stringify(handyman))
       
-      // ✅ Update global state
       login(handyman)
 
-      showToast('Account created! Welcome.', 'success')
+      showToast(t('auth.account_created'), 'success')
       setTimeout(() => router.replace('/handyman/Home'), 1200)
 
     } catch (error) {
@@ -282,9 +287,9 @@ export default function HandymanSignUpScreen() {
         
         const firstKey = Object.keys(data)[0]
         const firstError = Array.isArray(data[firstKey]) ? data[firstKey][0] : data[firstKey]
-        showToast(firstError || 'Error occurred during sign up', 'error')
+        showToast(firstError || t('auth.signup_failed'), 'error')
       } else {
-        showToast(error.message ?? 'Connection error', 'error')
+        showToast(error.message ?? t('auth.connection_error'), 'error')
       }
     } finally {
       setLoading(false)
@@ -293,15 +298,16 @@ export default function HandymanSignUpScreen() {
 
   if (step === 1) {
     return (
+      <ThemedView style={{ flex: 1 }}>
       <ScrollView>
       <DismissKeyboard>
-        <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
+        <SafeAreaView style={{ flex: 1 }}>
           <Toast visible={toast.visible} message={toast.message}
             type={toast.type}
             onHide={() => setToast(t => ({ ...t, visible: false }))} />
 
             <View>
-                 <Image source={favicon} width={200} height={250} alt="" style={{alignSelf:'center',padding:10, height:'250',width:'100%'}} />
+                 <Image source={favicon} alt="" style={{alignSelf:'center',padding:10, height:250,width:'100%'}} />
             </View>
           <KeyboardAvoidingView
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -310,17 +316,17 @@ export default function HandymanSignUpScreen() {
             <ScrollView contentContainerStyle={styles.scroll}
               keyboardShouldPersistTaps="handled">
 
-          <Text style={{textAlign:'center',marginBottom:20, fontSize:30,fontWeight:'black',color:'gray'}}>Sign Up Here As a Pro</Text>
-              <StepBar step={1} />
-              <Text style={styles.stepTitle}>Basic Information</Text>
+          <ThemedText type="title" style={{textAlign:'center',marginBottom:20}}>{t('auth.sign_up_pro', 'Sign Up as a Pro')}</ThemedText>
+              <StepBar step={1} theme={theme} />
+              <ThemedText type="subtitle" style={styles.stepTitle}>{t('auth.basic_info', 'Basic Information')}</ThemedText>
 
               <TouchableOpacity style={styles.avatarPicker} onPress={pickImage}>
                 {profilePicture ? (
                   <Image source={{ uri: profilePicture }} style={styles.avatar} />
                 ) : (
-                  <View style={styles.avatarPlaceholder}>
-                    <Ionicons name="camera-outline" size={28} color="#9ca3af" />
-                    <Text style={styles.avatarHint}>Add Photo</Text>
+                  <View style={[styles.avatarPlaceholder, { backgroundColor: theme.background }]}>
+                    <Ionicons name="camera-outline" size={28} color={theme.textSecondary} />
+                    <ThemedText type="secondary" style={styles.avatarHint}>{t('auth.add_photo', 'Add Photo')}</ThemedText>
                   </View>
                 )}
                 <View style={styles.avatarBadge}>
@@ -328,38 +334,61 @@ export default function HandymanSignUpScreen() {
                 </View>
               </TouchableOpacity>
 
-              <Input title="Username" value={username}
-                setValue={setUsername} error={usernameError}
-                setError={setUsernameError} />
+              <Input 
+                title={t('auth.username')} 
+                placeholder={t('auth.username_placeholder')}
+                value={username}
+                setValue={setUsername} 
+                error={usernameError}
+                setError={setUsernameError} 
+              />
 
-              <Input title="Email" value={email}
-                setValue={setEmail} error={emailError}
-                setError={setEmailError} />
+              <Input 
+                title={t('auth.email')} 
+                placeholder={t('auth.email_placeholder')}
+                value={email}
+                setValue={setEmail} 
+                error={emailError}
+                setError={setEmailError} 
+              />
 
               <View style={{ position: 'relative' }}>
-                <Input title="Password" value={password}
-                  setValue={setPassword} error={passwordError}
+                <Input 
+                  title={t('auth.password')} 
+                  placeholder={t('auth.password_placeholder')}
+                  value={password}
+                  setValue={setPassword} 
+                  error={passwordError}
                   setError={setPasswordError}
-                  secureTextEntry={!showPassword} />
+                  secureTextEntry={!showPassword} 
+                />
                 <TouchableOpacity style={styles.eye}
                   onPress={() => setShowPassword(s => !s)}>
                   <Ionicons
                     name={showPassword ? 'eye-outline' : 'eye-off-outline'}
-                    size={22} color="gray" />
+                    size={22} color={theme.textSecondary} />
                 </TouchableOpacity>
               </View>
 
-              <Input title="Phone (e.g. +237...)" value={phone} maxLength={9} KeyboardType="phone-pad"
-                setValue={setPhone} error="" setError={() => {}} />
-                <Text style={{color:'gray',fontWeight:'100',fontSize:12}}>Should be your MTN or OM number</Text>
+              <Input 
+                title={t('handyman_profile.contact')} 
+                placeholder="6XX XXX XXX"
+                value={phone} 
+                maxLength={9} 
+                keyboardType="phone-pad"
+                setValue={setPhone} 
+                error="" 
+                setError={() => {}} 
+              />
+              <ThemedText type="secondary" style={{fontSize:12}}>{t('auth.phone_hint', 'Should be your MTN or OM number')}</ThemedText>
 
-              <Text style={styles.fieldLabel}>Date of birth</Text>
+              <ThemedText style={styles.fieldLabel}>{t('handyman_profile.birth_date', 'Date of birth')}</ThemedText>
               <TouchableOpacity
-                style={styles.dateBtn}
+                style={[styles.dateBtn, { backgroundColor: theme.surface, borderColor: theme.border }]}
                 onPress={() => setShowBirthPicker(true)}
               >
-                <Ionicons name="calendar-outline" size={20} color="#6b7280" />
-                <Text style={styles.dateBtnText}>{formatBirthDateISO(birthDate)}</Text>
+                <Ionicons name="calendar-outline" size={20} color={theme.textSecondary} />
+                <ThemedText style={styles.dateBtnText}>{formatBirthDateISO(birthDate)}</ThemedText>
               </TouchableOpacity>
               {showBirthPicker && (
                 <DateTimePicker
@@ -374,79 +403,81 @@ export default function HandymanSignUpScreen() {
                 />
               )}
 
-              <Text style={styles.fieldLabel}>Gender</Text>
+              <ThemedText style={styles.fieldLabel}>{t('handyman_profile.gender', 'Gender')}</ThemedText>
               <View style={styles.genderRow}>
                 {['male', 'female'].map(g => (
                   <TouchableOpacity
                     key={g}
-                    style={[styles.genderChip, gender === g && styles.genderChipActive]}
+                    style={[styles.genderChip, { backgroundColor: theme.surface, borderColor: theme.border }, gender === g && { backgroundColor: theme.accent, borderColor: theme.accent }]}
                     onPress={() => setGender(g)}
                   >
-                    <Text style={[styles.genderChipText, gender === g && styles.genderChipTextActive]}>
-                      {g === 'male' ? 'Male' : 'Female'}
+                    <Text style={[styles.genderChipText, { color: theme.textSecondary }, gender === g && styles.genderChipTextActive]}>
+                      {g === 'male' ? t('handyman_profile.male', 'Male') : t('handyman_profile.female', 'Female')}
                     </Text>
                   </TouchableOpacity>
                 ))}
               </View>
 
-              <Button title="Next →" onPress={goToStep2} />
+              <Button title={t('common.next') + " →"} onPress={goToStep2} />
 
-              <Text style={styles.signinLink} onPress={() => router.push('/handyman/SignIn')}>
-                Already have an account?{' '}
-                <Text style={{ color: '#f59e0b' }}
+              <ThemedText style={styles.signinLink}>
+                {t('auth.already_have_account')}
+                <ThemedText style={{ color: theme.accent }}
                   onPress={() => router.push('/handyman/SignIn')}>
-                  Sign In
-                </Text>
-              </Text>
-              <Text style={styles.signinLink} onPress={() => router.push('/SignUp')}>
-                Create a Client Account?{' '}
-                <Text style={{ color: '#0b17f5' }}
+                  {t('auth.sign_in')}
+                </ThemedText>
+              </ThemedText>
+              <ThemedText style={styles.signinLink}>
+                {t('auth.create_client_account', 'Create a Client Account? ')}
+                <ThemedText style={{ color: theme.primary }}
                   onPress={() => router.push('/SignUp')}>
-                  Sign In
-                </Text>
-              </Text>
+                  {t('auth.sign_up')}
+                </ThemedText>
+              </ThemedText>
 
             </ScrollView>
           </KeyboardAvoidingView>
         </SafeAreaView>
       </DismissKeyboard>
       </ScrollView>
+      </ThemedView>
     )
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#fff',paddingTop:20 }}>
+    <ThemedView style={{ flex: 1 }}>
+    <SafeAreaView style={{ flex: 1, paddingTop:20 }}>
       <Toast visible={toast.visible} message={toast.message}
         type={toast.type}
         onHide={() => setToast(t => ({ ...t, visible: false }))} />
 
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: theme.surface, borderColor: theme.border }]}>
         <TouchableOpacity onPress={() => setStep(1)} style={{ padding: 4 }}>
-          <Ionicons name="arrow-back" size={24} color="#202020" />
+          <Ionicons name="arrow-back" size={24} color={theme.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Complete Your Profile</Text>
+        <ThemedText style={styles.headerTitle}>{t('auth.complete_profile', 'Complete Your Profile')}</ThemedText>
         <View style={{ width: 28 }} />
       </View>
 
-      <StepBar step={2} />
+      <StepBar step={2} theme={theme} />
 
       {fetching ? (
-        <ActivityIndicator style={{ flex: 1 }} size="large" color="#f59e0b" />
+        <ActivityIndicator style={{ flex: 1 }} size="large" color={theme.primary} />
       ) : (
         <ScrollView contentContainerStyle={styles.scroll2}
           showsVerticalScrollIndicator={false}>
 
-          <Text style={styles.sectionTitle}>
-            Your Services
-            <Text style={styles.sectionSub}> (select all that apply)</Text>
-          </Text>
+          <ThemedText style={styles.sectionTitle}>
+            {t('handyman_profile.services')}
+            <ThemedText type="secondary" style={styles.sectionSub}> ({t('auth.select_all_apply', 'select all that apply')})</ThemedText>
+          </ThemedText>
           <View style={styles.chipGrid}>
             {services.map(s => {
               const selected = selServices.includes(s.id)
               return (
                 <TouchableOpacity
                   key={s.id}
-                  style={[styles.chip, selected && styles.chipSelected]}
+                  style={[styles.chip, { backgroundColor: theme.surface, borderColor: theme.border }, selected && { backgroundColor: theme.accent, borderColor: theme.accent }]}
                   onPress={() => toggleService(s.id)}
                 >
                   {s.image ? (
@@ -454,9 +485,9 @@ export default function HandymanSignUpScreen() {
                       style={styles.chipImage} />
                   ) : (
                     <Ionicons name="construct-outline" size={16}
-                      color={selected ? 'white' : '#6b7280'} />
+                      color={selected ? 'white' : theme.textSecondary} />
                   )}
-                  <Text style={[styles.chipText, selected && styles.chipTextSelected]}>
+                  <Text style={[styles.chipText, { color: theme.text }, selected && styles.chipTextSelected]}>
                     {s.name}
                   </Text>
                   {selected && (
@@ -467,22 +498,22 @@ export default function HandymanSignUpScreen() {
             })}
           </View>
 
-          <Text style={[styles.sectionTitle, { marginTop: 24 }]}>
-            Your Location
-            <Text style={styles.sectionSub}> (select one)</Text>
-          </Text>
+          <ThemedText style={[styles.sectionTitle, { marginTop: 24 }]}>
+            {t('handyman_profile.location')}
+            <ThemedText type="secondary" style={styles.sectionSub}> ({t('auth.select_one', 'select one')})</ThemedText>
+          </ThemedText>
           <View style={styles.chipGrid}>
             {locations.map(l => {
               const selected = selLocation === l.id
               return (
                 <TouchableOpacity
                   key={l.id}
-                  style={[styles.chip, selected && styles.chipSelected]}
+                  style={[styles.chip, { backgroundColor: theme.surface, borderColor: theme.border }, selected && { backgroundColor: theme.accent, borderColor: theme.accent }]}
                   onPress={() => setSelLocation(l.id)}
                 >
                   <Ionicons name="location-outline" size={16}
-                    color={selected ? 'white' : '#6b7280'} />
-                  <Text style={[styles.chipText, selected && styles.chipTextSelected]}>
+                    color={selected ? 'white' : theme.textSecondary} />
+                  <Text style={[styles.chipText, { color: theme.text }, selected && styles.chipTextSelected]}>
                     {l.location}
                   </Text>
                   {selected && (
@@ -493,29 +524,29 @@ export default function HandymanSignUpScreen() {
             })}
           </View>
 
-          <Text style={[styles.sectionTitle, { marginTop: 24 }]}>
-            Availability
-            <Text style={styles.sectionSub}> (days + shifts)</Text>
-          </Text>
+          <ThemedText style={[styles.sectionTitle, { marginTop: 24 }]}>
+            {t('handyman_profile.availability')}
+            <ThemedText type="secondary" style={styles.sectionSub}> ({t('auth.days_shifts', 'days + shifts')})</ThemedText>
+          </ThemedText>
 
           {DAYS.map(day => (
             <View key={day.key} style={styles.dayRow}>
-              <Text style={styles.dayLabel}>{day.label}</Text>
+              <ThemedText style={styles.dayLabel}>{day.label}</ThemedText>
               <View style={styles.shiftRow}>
                 {SHIFTS.map(shift => {
                   const active = availability[day.key]?.includes(shift.key)
                   return (
                     <TouchableOpacity
                       key={shift.key}
-                      style={[styles.shiftBtn, active && styles.shiftBtnActive]}
+                      style={[styles.shiftBtn, { backgroundColor: theme.surface, borderColor: theme.border }, active && { backgroundColor: theme.accent, borderColor: theme.accent }]}
                       onPress={() => toggleShift(day.key, shift.key)}
                     >
                       <Ionicons
                         name={shift.icon}
                         size={14}
-                        color={active ? 'white' : '#6b7280'}
+                        color={active ? 'white' : theme.textSecondary}
                       />
-                      <Text style={[styles.shiftText, active && styles.shiftTextActive]}>
+                      <Text style={[styles.shiftText, { color: theme.textSecondary }, active && styles.shiftTextActive]}>
                         {shift.label}
                       </Text>
                     </TouchableOpacity>
@@ -525,21 +556,21 @@ export default function HandymanSignUpScreen() {
             </View>
           ))}
 
-          <View style={styles.legendBox}>
+          <View style={[styles.legendBox, { backgroundColor: theme.surface, borderColor: theme.border, borderWidth: 1 }]}>
             {SHIFTS.map(s => (
               <View key={s.key} style={styles.legendRow}>
-                <Ionicons name={s.icon} size={14} color="#f59e0b" />
-                <Text style={styles.legendText}>
-                  {s.label}: <Text style={{ color: '#9ca3af' }}>{s.sub}</Text>
-                </Text>
+                <Ionicons name={s.icon} size={14} color={theme.accent} />
+                <ThemedText type="secondary" style={styles.legendText}>
+                  {s.label}: <ThemedText type="secondary" style={{ opacity: 0.7 }}>{s.sub}</ThemedText>
+                </ThemedText>
               </View>
             ))}
           </View>
 
           {loading
-            ? <ActivityIndicator size="large" color="#f59e0b"
+            ? <ActivityIndicator size="large" color={theme.primary}
                 style={{ marginTop: 24 }} />
-            : <Button title="Create Account" onPress={onSubmit} />
+            : <Button title={t('auth.create_account', 'Create Account')} onPress={onSubmit} />
           }
 
           <View style={{ height: 40 }} />
@@ -547,6 +578,7 @@ export default function HandymanSignUpScreen() {
         </ScrollView>
       )}
     </SafeAreaView>
+    </ThemedView>
   )
 }
 
@@ -555,46 +587,41 @@ const styles = StyleSheet.create({
   scroll2:      { paddingHorizontal:16, paddingTop:8, paddingBottom:32 },
   stepBar:       { flexDirection:'row', alignItems:'center', justifyContent:'center', marginVertical:16 },
   stepRow:       { flexDirection:'row', alignItems:'center' },
-  stepCircle:    { width:32, height:32, borderRadius:16, backgroundColor:'#e5e7eb', alignItems:'center', justifyContent:'center' },
-  stepCircleActive: { backgroundColor:'#f59e0b' },
+  stepCircle:    { width:32, height:32, borderRadius:16, alignItems:'center', justifyContent:'center' },
   stepNum:       { fontSize:14, fontWeight:'700', color:'#9ca3af' },
   stepNumActive: { color:'white' },
-  stepLine:      { width:48, height:2, backgroundColor:'#e5e7eb', marginHorizontal:4 },
-  stepLineActive:{ backgroundColor:'#f59e0b' },
-  stepTitle:     { fontSize:18, fontWeight:'700', color:'#202020', textAlign:'center', marginBottom:20 },
+  stepLine:      { width:48, height:2, marginHorizontal:4 },
+  stepTitle:     { fontSize:18, fontWeight:'700', textAlign:'center', marginBottom:20 },
   avatarPicker:     { alignSelf:'center', position:'relative', marginBottom:24 },
   avatar:           { width:100, height:100, borderRadius:50 },
-  avatarPlaceholder:{ width:100, height:100, borderRadius:50, backgroundColor:'#f3f4f6', alignItems:'center', justifyContent:'center', borderWidth:1.5, borderColor:'#e5e7eb', borderStyle:'dashed' },
-  avatarHint:       { color:'#9ca3af', fontSize:11, marginTop:4 },
-  avatarBadge:      { position:'absolute', bottom:0, right:0, width:26, height:26, borderRadius:13, backgroundColor:'#f59e0b', alignItems:'center', justifyContent:'center', borderWidth:2, borderColor:'white' },
+  avatarPlaceholder:{ width:100, height:100, borderRadius:50, alignItems:'center', justifyContent:'center', borderWidth:1.5, borderStyle:'dashed' },
+  avatarHint:       { fontSize:11, marginTop:4 },
+  avatarBadge:      { position:'absolute', bottom:0, right:0, width:26, height:26, borderRadius:13, backgroundColor:'#6366F1', alignItems:'center', justifyContent:'center', borderWidth:2, borderColor:'white' },
   eye:           { position:'absolute', right:16, top:40, padding:4 },
-  signinLink:    { textAlign:'center', marginTop:16, color:'gray', fontSize:13 },
-  fieldLabel:    { fontSize:14, fontWeight:'600', color:'#374151', marginTop:12, marginBottom:6 },
-  dateBtn:       { flexDirection:'row', alignItems:'center', gap:10, padding:14, borderWidth:1, borderColor:'#e5e7eb', borderRadius:10, backgroundColor:'#f9fafb' },
-  dateBtnText:   { fontSize:15, color:'#202020' },
+  signinLink:    { textAlign:'center', marginTop:16, fontSize:13 },
+  fieldLabel:    { fontSize:14, fontWeight:'600', marginTop:12, marginBottom:6 },
+  dateBtn:       { flexDirection:'row', alignItems:'center', gap:10, padding:14, borderWidth:1, borderRadius:10 },
+  dateBtnText:   { fontSize:15 },
   genderRow:     { flexDirection:'row', gap:10, marginBottom:8 },
-  genderChip:    { flex:1, paddingVertical:12, borderRadius:10, borderWidth:1.5, borderColor:'#e5e7eb', alignItems:'center', backgroundColor:'#f9fafb' },
-  genderChipActive: { backgroundColor:'#f59e0b', borderColor:'#f59e0b' },
-  genderChipText: { fontSize:14, fontWeight:'600', color:'#6b7280' },
+  genderChip:    { flex:1, paddingVertical:12, borderRadius:10, borderWidth:1.5, alignItems:'center' },
+  genderChipText: { fontSize:14, fontWeight:'600' },
   genderChipTextActive: { color:'white' },
-  header:        { flexDirection:'row', alignItems:'center', justifyContent:'space-between', paddingHorizontal:16, paddingVertical:15, borderBottomWidth:1, borderColor:'#f0f0f0' },
-  headerTitle:   { fontSize:16, fontWeight:'700', color:'#202020' },
-  sectionTitle:  { fontSize:16, fontWeight:'700', color:'#202020', marginBottom:10 },
-  sectionSub:    { fontSize:12, fontWeight:'400', color:'#9ca3af' },
+  header:        { flexDirection:'row', alignItems:'center', justifyContent:'space-between', paddingHorizontal:16, paddingVertical:15, borderBottomWidth:1 },
+  headerTitle:   { fontSize:16, fontWeight:'700' },
+  sectionTitle:  { fontSize:16, fontWeight:'700', marginBottom:10 },
+  sectionSub:    { fontSize:12, fontWeight:'400' },
   chipGrid:      { flexDirection:'row', flexWrap:'wrap', gap:8 },
-  chip:          { flexDirection:'row', alignItems:'center', gap:6, paddingVertical:8, paddingHorizontal:12, borderRadius:20, borderWidth:1.5, borderColor:'#e5e7eb', backgroundColor:'#f9fafb' },
-  chipSelected:  { backgroundColor:'#f59e0b', borderColor:'#f59e0b' },
-  chipText:      { fontSize:13, color:'#374151', fontWeight:'500' },
+  chip:          { flexDirection:'row', alignItems:'center', gap:6, paddingVertical:8, paddingHorizontal:12, borderRadius:20, borderWidth:1.5 },
+  chipText:      { fontSize:13, fontWeight:'500' },
   chipTextSelected: { color:'white', fontWeight:'700' },
   chipImage:     { width:18, height:18, borderRadius:4 },
   dayRow:        { marginBottom:14 },
-  dayLabel:      { fontSize:14, fontWeight:'700', color:'#202020', marginBottom:6 },
+  dayLabel:      { fontSize:14, fontWeight:'700', marginBottom:6 },
   shiftRow:      { flexDirection:'row', flexWrap:'wrap', gap:6 },
-  shiftBtn:      { flexDirection:'row', alignItems:'center', gap:4, paddingVertical:6, paddingHorizontal:10, borderRadius:16, borderWidth:1.5, borderColor:'#e5e7eb', backgroundColor:'#f9fafb' },
-  shiftBtnActive:{ backgroundColor:'#f59e0b', borderColor:'#f59e0b' },
-  shiftText:     { fontSize:11, color:'#6b7280', fontWeight:'500' },
+  shiftBtn:      { flexDirection:'row', alignItems:'center', gap:4, paddingVertical:6, paddingHorizontal:10, borderRadius:16, borderWidth:1.5 },
+  shiftText:     { fontSize:11, fontWeight:'500' },
   shiftTextActive:{ color:'white', fontWeight:'700' },
-  legendBox:     { backgroundColor:'#fffbeb', borderRadius:10, padding:12, marginVertical:16, gap:6 },
+  legendBox:     { borderRadius:10, padding:12, marginVertical:16, gap:6 },
   legendRow:     { flexDirection:'row', alignItems:'center', gap:8 },
-  legendText:    { fontSize:12, color:'#374151', fontWeight:'500' },
+  legendText:    { fontSize:12, fontWeight:'500' },
 })

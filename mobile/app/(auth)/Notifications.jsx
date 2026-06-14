@@ -12,8 +12,12 @@ import {
 import { useRouter } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import api from '@/services/api';
+import { useTranslation } from 'react-i18next';
+import { useAppTheme } from '@/hooks/use-theme-color';
 
 export default function NotificationsScreen() {
+  const { t } = useTranslation();
+  const theme = useAppTheme();
   const router = useRouter();
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -26,7 +30,7 @@ export default function NotificationsScreen() {
       setNotifications(res.data);
     } catch (err) {
       console.error("❌ Fetch notifications error:", err.response?.data || err.message);
-      Alert.alert("Error", "Failed to load notifications");
+      Alert.alert(t('common.error'), t('notifications.load_failed', "Failed to load notifications"));
     } finally {
       setLoading(false);
     }
@@ -99,13 +103,13 @@ export default function NotificationsScreen() {
 
   const getNotificationColor = (type) => {
     switch (type) {
-      case 'booking_request': return '#f59e0b';
-      case 'booking_accepted': return '#22c55e';
-      case 'booking_declined': return '#ef4444';
-      case 'booking_completed': return '#3b82f6';
-      case 'new_message': return '#6366F1';
+      case 'booking_request': return theme.accent;
+      case 'booking_accepted': return theme.success;
+      case 'booking_declined': return theme.error;
+      case 'booking_completed': return theme.primary;
+      case 'new_message': return theme.primary;
       case 'payment_success': return '#8b5cf6';
-      default: return '#6b7280';
+      default: return theme.textSecondary;
     }
   };
 
@@ -145,13 +149,15 @@ export default function NotificationsScreen() {
 
   const unreadCount = notifications.filter(n => !n.is_read).length;
 
+  const styles = createStyles(theme);
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Notifications</Text>
+        <Text style={styles.headerTitle}>{t('notifications.title', 'Notifications')}</Text>
         {unreadCount > 0 && (
           <TouchableOpacity style={styles.markAllReadBtn} onPress={markAllAsRead}>
-            <Text style={styles.markAllReadText}>Mark all read</Text>
+            <Text style={styles.markAllReadText}>{t('notifications.mark_all_read', 'Mark all read')}</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -163,8 +169,8 @@ export default function NotificationsScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         ListEmptyComponent={
           <View style={styles.empty}>
-            <Ionicons name="notifications-off-outline" size={60} color="#9ca3af" />
-            <Text style={styles.emptyText}>No notifications</Text>
+            <Ionicons name="notifications-off-outline" size={60} color={theme.border} />
+            <Text style={styles.emptyText}>{t('notifications.no_notifications', 'No notifications')}</Text>
           </View>
         }
       />
@@ -172,8 +178,8 @@ export default function NotificationsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8fafc', paddingTop: 50 },
+const createStyles = (theme) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: theme.background, paddingTop: 50 },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -181,20 +187,26 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingBottom: 16,
   },
-  headerTitle: { fontSize: 24, fontWeight: '700', color: '#1f2937' },
-  markAllReadBtn: { paddingHorizontal: 12, paddingVertical: 6, backgroundColor: '#e5e7eb', borderRadius: 12 },
-  markAllReadText: { fontSize: 12, fontWeight: '600', color: '#475569' },
+  headerTitle: { fontSize: 24, fontWeight: '700', color: theme.text },
+  markAllReadBtn: { paddingHorizontal: 12, paddingVertical: 6, backgroundColor: theme.border, borderRadius: 12 },
+  markAllReadText: { fontSize: 12, fontWeight: '600', color: theme.textSecondary },
   notificationCard: {
-    backgroundColor: 'white',
+    backgroundColor: theme.surface,
     marginHorizontal: 16,
     marginVertical: 4,
     borderRadius: 12,
     padding: 16,
     elevation: 1,
+    shadowColor: theme.shadow,
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    shadowOffset: { width: 0, height: 1 },
+    borderWidth: 1,
+    borderColor: theme.border
   },
   unreadCard: {
-    borderLeftWidth: 3,
-    borderLeftColor: '#6366F1',
+    borderLeftWidth: 4,
+    borderLeftColor: theme.primary,
   },
   cardHeader: {
     flexDirection: 'row',
@@ -209,18 +221,18 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   content: { flex: 1 },
-  title: { fontSize: 16, fontWeight: '600', color: '#1f2937', marginBottom: 4 },
+  title: { fontSize: 16, fontWeight: '600', color: theme.text, marginBottom: 4 },
   unreadTitle: { fontWeight: '700' },
-  body: { fontSize: 14, color: '#64748b', lineHeight: 20, marginBottom: 8 },
-  time: { fontSize: 12, color: '#9ca3af' },
+  body: { fontSize: 14, color: theme.textSecondary, lineHeight: 20, marginBottom: 8 },
+  time: { fontSize: 12, color: theme.textSecondary },
   unreadDot: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#6366F1',
+    backgroundColor: theme.primary,
     marginLeft: 8,
     marginTop: 4,
   },
   empty: { alignItems: 'center', justifyContent: 'center', marginTop: 100 },
-  emptyText: { marginTop: 16, fontSize: 16, color: '#9ca3af' },
+  emptyText: { marginTop: 16, fontSize: 16, color: theme.textSecondary },
 });

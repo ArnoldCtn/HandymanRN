@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import {
-  View, Text, StyleSheet, ActivityIndicator,
+  View, StyleSheet, ActivityIndicator,
   RefreshControl, ScrollView,
   TouchableOpacity
 } from 'react-native'
@@ -9,12 +9,18 @@ import ServiceCarousel from '@/components/ServiceCarousel'
 import useGlobal from '@/services/global'
 import Ionicons from '@expo/vector-icons/Ionicons'
 import { useRouter } from 'expo-router'
+import { useTranslation } from 'react-i18next'
+import { useAppTheme } from '@/hooks/use-theme-color'
+import { ThemedText } from '@/components/themed-text'
+import { ThemedView } from '@/components/themed-view'
 
 export default function RequestScreen() {
-  const [services,       setServices]       = useState([])
-  const [recentReviews,  setRecentReviews]  = useState([])
-  const [loading,        setLoading]        = useState(true)
-  const [refreshing,     setRefreshing]     = useState(false)
+  const { t } = useTranslation()
+  const theme = useAppTheme()
+  const [services, setServices] = useState([])
+  const [recentReviews, setRecentReviews] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
 
   const user = useGlobal(s => s.user)
   const router = useRouter()
@@ -37,341 +43,357 @@ export default function RequestScreen() {
 
   useEffect(() => { fetchServices() }, [])
 
-  if (loading) return <ActivityIndicator style={{ flex: 1 }} size="large" color="#6366F1" />
+  const getGreeting = () => {
+    const hours = new Date().getHours();
+    if (hours < 12) return t('request.good_morning');
+    if (hours < 18) return t('request.good_afternoon');
+    return t('request.good_evening');
+  };
+
+  const styles = createStyles(theme);
+
+  if (loading) return <ActivityIndicator style={{ flex: 1, backgroundColor: theme.background }} size="large" color={theme.primary} />
 
   return (
-    <ScrollView
-      style={{ flex: 1, backgroundColor: '#f9fafb' }}
-      refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={() => { setRefreshing(true); fetchServices() }}
-        />
-      }
-    >
-      <View style={styles.heroLeft}>
-         <Text style={styles.heroGreet}>
-            {new Date().getHours() < 12 ? 'Good morning' :
-             new Date().getHours() < 18 ? 'Good afternoon' : 'Good evening'} 👋
-          </Text>
-          <Text style={styles.heroName} numberOfLines={1}>
-            {user?.username ?? 'user'}
-          </Text>
-      </View>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Explore</Text>
-      </View>
-
-      <View style={{ marginTop: 20 }}>
-        <ServiceCarousel services={services} />
-      </View>
-
-      
-
-      <View style={styles.aboutSection}>
-        <View style={styles.aboutHeader}>
-          <Text style={styles.title}>About HandymanWest</Text>
-          <Text style={styles.description}>
-            Your trusted partner for finding reliable handymen in the West Region, Cameroon
-          </Text>
+    <ThemedView style={{ flex: 1 }}>
+      <ScrollView
+        style={{ flex: 1 }}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => { setRefreshing(true); fetchServices() }}
+            tintColor={theme.primary}
+          />
+        }
+      >
+        <View style={styles.heroLeft}>
+          <View>
+            <ThemedText type="secondary" style={styles.heroGreet}>
+              {getGreeting()} 👋
+            </ThemedText>
+            <ThemedText type="subtitle" style={styles.heroName} numberOfLines={1}>
+              {user?.username ?? 'user'}
+            </ThemedText>
+          </View>
         </View>
 
-        {/* Feature Cards */}
-        <View style={styles.featureList}>
-          {[
-            { title: 'Browse Services', icon: 'construct-outline', desc: 'Explore our wide range of professional services' },
-            { title: 'Find Nearby Pros', icon: 'location-outline', desc: 'Connect with verified handymen in your area' },
-            { title: 'Book & Pay', icon: 'card-outline', desc: 'Secure booking and seamless payment system' }
-          ].map((item, index) => (
-            <View key={index} style={styles.featureCard}>
-              <View style={styles.featureIconContainer}>
-                <Ionicons name={item.icon} size={32} color="white" style={styles.featureIcon} />
-              </View>
-              <View style={styles.featureContent}>
-                <Text style={styles.featureTitle}>{item.title}</Text>
-                <Text style={styles.featureText}>{item.desc}</Text>
-              </View>
-            </View>
-          ))}
+        <View style={styles.header}>
+          <ThemedText type="subtitle" style={styles.headerTitle}>{t('request.explore')}</ThemedText>
         </View>
 
-        {/* Why Choose Us */}
-        <View style={styles.whySection}>
-          <Text style={styles.whyTitle}>Why Choose HandymanWest?</Text>
-          <View style={styles.whyGrid}>
+        <View style={{ marginTop: 20 }}>
+          <ServiceCarousel services={services} />
+        </View>
+
+        <View style={styles.aboutSection}>
+          <View style={styles.aboutHeader}>
+            <ThemedText type="subtitle" style={styles.title}>
+              {t('request.about_title')}
+            </ThemedText>
+            <ThemedText type="secondary" style={styles.description}>
+              {t('request.about_desc')}
+            </ThemedText>
+          </View>
+
+          {/* Feature Cards */}
+          <View style={styles.featureList}>
             {[
-              { icon: 'shield-checkmark-outline', title: 'Trusted Handymen', desc: 'All professionals are verified and background-checked' },
-              { icon: 'phone-portrait-outline', title: 'Easy-to-Use', desc: 'Intuitive app design for seamless experience' },
-              { icon: 'lock-closed-outline', title: 'Secure Payments', desc: 'Safe and encrypted payment processing' },
-              { icon: 'headset-outline', title: '7/7 Support', desc: 'Round-the-clock customer assistance' }
-            ].map((item, i) => (
-              <View key={i} style={styles.whyCard}>
-                <View style={styles.whyIconContainer}>
-                  <Ionicons name={item.icon} size={24} color="#3b82f6" />
+              { title: t('request.feature_browse_title'), icon: 'construct-outline', desc: t('request.feature_browse_desc') },
+              { title: t('request.feature_find_title'), icon: 'location-outline', desc: t('request.feature_find_desc') },
+              { title: t('request.feature_book_title'), icon: 'card-outline', desc: t('request.feature_book_desc') }
+            ].map((item, index) => (
+              <View key={index} style={styles.featureCard}>
+                <View style={styles.featureIconContainer}>
+                  <Ionicons name={item.icon} size={32} color="white" />
                 </View>
-                <Text style={styles.whyCardTitle}>{item.title}</Text>
-                <Text style={styles.whyCardDesc}>{item.desc}</Text>
+                <View style={styles.featureContent}>
+                  <ThemedText type="defaultSemiBold" style={styles.featureTitle}>{item.title}</ThemedText>
+                  <ThemedText type="secondary" style={styles.featureText}>{item.desc}</ThemedText>
+                </View>
               </View>
             ))}
           </View>
-          
-          <TouchableOpacity style={styles.ctaButton}>
-            <Ionicons name="arrow-forward" size={20} color="white" style={{ marginRight: 8 }} />
-            <Text style={styles.ctaText}>Explore Services</Text>
-          </TouchableOpacity>
+
+          {/* Why Choose Us */}
+          <View style={styles.whySection}>
+            <ThemedText type="subtitle" style={styles.whyTitle}>
+              {t('request.why_title')}
+            </ThemedText>
+            <View style={styles.whyGrid}>
+              {[
+                { icon: 'shield-checkmark-outline', title: t('request.why_trusted_title'), desc: t('request.why_trusted_desc') },
+                { icon: 'phone-portrait-outline', title: t('request.why_easy_title'), desc: t('request.why_easy_desc') },
+                { icon: 'lock-closed-outline', title: t('request.why_secure_title'), desc: t('request.why_secure_desc') },
+                { icon: 'headset-outline', title: t('request.why_support_title'), desc: t('request.why_support_desc') }
+              ].map((item, i) => (
+                <View key={i} style={styles.whyCard}>
+                  <View style={styles.whyIconContainer}>
+                    <Ionicons name={item.icon} size={24} color={theme.primary} />
+                  </View>
+                  <ThemedText type="defaultSemiBold" style={styles.whyCardTitle}>{item.title}</ThemedText>
+                  <ThemedText type="secondary" style={styles.whyCardDesc}>{item.desc}</ThemedText>
+                </View>
+              ))}
+            </View>
+
+            <TouchableOpacity style={styles.ctaButton} onPress={() => router.push('(auth)/search')}>
+              <Ionicons name="arrow-forward" size={20} color="white" style={{ marginRight: 8 }} />
+              <ThemedText style={styles.ctaText}>{t('request.explore_services')}</ThemedText>
+            </TouchableOpacity>
+          </View>
+
+
+          {/* ── Recent Community Reviews ──────────────── */}
+          <View style={styles.reviewSection}>
+            <ThemedText type="defaultSemiBold" style={styles.sectionLabel}>{t('request.recent_reviews')}</ThemedText>
+            {recentReviews.length > 0 ? (
+              recentReviews.map((item, i) => (
+                <View key={item.id} style={styles.reviewCardSmall}>
+                  <View style={styles.reviewTop}>
+                    <Ionicons name="star" size={14} color={theme.accent} />
+                    <ThemedText style={[styles.reviewRating, { color: theme.accent }]}>{item.rating}/10</ThemedText>
+                    <ThemedText type="secondary" style={styles.reviewTarget}>
+                      {t('request.for_handyman', { username: item.handyman_info?.username })}
+                    </ThemedText>
+                  </View>
+                  <ThemedText style={styles.reviewTextSmall} numberOfLines={2}>
+                    "{item.review || t('request.no_comment')}"
+                  </ThemedText>
+                  <ThemedText type="secondary" style={styles.reviewAuthor}>
+                    {t('request.by_user', { username: item.user_info?.username })}
+                  </ThemedText>
+                </View>
+              ))
+            ) : (
+              <ThemedText type="secondary" style={styles.noReviewsText}>{t('request.no_reviews')}</ThemedText>
+            )}
+          </View>
+
+          {/* Support Button at Bottom */}
+          <View style={styles.supportContainer}>
+            <TouchableOpacity
+              style={styles.supportBtn}
+              onPress={() => router.push('/chat/support')}
+            >
+              <Ionicons name="headset-outline" size={24} color="white" />
+              <ThemedText style={styles.supportBtnText}>{t('request.need_help')}</ThemedText>
+            </TouchableOpacity>
+          </View>
         </View>
 
-
-        {/* ── Recent Community Reviews ──────────────── */}
-      <View style={styles.reviewSection}>
-        <Text style={styles.sectionLabel}>Recent Community Reviews</Text>
-        {recentReviews.length > 0 ? (
-          recentReviews.map((item, i) => (
-            <View key={item.id} style={styles.reviewCardSmall}>
-              <View style={styles.reviewTop}>
-                <Ionicons name="star" size={14} color="#f59e0b" />
-                <Text style={styles.reviewRating}>{item.rating}/10</Text>
-                <Text style={styles.reviewTarget}>for handyman: {item.handyman_info?.username}</Text>
+        {/* Footer */}
+        <View style={styles.footer}>
+          <View style={styles.footerContent}>
+            <View style={styles.footerBrand}>
+              <Ionicons name="build-outline" size={32} color={theme.primary} />
+              <ThemedText type="subtitle" style={styles.footerBrandText}>{t('request.footer_brand')}</ThemedText>
+            </View>
+            <View style={styles.footerContact}>
+              <View style={styles.footerContactItem}>
+                <Ionicons name="mail-outline" size={16} color={theme.textSecondary} style={{ marginRight: 8 }} />
+                <ThemedText type="secondary" style={styles.footerText}>arnodlctn@gmail.com</ThemedText>
               </View>
-              <Text style={styles.reviewTextSmall} numberOfLines={2}>
-                "{item.review || 'No comment left'}"
-              </Text>
-              <Text style={styles.reviewAuthor}>By user: {item.user_info?.username}</Text>
+              <View style={styles.footerContactItem}>
+                <Ionicons name="call-outline" size={16} color={theme.textSecondary} style={{ marginRight: 8 }} />
+                <ThemedText type="secondary" style={styles.footerText}>+237 675 828 711</ThemedText>
+              </View>
             </View>
-          ))
-        ) : (
-          <Text style={styles.noReviewsText}>No reviews yet</Text>
-        )}
-      </View>
-
-        {/* Support Button at Bottom */}
-        <View style={styles.supportContainer}>
-          <TouchableOpacity 
-            style={styles.supportBtn}
-            onPress={() => router.push('/chat/support')}
-          >
-            <Ionicons name="headset-outline" size={24} color="white" />
-            <Text style={styles.supportBtnText}>Need Help? Contact Admin</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      {/* Footer */}
-      <View style={styles.footer}>
-        <View style={styles.footerContent}>
-          <View style={styles.footerBrand}>
-            <Ionicons name="build-outline" size={32} color="white" />
-            <Text style={styles.footerBrandText}>HandymanWest</Text>
+            <ThemedText type="secondary" style={styles.copy}>{t('request.footer_copy')}</ThemedText>
           </View>
-          <View style={styles.footerContact}>
-            <View style={styles.footerContactItem}>
-              <Ionicons name="mail-outline" size={16} color="#94a3b8" style={{ marginRight: 8 }} />
-              <Text style={styles.footerText}>arnodlctn@gmail.com</Text>
-            </View>
-            <View style={styles.footerContactItem}>
-              <Ionicons name="call-outline" size={16} color="#94a3b8" style={{ marginRight: 8 }} />
-              <Text style={styles.footerText}>+237 675 828 711</Text>
-            </View>
-          </View>
-          <Text style={styles.copy}>© 2024 HandymanWest. All rights reserved.</Text>
         </View>
-      </View>
 
-      {/* You can add more sections below e.g. Featured, Nearby etc */}
-    </ScrollView>
+      </ScrollView>
+    </ThemedView>
   )
 }
 
-const styles = StyleSheet.create({
-  header:      { paddingHorizontal: 16, paddingTop: 20, paddingBottom: 8 },
-  headerTitle: { fontSize: 26, fontWeight:'black', color: '#202020' },
+const createStyles = (theme) => StyleSheet.create({
+  header: { paddingHorizontal: 16, paddingTop: 20, paddingBottom: 8 },
+  headerTitle: { fontSize: 26, fontWeight: '900', color: theme.text },
 
-  heroGreet:            { fontSize:13, color:'#94a3b8', marginBottom:4 },
-  heroName:             { fontSize:24, fontWeight:'800', color:'white', marginBottom:10 },
-  heroLeft:                 { flexDirection:'row', alignItems:'center', justifyContent:'space-between', backgroundColor:'#1e293b', paddingHorizontal:20, paddingTop:10, paddingBottom:10 },
- 
+  heroGreet: { fontSize: 13, marginBottom: 4 },
+  heroName: { fontSize: 24, fontWeight: '800', marginBottom: 10, color: 'white' },
+  heroLeft: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 10, paddingBottom: 10, backgroundColor: '#1e293b' },
+
   // About Section Styles
-  aboutSection: { 
-    backgroundColor: '#f0f9ff', 
-    paddingHorizontal: 20, 
+  aboutSection: {
+    paddingHorizontal: 20,
     paddingVertical: 30,
     borderRadius: 20,
     margin: 20,
-    marginHorizontal: 16
+    marginHorizontal: 16,
+    backgroundColor: theme.background === '#0f172a' ? '#1e293b' : '#f0f9ff'
   },
   aboutHeader: { marginBottom: 30 },
-  title: { 
-    color: '#1e40af', 
-    fontSize: 28, 
-    fontWeight: '900', 
-    textAlign: 'center', 
-    marginBottom: 12 
+  title: {
+    fontSize: 28,
+    fontWeight: '900',
+    textAlign: 'center',
+    marginBottom: 12,
+    color: theme.primary
   },
-  description: { 
-    color: '#64748b', 
-    textAlign: 'center', 
-    fontSize: 16, 
+  description: {
+    textAlign: 'center',
+    fontSize: 16,
     lineHeight: 24,
-    paddingHorizontal: 20
+    paddingHorizontal: 20,
+    color: theme.textSecondary
   },
-  
+
   // Feature Cards
   featureList: { gap: 16, marginBottom: 30 },
-  featureCard: { 
-    backgroundColor: 'white', 
-    borderRadius: 16, 
+  featureCard: {
+    borderRadius: 16,
     padding: 20,
     flexDirection: 'row',
     alignItems: 'center',
-    shadowColor: '#3b82f6',
+    shadowColor: theme.shadow,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
     shadowRadius: 12,
-    elevation: 6
+    elevation: 6,
+    backgroundColor: theme.card
   },
-  featureIconContainer: { 
-    backgroundColor: '#3b82f6', 
-    width: 60, 
-    height: 60, 
+  featureIconContainer: {
+    width: 60,
+    height: 60,
     borderRadius: 30,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 16
+    marginRight: 16,
+    backgroundColor: theme.primary
   },
-  featureIcon: {},
   featureContent: { flex: 1 },
-  featureTitle: { 
-    fontSize: 18, 
-    fontWeight: 'bold', 
-    color: '#1e293b',
-    marginBottom: 4
+  featureTitle: {
+    fontSize: 18,
+    marginBottom: 4,
+    color: theme.text
   },
-  featureText: { 
-    fontSize: 14, 
-    color: '#64748b',
-    lineHeight: 20
+  featureText: {
+    fontSize: 14,
+    lineHeight: 20,
+    color: theme.textSecondary
   },
 
   // Why Choose Us Section
-  whySection: { 
+  whySection: {
     marginTop: 20,
     paddingHorizontal: 20
   },
-  whyTitle: { 
-    color: '#1e40af', 
-    fontSize: 24, 
-    fontWeight: 'bold', 
+  whyTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
     textAlign: 'center',
-    marginBottom: 24
+    marginBottom: 24,
+    color: theme.primary
   },
-  whyGrid: { 
-    flexDirection: 'row', 
-    flexWrap: 'wrap', 
+  whyGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     justifyContent: 'space-between',
     marginBottom: 30
   },
-  whyCard: { 
-    backgroundColor: 'white',
+  whyCard: {
     width: '48%',
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',
     marginBottom: 16,
-    shadowColor: '#3b82f6',
+    shadowColor: theme.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
     shadowRadius: 8,
-    elevation: 4
+    elevation: 4,
+    backgroundColor: theme.card
   },
-  whyIconContainer: { 
-    backgroundColor: '#eff6ff',
-    width: 50, 
-    height: 50, 
+  whyIconContainer: {
+    width: 50,
+    height: 50,
     borderRadius: 25,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 12
+    marginBottom: 12,
+    backgroundColor: theme.background
   },
-  whyCardTitle: { 
-    fontSize: 14, 
-    fontWeight: 'bold', 
-    color: '#1e293b',
+  whyCardTitle: {
+    fontSize: 14,
     textAlign: 'center',
-    marginBottom: 6
+    marginBottom: 6,
+    color: theme.text
   },
-  whyCardDesc: { 
-    fontSize: 12, 
-    color: '#64748b',
+  whyCardDesc: {
+    fontSize: 12,
     textAlign: 'center',
-    lineHeight: 16
+    lineHeight: 16,
+    color: theme.textSecondary
   },
 
   // CTA Button
-  ctaButton: { 
-    backgroundColor: '#3b82f6', 
-    padding: 16, 
-    borderRadius: 12, 
+  ctaButton: {
+    padding: 16,
+    borderRadius: 12,
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#3b82f6',
+    shadowColor: theme.shadow,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
-    elevation: 6
+    elevation: 6,
+    backgroundColor: theme.primary
   },
-  ctaText: { 
-    color: 'white', 
-    fontSize: 16, 
-    fontWeight: 'bold' 
+  ctaText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold'
   },
 
   // Footer
-  footer: { 
-    backgroundColor: '#1e293b', 
+  footer: {
     paddingHorizontal: 20,
     paddingVertical: 30,
-    marginTop: 20
+    marginTop: 20,
+    backgroundColor: theme.surface
   },
   footerContent: { alignItems: 'center' },
-  footerBrand: { 
+  footerBrand: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 16
   },
-  footerBrandText: { 
-    color: 'white', 
-    fontSize: 20, 
+  footerBrandText: {
+    fontSize: 20,
     fontWeight: 'bold',
-    marginLeft: 8
+    marginLeft: 8,
+    color: theme.text
   },
   footerContact: { marginBottom: 16 },
-  footerContactItem: { 
-    flexDirection: 'row', 
+  footerContactItem: {
+    flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 6
   },
-  footerText: { 
-    color: '#94a3b8', 
-    fontSize: 14 
+  footerText: {
+    fontSize: 14,
+    color: theme.textSecondary
   },
-  copy: { 
-    color: '#64748b', 
+  copy: {
     fontSize: 12,
-    textAlign: 'center'
+    textAlign: 'center',
+    color: theme.textSecondary
   },
   supportContainer: { paddingHorizontal: 0, marginTop: 30, marginBottom: 10 },
-  supportBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, backgroundColor: '#1e40af', paddingVertical: 16, borderRadius: 14, elevation: 4, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 10, shadowOffset: { width: 0, height: 4 } },
+  supportBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, paddingVertical: 16, borderRadius: 14, elevation: 4, shadowColor: theme.shadow, shadowOpacity: 0.1, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, backgroundColor: theme.primary },
   supportBtnText: { color: 'white', fontSize: 16, fontWeight: '700' },
 
   // Reviews
   reviewSection: { paddingHorizontal: 20, marginTop: 24 },
-  sectionLabel: { fontSize: 16, fontWeight: '800', color: '#1e293b', marginBottom: 16, textTransform: 'uppercase', letterSpacing: 0.5 },
-  reviewCardSmall: { backgroundColor: 'white', borderRadius: 14, padding: 14, marginBottom: 12, borderLeftWidth: 4, borderLeftColor: '#f59e0b', elevation: 2, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 5, shadowOffset: { width: 0, height: 2 } },
+  sectionLabel: { fontSize: 16, marginBottom: 16, textTransform: 'uppercase', letterSpacing: 0.5, color: theme.text },
+  reviewCardSmall: { borderRadius: 14, padding: 14, marginBottom: 12, borderLeftWidth: 4, elevation: 2, shadowColor: theme.shadow, shadowOpacity: 0.05, shadowRadius: 5, shadowOffset: { width: 0, height: 2 }, backgroundColor: theme.card, borderLeftColor: theme.accent },
   reviewTop: { flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 6 },
-  reviewRating: { fontSize: 13, fontWeight: '800', color: '#92400e' },
-  reviewTarget: { fontSize: 12, color: '#64748b' },
-  reviewTextSmall: { fontSize: 13, color: '#4b5563', lineHeight: 18, fontStyle: 'italic' },
-  reviewAuthor: { fontSize: 11, fontWeight: '700', color: '#94a3b8', textAlign: 'right', marginTop: 4 },
-  noReviewsText: { textAlign: 'center', color: '#94a3b8', fontSize: 14, marginVertical: 20 },
-  })
+  reviewRating: { fontSize: 13, fontWeight: '800' },
+  reviewTarget: { fontSize: 12, color: theme.textSecondary },
+  reviewTextSmall: { fontSize: 13, color: theme.text, lineHeight: 18, fontStyle: 'italic' },
+  reviewAuthor: { fontSize: 11, fontWeight: '700', textAlign: 'right', marginTop: 4, color: theme.textSecondary },
+  noReviewsText: { textAlign: 'center', fontSize: 14, marginVertical: 20, color: theme.textSecondary },
+})

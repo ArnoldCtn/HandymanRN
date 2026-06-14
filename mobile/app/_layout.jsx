@@ -3,17 +3,22 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
 
+import '@/services/i18n'; // Initialize i18n
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { ToastProvider } from '@/hooks/useToast';
 import { SupportListener } from '@/components/SupportListener';
 import { AuthProvider } from '@/hooks/useAuth';
+import useSettingsStore from '@/services/settingsStore';
 
 export const unstable_settings = {
   anchor: '(auth)',
 };
 
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
+  const systemColorScheme = useColorScheme();
+  const themePreference = useSettingsStore(s => s.theme);
+  
+  const colorScheme = themePreference === 'system' ? systemColorScheme : themePreference;
 
   return (
     <AuthProvider>
@@ -29,7 +34,7 @@ export default function RootLayout() {
             <Stack.Screen name="wallet" options={{ headerShown: false }} />
             <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
           </Stack>
-          <StatusBar style="auto" />
+          <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
         </ThemeProvider>
       </ToastProvider>
     </AuthProvider>

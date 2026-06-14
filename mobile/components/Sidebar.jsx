@@ -6,14 +6,15 @@ import {
 } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
-
-import Myservices from '@/app/handyman/Myservices'
-
+import { useTranslation } from 'react-i18next';
+import { useAppTheme } from '@/hooks/use-theme-color';
 
 const { width } = Dimensions.get('window');
 const SIDEBAR_WIDTH = width * 0.75;
 
 export default function Sidebar({ visible, onClose, user, isHandyman, onLogout }) {
+  const { t } = useTranslation();
+  const theme = useAppTheme();
   const router = useRouter();
   const slideAnim = useRef(new Animated.Value(-SIDEBAR_WIDTH)).current;
 
@@ -36,37 +37,38 @@ export default function Sidebar({ visible, onClose, user, isHandyman, onLogout }
   function resolveAvatar(thumbnail) {
     if (!thumbnail) return null;
     if (thumbnail.startsWith('http')) return thumbnail;
-    const base = isHandyman ? 'http://192.168.43.188:8000/media/' : 'http://192.168.1.XXX:8000/media/';
-    return `${base}${thumbnail}`;
+    return thumbnail;
   }
 
   const avatarUrl = resolveAvatar(user?.thumbnail);
 
   const menuItems = isHandyman ? [
-    { label: 'Dashboard', icon: 'grid-outline', route: '/handyman/Home' },
-    { label: 'Bookings', icon: 'calendar-outline', route: '/handyman/Bookings' },
-    { label: 'My Services', icon: 'briefcase-outline', route: '/handyman/Myservices' },
-    { label: 'Favorited By', icon: 'heart-outline', route: '/handyman/FavoritedBy' },
-    { label: 'Reviews', icon: 'star-outline', route: '/handyman/Reviews' },
-    { label: 'Notifications', icon: 'notifications-outline', route: '/handyman/Notifications' },
-    { label: 'Messages', icon: 'chatbubbles-outline', route: '/handyman/ChatsList' },
-    { label: 'Wallet', icon: 'wallet-outline', route: '/wallet?source=handyman' },
-    { label: 'Subscription', icon: 'card-outline', route: '/handyman/Subscription' },
-    { label: 'Support', icon: 'help-circle-outline', route: '/chat/support?source=handyman' },
+    { label: t('sidebar.dashboard', 'Dashboard'), icon: 'grid-outline', route: '/handyman/Home' },
+    { label: t('sidebar.bookings', 'Bookings'), icon: 'calendar-outline', route: '/handyman/Bookings' },
+    { label: t('sidebar.my_services', 'My Services'), icon: 'briefcase-outline', route: '/handyman/Myservices' },
+    { label: t('sidebar.favorited_by', 'Favorited By'), icon: 'heart-outline', route: '/handyman/FavoritedBy' },
+    { label: t('sidebar.reviews', 'Reviews'), icon: 'star-outline', route: '/handyman/Reviews' },
+    { label: t('sidebar.notifications', 'Notifications'), icon: 'notifications-outline', route: '/handyman/Notifications' },
+    { label: t('sidebar.messages', 'Messages'), icon: 'chatbubbles-outline', route: '/handyman/ChatsList' },
+    { label: t('sidebar.wallet', 'Wallet'), icon: 'wallet-outline', route: '/wallet?source=handyman' },
+    { label: t('sidebar.subscription', 'Subscription'), icon: 'card-outline', route: '/handyman/Subscription' },
+    { label: t('sidebar.support', 'Support'), icon: 'help-circle-outline', route: '/chat/support?source=handyman' },
   ] : [
-    { label: 'Home', icon: 'grid-outline', route: '/(auth)/Home' },
-    { label: 'My Bookings', icon: 'book-outline', route: '/(auth)/Mybookings' },
-    { label: 'Favorites', icon: 'heart-outline', route: '/(auth)/Favorites' },
-    { label: 'Notifications', icon: 'notifications-outline', route: '/(auth)/Notifications' },
-    { label: 'Messages', icon: 'chatbubbles-outline', route: '/(auth)/ChatsList' },
-    { label: 'Wallet', icon: 'wallet-outline', route: '/wallet' },
-    { label: 'Support', icon: 'help-circle-outline', route: '/chat/support' },
+    { label: t('sidebar.home', 'Home'), icon: 'grid-outline', route: '/(auth)/Home' },
+    { label: t('sidebar.my_bookings', 'My Bookings'), icon: 'book-outline', route: '/(auth)/Mybookings' },
+    { label: t('sidebar.favorites', 'Favorites'), icon: 'heart-outline', route: '/(auth)/Favorites' },
+    { label: t('sidebar.notifications', 'Notifications'), icon: 'notifications-outline', route: '/(auth)/Notifications' },
+    { label: t('sidebar.messages', 'Messages'), icon: 'chatbubbles-outline', route: '/(auth)/ChatsList' },
+    { label: t('sidebar.wallet', 'Wallet'), icon: 'wallet-outline', route: '/wallet' },
+    { label: t('sidebar.support', 'Support'), icon: 'help-circle-outline', route: '/chat/support' },
   ];
 
   const handleNavigate = (route) => {
     onClose();
     router.push(route);
   };
+
+  const styles = createStyles(theme);
 
   return (
     <Modal
@@ -89,10 +91,10 @@ export default function Sidebar({ visible, onClose, user, isHandyman, onLogout }
                 </Text>
               </View>
             )}
-            <Text style={styles.username}>{user?.username ?? 'Guest'}</Text>
+            <Text style={styles.username}>{user?.username ?? t('common.guest', 'Guest')}</Text>
             {isHandyman && user?.average_rating && (
               <View style={styles.ratingRow}>
-                <Ionicons name="star" size={14} color="#f59e0b" />
+                <Ionicons name="star" size={14} color={theme.accent} />
                 <Text style={styles.ratingText}>{Number(user.average_rating).toFixed(1)}</Text>
               </View>
             )}
@@ -106,7 +108,7 @@ export default function Sidebar({ visible, onClose, user, isHandyman, onLogout }
                 style={styles.menuItem}
                 onPress={() => handleNavigate(item.route)}
               >
-                <Ionicons name={item.icon} size={22} color="#4b5563" />
+                <Ionicons name={item.icon} size={22} color={theme.textSecondary} />
                 <Text style={styles.menuLabel}>{item.label}</Text>
               </TouchableOpacity>
             ))}
@@ -114,8 +116,8 @@ export default function Sidebar({ visible, onClose, user, isHandyman, onLogout }
 
           <View style={styles.footer}>
             <TouchableOpacity style={styles.logoutBtn} onPress={() => { onClose(); onLogout(); }}>
-              <Ionicons name="log-out-outline" size={22} color="#ef4444" />
-              <Text style={styles.logoutText}>Logout</Text>
+              <Ionicons name="log-out-outline" size={22} color={theme.error} />
+              <Text style={styles.logoutText}>{t('auth.logout', 'Logout')}</Text>
             </TouchableOpacity>
           </View>
         </Animated.View>
@@ -124,7 +126,7 @@ export default function Sidebar({ visible, onClose, user, isHandyman, onLogout }
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme) => StyleSheet.create({
   overlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
@@ -135,18 +137,20 @@ const styles = StyleSheet.create({
   sidebar: {
     width: SIDEBAR_WIDTH,
     height: '100%',
-    backgroundColor: 'white',
+    backgroundColor: theme.surface,
     paddingTop: 50,
     elevation: 10,
-    shadowColor: '#000',
+    shadowColor: theme.shadow,
     shadowOpacity: 0.25,
     shadowRadius: 10,
     shadowOffset: { width: 5, height: 0 },
+    borderRightWidth: 1,
+    borderColor: theme.border
   },
   header: {
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
+    borderBottomColor: theme.border,
     alignItems: 'center',
   },
   avatar: {
@@ -154,14 +158,14 @@ const styles = StyleSheet.create({
     height: 80,
     borderRadius: 40,
     marginBottom: 12,
-    borderColor:'#f59e0b',
-
+    borderColor: theme.accent,
+    borderWidth: 2
   },
   avatarPlaceholder: {
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: '#6366F1',
+    backgroundColor: theme.primary,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 12,
@@ -174,29 +178,29 @@ const styles = StyleSheet.create({
   username: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#1f2937',
+    color: theme.text,
   },
   email: {
     fontSize: 14,
-    color: '#6b7280',
+    color: theme.textSecondary,
     marginTop: 2,
   },
   ratingRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fffbeb',
+    backgroundColor: theme.accent + '11',
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#fef3c7',
+    borderColor: theme.accent + '22',
     marginTop: 4,
     gap: 4,
   },
   ratingText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#92400e',
+    color: theme.accent,
   },
   menu: {
     flex: 1,
@@ -211,13 +215,13 @@ const styles = StyleSheet.create({
   },
   menuLabel: {
     fontSize: 16,
-    color: '#374151',
+    color: theme.text,
     fontWeight: '500',
   },
   footer: {
     padding: 20,
     borderTopWidth: 1,
-    borderTopColor: '#f3f4f6',
+    borderTopColor: theme.border,
   },
   logoutBtn: {
     flexDirection: 'row',
@@ -226,7 +230,7 @@ const styles = StyleSheet.create({
   },
   logoutText: {
     fontSize: 16,
-    color: '#ef4444',
+    color: theme.error,
     fontWeight: '600',
   },
 });

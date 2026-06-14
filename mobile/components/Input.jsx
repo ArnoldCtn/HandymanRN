@@ -1,33 +1,59 @@
-import { StyleSheet, Text, View,TextInput } from 'react-native'
+import { StyleSheet, Text, View, TextInput } from 'react-native'
 import React from 'react'
+import { useAppTheme } from '@/hooks/use-theme-color'
 
-export default function Input({title,value,setValue,error,setError,secureTextEntry,keyboardType,maxLength}){
+export default function Input({ 
+  title, value, setValue, error, setError, 
+  secureTextEntry, keyboardType, maxLength,
+  multiline, numberOfLines, ...props 
+}) {
+  const theme = useAppTheme();
+
   return (
-    <View>
-      <Text style={{color:'blue', marginVertical:6,paddingLeft:16}}>
+    <View style={styles.container}>
+      <Text style={{ color: theme.primary, marginVertical: 6, paddingLeft: 16, fontWeight: '600' }}>
         {title}</Text>
       <TextInput
-      style={{backgroundColor:'#e1e2e4',borderRadius:26, height:56,
-        paddingHorizontal:16, fontSize:16,
-        borderColor:error ? '#ff5555' : 'transparent',
-        borderWidth:2 
-      }} 
-      autoCapitalize='none'
-      autoComplete='off'
-      value={value}
-      allowFontScaling={false}
-      maxLength={maxLength}
-      keyboardType={keyboardType}
-      onChangeText={text => {setValue(text) 
-      if(error){
-        setError('')
-      } 
-      }}
-      secureTextEntry={secureTextEntry}/>
-      <Text style={{color:'red', marginVertical:6,paddingLeft:16}}>
-        {error}</Text>
+        style={{
+          backgroundColor: theme.card,
+          color: theme.text,
+          borderRadius: multiline ? 16 : 26,
+          height: multiline ? (numberOfLines ? numberOfLines * 24 + 20 : 100) : 56,
+          paddingHorizontal: 16,
+          paddingTop: multiline ? 12 : 0,
+          fontSize: 16,
+          borderColor: error ? theme.error : theme.border,
+          borderWidth: 1.5,
+          textAlignVertical: multiline ? 'top' : 'center'
+        }}
+        autoCapitalize='none'
+        autoComplete='off'
+        value={value}
+        allowFontScaling={false}
+        maxLength={maxLength}
+        keyboardType={keyboardType}
+        placeholderTextColor={theme.textSecondary}
+        multiline={multiline}
+        numberOfLines={numberOfLines}
+        onChangeText={text => {
+          setValue(text)
+          if (error) {
+            setError('')
+          }
+        }}
+        secureTextEntry={secureTextEntry}
+        {...props}
+      />
+      {error ? (
+        <Text style={{ color: theme.error, marginVertical: 6, paddingLeft: 16, fontSize: 12 }}>
+          {error}</Text>
+      ) : null}
     </View>
   )
 }
 
-const styles = StyleSheet.create({})
+const styles = StyleSheet.create({
+  container: {
+    marginBottom: 5,
+  }
+})
