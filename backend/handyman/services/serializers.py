@@ -1,5 +1,11 @@
 from rest_framework import serializers
-from .models import Service
+from .models import Service, Category
+
+class CategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Category
+        fields = ['id','service','name','description','price','created_at']
+        read_only_fields = ['id','created_at']
 
 class ServiceSerializer(serializers.ModelSerializer):
     image = serializers.SerializerMethodField()

@@ -1,5 +1,5 @@
-// app/chat/[booking_id].jsx — SHARED chat for both user and handyman
-import React, { useEffect, useState, useRef } from 'react';
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              // app/chat/[booking_id].jsx — SHARED chat for both user and handyman
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import {
   View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet,
   KeyboardAvoidingView, Platform, SafeAreaView, Alert, ActivityIndicator, Image, Modal,
@@ -8,10 +8,12 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function ChatScreen() {
   const { booking_id, source } = useLocalSearchParams();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
 
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
@@ -20,6 +22,8 @@ export default function ChatScreen() {
   const [myUsername, setMyUsername] = useState('');
   const [fullScreenImage, setFullScreenImage] = useState(null);
   const [showScrollButton, setShowScrollButton] = useState(false);
+  const [typingUser, setTypingUser] = useState('');
+  const typingTimeout = useRef(null);
 
   // Explicit role from navigation — never guess from tokens
   const isHandyman = source === 'handyman';
@@ -82,11 +86,19 @@ export default function ChatScreen() {
           return;
         }
 
-        const wsUrl = `ws://192.168.43.188:8000/ws/chat/booking/${booking_id}/?token=${token}`;
+        const wsUrl = `${API_BASE_URL.replace('http', 'ws')}/ws/chat/booking/${booking_id}/?token=${token}`;
         ws.current = new WebSocket(wsUrl);
 
         ws.current.onmessage = (event) => {
           const data = JSON.parse(event.data);
+          
+          if (data.type === 'typing') {
+            setTypingUser(data.username);
+            if (typingTimeout.current) clearTimeout(typingTimeout.current);
+            typingTimeout.current = setTimeout(() => setTypingUser(''), 3000);
+            return;
+          }
+          
           // Only add if not already in state to prevent duplicates
           setMessages((prev) => {
             if (prev.some(m => m.id === data.message.id)) return prev;
@@ -99,7 +111,10 @@ export default function ChatScreen() {
     };
 
     connectWebSocket();
-    return () => { if (ws.current) ws.current.close(); };
+    return () => { 
+      if (ws.current) ws.current.close(); 
+      if (typingTimeout.current) clearTimeout(typingTimeout.current);
+    };
   }, [booking_id]);
 
   const sendMessage = (text, image_url = null) => {
@@ -108,6 +123,28 @@ export default function ChatScreen() {
     ws.current.send(JSON.stringify({ message: text, image_url: image_url }));
     setNewMessage('');
   };
+
+  // Typing indicator — debounced
+  const handleTyping = useCallback((text) => {
+    setNewMessage(text);
+    
+    // Clear previous timeout
+    if (typingTimeout.current) clearTimeout(typingTimeout.current);
+    
+    if (ws.current && ws.current.readyState === WebSocket.OPEN) {
+      if (text.trim()) {
+        ws.current.send(JSON.stringify({ type: 'typing', typing: true }));
+        // Send typing:false after 2 seconds of no typing
+        typingTimeout.current = setTimeout(() => {
+          if (ws.current && ws.current.readyState === WebSocket.OPEN) {
+            ws.current.send(JSON.stringify({ type: 'typing', typing: false }));
+          }
+        }, 2000);
+      } else {
+        ws.current.send(JSON.stringify({ type: 'typing', typing: false }));
+      }
+    }
+  }, []);
 
   const uploadAndSendMessage = async (uri, filename, type) => {
     const formData = new FormData();
@@ -180,6 +217,9 @@ export default function ChatScreen() {
     const isMyMessage = item.sender_username === myUsername;
     return (
       <View style={[styles.messageBubble, isMyMessage ? styles.myMessage : styles.theirMessage]}>
+        {!isMyMessage && (
+          <Text style={styles.senderName}>{item.sender_username || 'Unknown'}</Text>
+        )}
         {item.image_url ? (
           <TouchableOpacity onPress={() => setFullScreenImage(item.image_url)}>
             <Image source={{ uri: item.image_url }} style={styles.messageImage} />
@@ -202,38 +242,50 @@ export default function ChatScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}><Ionicons name="arrow-back" size={28} color="#1F2937" /></TouchableOpacity>
-        <Image source={{ uri: avatarUrl }} style={styles.headerAvatar} />
-        <View style={styles.headerInfo}><Text style={styles.headerName}>{otherPersonName || '...'}</Text></View>
-      </View>
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+        style={{ flex: 1 }}
+      >
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()}><Ionicons name="arrow-back" size={28} color="#1F2937" /></TouchableOpacity>
+          <Image source={{ uri: avatarUrl }} style={styles.headerAvatar} />
+          <View style={styles.headerInfo}><Text style={styles.headerName}>{otherPersonName || '...'}</Text></View>
+        </View>
 
-      <FlatList 
-        ref={flatListRef} 
-        data={messages} 
-        keyExtractor={(item, index) => item.id?.toString() || index.toString()} 
-        renderItem={renderMessage} 
-        contentContainerStyle={styles.messagesList}
-        onContentSizeChange={scrollToBottom}
-        onLayout={scrollToBottom}
-        onScroll={({nativeEvent}) => {
-            const isAtBottom = nativeEvent.contentOffset.y + nativeEvent.layoutMeasurement.height >= nativeEvent.contentSize.height - 100;
-            setShowScrollButton(!isAtBottom);
-        }}
-        scrollEventThrottle={400}
-      />
+        <FlatList 
+          ref={flatListRef} 
+          data={messages} 
+          keyExtractor={(item, index) => item.id?.toString() || index.toString()} 
+          renderItem={renderMessage} 
+          contentContainerStyle={styles.messagesList}
+          onContentSizeChange={scrollToBottom}
+          onLayout={scrollToBottom}
+          onScroll={({nativeEvent}) => {
+              const isAtBottom = nativeEvent.contentOffset.y + nativeEvent.layoutMeasurement.height >= nativeEvent.contentSize.height - 100;
+              setShowScrollButton(!isAtBottom);
+          }}
+          scrollEventThrottle={400}
+        />
 
-      {showScrollButton && (
-          <TouchableOpacity style={styles.scrollButton} onPress={scrollToBottom}>
-              <Ionicons name="chevron-down" size={24} color="white" />
-          </TouchableOpacity>
-      )}
+        {showScrollButton && (
+            <TouchableOpacity style={styles.scrollButton} onPress={scrollToBottom}>
+                <Ionicons name="chevron-down" size={24} color="white" />
+            </TouchableOpacity>
+        )}
 
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.inputContainer}>
-        <View style={styles.inputWrapper}>
-          <TouchableOpacity onPress={handleImagePicker} style={styles.iconButton}><Ionicons name="image" size={24} color="#6366F1" /></TouchableOpacity>
-          <TextInput style={styles.input} placeholder="Type a message..." value={newMessage} onChangeText={setNewMessage} multiline />
-          <TouchableOpacity style={styles.sendButton} onPress={() => sendMessage(newMessage)} disabled={!newMessage.trim()}><Ionicons name="send" size={24} color={newMessage.trim() ? '#6366F1' : '#9ca3af'} /></TouchableOpacity>
+        {typingUser ? (
+          <View style={styles.typingContainer}>
+            <Text style={styles.typingText}>{typingUser} is typing...</Text>
+          </View>
+        ) : null}
+
+        <View style={[styles.inputContainer, { paddingBottom: Math.max(insets.bottom, 12) }]}>
+          <View style={styles.inputWrapper}>
+            <TouchableOpacity onPress={handleImagePicker} style={styles.iconButton}><Ionicons name="image" size={24} color="#6366F1" /></TouchableOpacity>
+            <TextInput style={styles.input} placeholder="Type a message..." value={newMessage} onChangeText={handleTyping} multiline />
+            <TouchableOpacity style={styles.sendButton} onPress={() => sendMessage(newMessage)} disabled={!newMessage.trim()}><Ionicons name="send" size={24} color={newMessage.trim() ? '#6366F1' : '#9ca3af'} /></TouchableOpacity>
+          </View>
         </View>
       </KeyboardAvoidingView>
 
@@ -271,4 +323,7 @@ const styles = StyleSheet.create({
   closeButton: { position: 'absolute', top: 50, right: 20, zIndex: 1 },
   fullScreenImage: { width: '100%', height: '80%' },
   scrollButton: { position: 'absolute', bottom: 100, right: 20, backgroundColor: '#6366F1', borderRadius: 20, padding: 8, elevation: 5 },
+  senderName: { fontSize: 11, fontWeight: '700', color: '#6366F1', marginBottom: 3 },
+  typingContainer: { paddingHorizontal: 16, paddingVertical: 6, backgroundColor: '#f1f5f9' },
+  typingText: { fontSize: 12, color: '#6366F1', fontStyle: 'italic' },
 });

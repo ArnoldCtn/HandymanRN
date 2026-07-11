@@ -22,25 +22,11 @@ export default function JobPicturesScreen() {
   const handyman = useHandymanGlobal(s => s.handyman);
   const refreshHandyman = useHandymanGlobal(s => s.refreshHandyman);
   const [uploading, setUploading] = useState(false);
+  const [failedImages, setFailedImages] = useState({});
 
   const pictures = handyman?.job_pictures || [];
-  const subscription = handyman?.subscription_level || 'free';
-
-  const limits = {
-    free: 2,
-    pro: 6,
-    premium: Infinity
-  };
-
-  const limit = limits[subscription];
-  const remaining = limit - pictures.length;
 
   async function handlePickImage() {
-    if (pictures.length >= limit) {
-      Alert.alert(t('job_pictures.limit_reached', "Limit Reached"), t('job_pictures.limit_msg', { subscription, limit }, `Your ${subscription} subscription allows a maximum of ${limit} pictures.`));
-      return;
-    }
-
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
       Alert.alert(t('common.error'), t('job_pictures.permission_denied', 'We need access to your photos to upload them.'));
@@ -50,7 +36,7 @@ export default function JobPicturesScreen() {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
-      quality: 0.7,
+      quality: 0.8,
       base64: true,
     });
 
@@ -113,20 +99,10 @@ export default function JobPicturesScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.infoCard}>
-          <Text style={styles.subscriptionLabel}>{t('job_pictures.current_plan', 'Current Plan')}: <Text style={styles.planName}>{subscription.toUpperCase()}</Text></Text>
-          <Text style={styles.limitText}>
-            {limit === Infinity ? t('job_pictures.unlimited', "Unlimited pictures") : `${t('job_pictures.limit', 'Limit')}: ${pictures.length} / ${limit} ${t('job_pictures.pictures', 'pictures')}`}
-          </Text>
-          {limit !== Infinity && remaining > 0 && (
-            <Text style={styles.remainingText}>{t('job_pictures.remaining', { count: remaining }, `You can add ${remaining} more pictures.`)}</Text>
-          )}
-        </View>
-
         <TouchableOpacity 
-          style={[styles.uploadBtn, (pictures.length >= limit || uploading) && styles.uploadBtnDisabled]}
+          style={[styles.uploadBtn, uploading && styles.uploadBtnDisabled]}
           onPress={handlePickImage}
-          disabled={uploading || pictures.length >= limit}
+          disabled={uploading}
         >
           {uploading ? (
             <ActivityIndicator color="white" />
@@ -138,12 +114,24 @@ export default function JobPicturesScreen() {
           )}
         </TouchableOpacity>
 
-        <Text style={styles.sectionTitle}>{t('handyman_profile.portfolio')}</Text>
+        <Text style={styles.sectionTitle}>{t('handyman_profile.portfolio', 'Portfolio')}</Text>
 
         <View style={styles.grid}>
           {pictures.map((item) => (
             <View key={item.id} style={styles.imageWrapper}>
-              <Image source={{ uri: item.image }} style={styles.image} />
+              {failedImages[item.id] ? (
+                <View style={styles.imageFailed}>
+                  <Ionicons name="image-outline" size={32} color={theme.textSecondary} />
+                </View>
+              ) : (
+                <Image
+                  source={{ uri: item.image, cache: 'force-cache' }}
+                  style={styles.image}
+                  resizeMode="cover"
+                  resizeMethod="resize"
+                  onError={() => setFailedImages(prev => ({ ...prev, [item.id]: true }))}
+                />
+              )}
               <TouchableOpacity 
                 style={styles.deleteBtn}
                 onPress={() => handleDelete(item.id)}
@@ -184,19 +172,6 @@ const createStyles = (theme) => StyleSheet.create({
   
   content: { padding: 16 },
   
-  infoCard: { 
-    backgroundColor: theme.surface, 
-    padding: 16, 
-    borderRadius: 16, 
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: theme.border
-  },
-  subscriptionLabel: { fontSize: 14, color: theme.textSecondary, marginBottom: 4 },
-  planName: { fontWeight: '800', color: theme.primary },
-  limitText: { fontSize: 16, fontWeight: '700', color: theme.text },
-  remainingText: { fontSize: 13, color: theme.success, marginTop: 4, fontWeight: '600' },
-  
   uploadBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -213,7 +188,7 @@ const createStyles = (theme) => StyleSheet.create({
   sectionTitle: { fontSize: 17, fontWeight: '800', color: theme.text, marginBottom: 16 },
   
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 16 },
-  imageWrapper: { 
+   imageWrapper: { 
     width: ITEM_SIZE, 
     height: ITEM_SIZE, 
     borderRadius: 12, 
@@ -221,7 +196,12 @@ const createStyles = (theme) => StyleSheet.create({
     backgroundColor: theme.border,
     position: 'relative'
   },
-  image: { width: '100%', height: '100%' },
+  image: { width: '100%', height: '100%', backgroundColor: theme.border },
+  imageFailed: {
+    width: '100%', height: '100%',
+    alignItems: 'center', justifyContent: 'center',
+    backgroundColor: theme.border,
+  },
   deleteBtn: {
     position: 'absolute',
     top: 8,

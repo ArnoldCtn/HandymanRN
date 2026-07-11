@@ -42,8 +42,8 @@ class ChatImageUploadView(APIView):
                 if not conv: conv = SupportConversation.objects.create(user=user)
                 msg = SupportMessage.objects.create(conversation=conv, sender_user=user, image=image)
 
-            # Return the relative URL
-            return Response({'image_url': msg.image.url}, status=status.HTTP_201_CREATED)
+            # Return the absolute URL
+            return Response({'image_url': request.build_absolute_uri(msg.image.url)}, status=status.HTTP_201_CREATED)
 
         else:
             # Handle booking image
@@ -221,6 +221,7 @@ class SupportChatHistoryView(APIView):
                 'message': msg.message,
                 'is_from_admin': msg.is_from_admin,
                 'sender_username': sender_name,
+                'image_url': request.build_absolute_uri(msg.image.url) if msg.image else None,
                 'created_at': msg.created_at.strftime("%Y-%m-%d %H:%M")
             })
 

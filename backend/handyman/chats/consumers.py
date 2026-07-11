@@ -1,4 +1,4 @@
-# chats/consumers.py
+                                         # chats/consumers.py
 import json
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
@@ -26,6 +26,18 @@ class BookingChatConsumer(AsyncWebsocketConsumer):
 
     async def receive(self, text_data):
         data = json.loads(text_data)
+        
+        # Handle typing indicator
+        if data.get('type') == 'typing':
+            await self.channel_layer.group_send(
+                self.room_group_name,
+                {
+                    'type': 'typing_indicator',
+                    'username': self.scope['user'].username,
+                }
+            )
+            return
+
         message = data.get('message', '')
         image_url = data.get('image_url')
 
@@ -43,6 +55,12 @@ class BookingChatConsumer(AsyncWebsocketConsumer):
                 'message': saved_message,
             }
         )
+
+    async def typing_indicator(self, event):
+        await self.send(text_data=json.dumps({
+            'type': 'typing',
+            'username': event['username'],
+        }))
 
     async def chat_message(self, event):
         await self.send(text_data=json.dumps({

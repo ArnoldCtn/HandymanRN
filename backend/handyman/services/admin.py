@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Service
+from .models import Service, Category
 from django.utils.html import format_html
 # from django.db import models
 
@@ -33,3 +33,28 @@ class ServiceAdmin(admin.ModelAdmin):
         }),
         
     )
+
+
+@admin.register(Category)
+class CategoryAdmin(admin.ModelAdmin):
+    list_display = ['name', 'service', 'description_preview', 'image_preview', 'created_at']
+    list_filter = ['service']
+    search_fields = ['name', 'description', 'service__name']
+    readonly_fields = ['image_preview', 'created_at']
+    fieldsets = (
+        ('Category Info', {
+            'fields': ('service', 'name', 'description')
+        }),
+        ('Image', {
+            'fields': ('image', 'image_preview')
+        }),
+    )
+
+    def description_preview(self, obj):
+        return (obj.description or '')[:60]
+    description_preview.short_description = 'Description'
+
+    def image_preview(self, obj):
+        # Category model no longer has an image field
+        return '—'
+    image_preview.short_description = 'Image'

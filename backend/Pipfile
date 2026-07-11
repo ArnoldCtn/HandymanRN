@@ -15,6 +15,8 @@ python-dotenv = "*"
 gunicorn = "*"
 whitenoise = "*"
 dj-database-url = "*"
+channels = "*"
+django-cors-headers = "*"
 
 [dev-packages]
 

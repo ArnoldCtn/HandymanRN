@@ -7,6 +7,11 @@ const YOUR_LAN_IP = process.env.EXPO_PUBLIC_API_URL
 
 function getBaseURL() {
   if (Platform.OS === 'web') return `http://localhost:${DJANGO_PORT}`
+  // Fallback if env var missing
+  if (!YOUR_LAN_IP) {
+    console.warn('[HandymanAPI] EXPO_PUBLIC_API_URL not set – falling back to http://10.0.2.2:8000')
+    return 'http://10.0.2.2:8000'
+  }
   return YOUR_LAN_IP
 }
 

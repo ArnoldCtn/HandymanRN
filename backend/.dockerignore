@@ -1,0 +1,15 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.git/
+.github/
+.vscode/
+Pipfile
+Pipfile.lock
+db.sqlite3
+media/
+static/
+staticfiles/
+.env
+.env.example

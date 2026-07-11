@@ -1,4 +1,5 @@
 & C:\Users\ArnoldCtn\.virtualenvs\backend-81P7jbCI\Scripts\Activate.ps1
+& C:\Users\ArnoldCtn\.virtualenvs\backend-yp9rZfW9\Scripts\Activate.ps1
 
 python manage.py runserver 0.0.0.0:8000
 
@@ -130,26 +131,130 @@ Gold  Peace of Mind 7,000 XAF     1 Free Inspection + Emergency Priority
 
 
 
-The text you are seeing, like 2026-06-10T03:29:28.561641Z, represents the timestamp of when
-  that specific message was created and saved in the database.
+forgot password ws.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "C:\Users\ArnoldCtn\Desktop\Handyman RN\HandymanRN\backend\handyman\users\views.py", line 287, in post
+    send_mail(
+    ~~~~~~~~~^
+        'Password Reset OTP',
+        ^^^^^^^^^^^^^^^^^^^^^
+    ...<11 lines>...
+        """
+        ^^^
+    )
+    ^
+  File "C:\Users\ArnoldCtn\.virtualenvs\backend-yp9rZfW9\Lib\site-packages\django\utils\deprecation.py", line 268, in wrapper
+    return func(*args, **kwargs)
+  File "C:\Users\ArnoldCtn\.virtualenvs\backend-yp9rZfW9\Lib\site-packages\django\core\mail\__init__.py", line 108, in send_mail
+    return mail.send()
+           ~~~~~~~~~^^
+  File "C:\Users\ArnoldCtn\.virtualenvs\backend-yp9rZfW9\Lib\site-packages\django\core\mail\message.py", line 358, in send
+    return self.get_connection(fail_silently).send_messages([self])
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^
+  File "C:\Users\ArnoldCtn\.virtualenvs\backend-yp9rZfW9\Lib\site-packages\django\core\mail\backends\smtp.py", line 148, in send_messages
+    new_conn_created = self.open()
+  File "C:\Users\ArnoldCtn\.virtualenvs\backend-yp9rZfW9\Lib\site-packages\django\core\mail\backends\smtp.py", line 94, in open
+    self._partial_connection = self.connection_class(
+                               ~~~~~~~~~~~~~~~~~~~~~^
+        self.host, self.port, **connection_params
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Python314\Lib\smtplib.py", line 261, in __init__
+    (code, msg) = self.connect(host, port)
+                  ~~~~~~~~~~~~^^^^^^^^^^^^
+  File "C:\Python314\Lib\smtplib.py", line 348, in connect
+    self.sock = self._get_socket(host, port, self.timeout)
+                ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python314\Lib\smtplib.py", line 318, in _get_socket
+    return socket.create_connection((host, port), timeout,
+           ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+                                    self.source_address)
+                                    ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python314\Lib\socket.py", line 850, in create_connection
+    for res in getaddrinfo(host, port, 0, SOCK_STREAM):
+               ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python314\Lib\socket.py", line 987, in getaddrinfo
+    for res in _socket.getaddrinfo(host, port, family, type, proto, flags):
+               ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+socket.gaierror: [Errno 11001] getaddrinfo failed
+HTTP POST /users/password-reset/request/ 500 [0.12, 192.168.43.121:59006]
+[ERROR] django.channels.server — HTTP POST /users/password-reset/request/ 500 [0.12, 192.168.43.121:59006]
+[HandymanSignIn] Attempting login for username/email: "arnoldctn@gmail.com"
+[HandymanSignIn] Found handyman: id=6, active=True
+[HandymanSignIn] Login successful for: "ngounte clinton"
+HTTP POST /handymen/signin/ 200 [1.68, 192.168.43.121:59006]
+[INFO] django.channels.server — HTTP POST /handymen/signin/ 200 [1.68, 192.168.43.121:59006]
 
-  Here is the breakdown of that format:
 
-   * 2026-06-10: The Date (Year-Month-Day).
-   * T: A separator between the date and the time.
-   * 03:29:28: The Time (Hours:Minutes:Seconds) in UTC (Coordinated Universal Time).
-   * .561641: The fractional seconds (microseconds), providing high precision.
-   * Z: Stands for "Zulu time," which is another way of indicating that the time is in UTC.
+for payment: error pymrsombb sdk not installed (forgot password ws.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "C:\Users\ArnoldCtn\Desktop\Handyman RN\HandymanRN\backend\handyman\users\views.py", line 287, in post
+    send_mail(
+    ~~~~~~~~~^
+        'Password Reset OTP',
+        ^^^^^^^^^^^^^^^^^^^^^
+    ...<11 lines>...
+        """
+        ^^^
+    )
+    ^
+  File "C:\Users\ArnoldCtn\.virtualenvs\backend-yp9rZfW9\Lib\site-packages\django\utils\deprecation.py", line 268, in wrapper
+    return func(*args, **kwargs)
+  File "C:\Users\ArnoldCtn\.virtualenvs\backend-yp9rZfW9\Lib\site-packages\django\core\mail\__init__.py", line 108, in send_mail
+    return mail.send()
+           ~~~~~~~~~^^
+  File "C:\Users\ArnoldCtn\.virtualenvs\backend-yp9rZfW9\Lib\site-packages\django\core\mail\message.py", line 358, in send
+    return self.get_connection(fail_silently).send_messages([self])
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^
+  File "C:\Users\ArnoldCtn\.virtualenvs\backend-yp9rZfW9\Lib\site-packages\django\core\mail\backends\smtp.py", line 148, in send_messages
+    new_conn_created = self.open()
+  File "C:\Users\ArnoldCtn\.virtualenvs\backend-yp9rZfW9\Lib\site-packages\django\core\mail\backends\smtp.py", line 94, in open
+    self._partial_connection = self.connection_class(
+                               ~~~~~~~~~~~~~~~~~~~~~^
+        self.host, self.port, **connection_params
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Python314\Lib\smtplib.py", line 261, in __init__
+    (code, msg) = self.connect(host, port)
+                  ~~~~~~~~~~~~^^^^^^^^^^^^
+  File "C:\Python314\Lib\smtplib.py", line 348, in connect
+    self.sock = self._get_socket(host, port, self.timeout)
+                ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python314\Lib\smtplib.py", line 318, in _get_socket
+    return socket.create_connection((host, port), timeout,
+           ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+                                    self.source_address)
+                                    ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python314\Lib\socket.py", line 850, in create_connection
+    for res in getaddrinfo(host, port, 0, SOCK_STREAM):
+               ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python314\Lib\socket.py", line 987, in getaddrinfo
+    for res in _socket.getaddrinfo(host, port, family, type, proto, flags):
+               ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+socket.gaierror: [Errno 11001] getaddrinfo failed
+HTTP POST /users/password-reset/request/ 500 [0.12, 192.168.43.121:59006]
+[ERROR] django.channels.server — HTTP POST /users/password-reset/request/ 500 [0.12, 192.168.43.121:59006]
+[HandymanSignIn] Attempting login for username/email: "arnoldctn@gmail.com"
+[HandymanSignIn] Found handyman: id=6, active=True
+[HandymanSignIn] Login successful for: "ngounte clinton"
+HTTP POST /handymen/signin/ 200 [1.68, 192.168.43.121:59006]
+[INFO] django.channels.server — HTTP POST /handymen/signin/ 200 [1.68, 192.168.43.121:59006]
+[INFO] payments.services — [process_payment_sync] Payment FAILED | payment=3 | code=SDK_MISSING | error=pymesomb SDK not installed. Please run: pip install pymesomb
+[INFO] bookings.views — [PAYMENT] Result for booking 2: success=False
+Payment Required: /bookings/2/action/
+[WARNING] django.request — Payment Required: /bookings/2/action/
+HTTP PATCH /bookings/2/action/ 402 [0.16, 192.168.43.121:59006]
+[WARNING] django.channels.server — HTTP PATCH /bookings/2/action/ 402 [0.16, 192.168.43.121:59006]
+HTTP GET /notifications/unread-count/ 200 [0.08, 192.168.43.121:36402]
+[INFO] django.channels.server — HTTP GET /notifications/unread-count/ 200 [0.08, 192.168.43.121:36402]
+HTTP GET /chats/my-chats/ 200 [0.11, 192.168.43.121:59006]
+[INFO] django.channels.server — HTTP GET /chats/my-chats/ 200 [0.11, 192.168.43.121:59006]
+HTTP GET /notifications/unread-count/ 200 [0.08, 192.168.43.1:56504]
+[INFO] django.channels.server — HTTP GET /notifications/unread-count/ 200 [0.08, 192.168.43.1:56504]
+HTTP GET /chats/my-chats/ 200 [0.12, 192.168.43.1:56506]
+[INFO] django.channels.server — HTTP GET /chats/my-chats/ 200 [0.12, 192.168.43.1:56506]
 
-  Why is it appearing on images?
-  The code I implemented for rendering messages currently displays the created_at timestamp for
-  every message bubble. When an image is sent, it is treated as a message object that includes
-  its image_url and this created_at timestamp.
 
-  If you don't want this raw timestamp appearing under the images, I can easily modify the
-  renderMessage function in [booking_id].jsx to format it more nicely (e.g., just showing the
-  time, like "03:29 AM") or hide the timestamp specifically for image messages. Let me know if
-  you would like me to adjust that display!
-
-
- perform a simple favorites functionality, such that  a user goes in [@[id].jsx](file:///C:/Users/ArnoldCtn/Desktop/Handyman%20RN/HandymanRN/mobile/app/(auth)/handyman-Profile/[id].jsx) , hanydman profile page where they perform booking, add a heart icon such that once clicked it toggle added to favorites simply. and in side bar and profile views a Favorites button to go to a favorites page with all what they added if actually having.(handyman name, profile picture, services, location,age,gender etc all neccesary info) and when clicking each handyman card there, they are liniked corresponding page for booking. and in handyman side still in side bar and profile pages, a favorites butoon where they will go and see all people who added them as favorites just. without interactions. and the admin a view of each favorite relation.  ensure correct database setting.  ACT AS AN EXPERT AND DONT MODIFY UNRELATED STUFFS. do all simply. just create the favorites django app.
+for payment: error pymrsombb sdk not installed)

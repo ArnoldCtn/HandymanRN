@@ -1,0 +1,47 @@
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: handyman_db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - handyman_network
+
+  redis:
+    image: redis:7-alpine
+    container_name: handyman_redis
+    ports:
+      - "6379:6379"
+    networks:
+      - handyman_network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: handyman_backend
+    command: daphne -b 0.0.0.0 -p 8000 handyman.asgi:application
+    volumes:
+      - ./backend:/app
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./backend/.env.docker
+    depends_on:
+      - db
+      - redis
+    networks:
+      - handyman_network
+
+volumes:
+  postgres_data:
+
+networks:
+  handyman_network:
+    driver: bridge

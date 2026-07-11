@@ -59,13 +59,41 @@ class User(AbstractUser):
 
 
 class PasswordResetOTP(models.Model):
+    USER_TYPE_CHOICES = [
+        ('user', 'User'),
+        ('handyman', 'Handyman'),
+    ]
+    
     email = models.EmailField()
     otp_code = models.CharField(max_length=6)
     expires_at = models.DateTimeField()
     created_at = models.DateTimeField(auto_now_add=True)
     
+    # Tracking fields
+    user_type = models.CharField(max_length=20, choices=USER_TYPE_CHOICES, default='user')
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.TextField(null=True, blank=True)
+    
+    # Security fields
+    attempts = models.IntegerField(default=0)
+    max_attempts = models.IntegerField(default=3)
+    is_used = models.BooleanField(default=False)
+    verified_at = models.DateTimeField(null=True, blank=True)
+    
     def is_expired(self):
         return timezone.now() > self.expires_at
+    
+    def is_locked(self):
+        return self.attempts >= self.max_attempts
+    
+    def increment_attempts(self):
+        self.attempts += 1
+        self.save(update_fields=['attempts'])
+    
+    def mark_as_used(self):
+        self.is_used = True
+        self.verified_at = timezone.now()
+        self.save(update_fields=['is_used', 'verified_at'])
 
     def save(self, *args, **kwargs):
         if not self.otp_code:

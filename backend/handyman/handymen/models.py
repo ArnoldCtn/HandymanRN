@@ -47,13 +47,6 @@ class HandymanManager(BaseUserManager):
 # ── Model ─────────────────────────────────────────────────
 class Handyman(AbstractBaseUser, PermissionsMixin):
 
-    SUBSCRIPTION_CHOICES = [
-        ('free', 'Free'),
-        ('pro', 'Pro'),
-        ('premium', 'Premium'),
-        
-    ]
-
     GENDER_CHOICES = [
         ('male', 'Male'),
         ('female', 'Female'),
@@ -134,6 +127,13 @@ class Handyman(AbstractBaseUser, PermissionsMixin):
         related_name='handymen'
     )
 
+    # MANY categories per handyman — sub-types within their services
+    categories = models.ManyToManyField(
+        'services.Category',
+        blank=True,
+        related_name='handymen'
+    )
+
     average_rating = models.DecimalField(
         max_digits=3,decimal_places=2,null=True,blank=True,
                 help_text="Average rating from 1.00 to 10.00"
@@ -149,12 +149,6 @@ class Handyman(AbstractBaseUser, PermissionsMixin):
     is_available = models.BooleanField(default=True)
     is_verified  = models.BooleanField(default=False)  # admin approves
 
-
-    subscription_level = models.CharField(
-        max_length=20, 
-        choices=SUBSCRIPTION_CHOICES, 
-        default='free'
-    )
 
     # ── 2FA ──────────────────────────────────────────────
     two_fa_enabled = models.BooleanField(default=False)

@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "cd2e89a6aec7370b20d1ad0e27a27bdd86c91218b247175f0edfe75e6d0bab8d"
+            "sha256": "a3898be2fae2ec39aeb1b71d0f979c103e8875ad818ecd404878f7c2c0604302"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -137,6 +137,15 @@
             ],
             "markers": "python_version >= '3.9'",
             "version": "==2.0.0"
+        },
+        "channels": {
+            "hashes": [
+                "sha256:f2bb6bfb73ad7fb4705041d07613c7b4e69528f01ef8cb9fb6c21d9295f15667",
+                "sha256:fef47e9055a603900cf16cef85f050d522d9ac4b3daccf24835bd9580705c176"
+            ],
+            "index": "pypi",
+            "markers": "python_version >= '3.9'",
+            "version": "==4.3.2"
         },
         "charset-normalizer": {
             "hashes": [
@@ -369,6 +378,15 @@
             "index": "pypi",
             "markers": "python_version >= '3.10'",
             "version": "==8.3.1"
+        },
+        "django-cors-headers": {
+            "hashes": [
+                "sha256:15c7f20727f90044dcee2216a9fd7303741a864865f0c3657e28b7056f61b449",
+                "sha256:fe5d7cb59fdc2c8c646ce84b727ac2bca8912a247e6e68e1fb507372178e59e8"
+            ],
+            "index": "pypi",
+            "markers": "python_version >= '3.9'",
+            "version": "==4.9.0"
         },
         "django-formtools": {
             "hashes": [

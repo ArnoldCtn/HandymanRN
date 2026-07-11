@@ -3,7 +3,7 @@ import {
   SafeAreaView, ScrollView, StyleSheet, Text,
   TouchableOpacity, View, ActivityIndicator
 } from 'react-native'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useRouter } from 'expo-router'
 import * as ImagePicker from 'expo-image-picker'
 import Ionicons from '@expo/vector-icons/Ionicons'
@@ -48,13 +48,24 @@ export default function HandymanEditProfileScreen() {
   const [profilePicture, setProfilePicture] = useState(null)
 
   const [services,     setServices]    = useState([])
+  const [categories,   setCategories]  = useState([])
   const [locations,    setLocations]   = useState([])
   const [selServices,  setSelServices] = useState(
     handyman?.services?.map(s => s.id ?? s) ?? []
   )
-  const [selLocation, setSelLocation] = useState(
-    handyman?.location?.id ?? handyman?.location ?? null
+  const [selCategories,setSelCategories] = useState(
+    handyman?.categories?.map(c => c.id ?? c) ?? []
   )
+  
+  // Robustly determine initial location ID
+  const initialLocation = useMemo(() => {
+    if (handyman?.location) {
+      return typeof handyman.location === 'object' ? handyman.location.id : handyman.location;
+    }
+    return null;
+  }, [handyman?.location]);
+
+  const [selLocation, setSelLocation] = useState(initialLocation);
   const [availability, setAvailability] = useState(
     handyman?.availability ?? Object.fromEntries(DAYS.map(d => [d.key, []]))
   )
@@ -77,11 +88,13 @@ export default function HandymanEditProfileScreen() {
   useEffect(() => {
     async function load() {
       try {
-        const [sRes, lRes] = await Promise.all([
+        const [sRes, cRes, lRes] = await Promise.all([
           handymanApi.get('/handymen/services/'),
+          handymanApi.get('/services/categories/'),
           handymanApi.get('/handymen/locations/'),
         ])
         setServices(sRes.data)
+        setCategories(cRes.data)
         setLocations(lRes.data)
       } catch (e) {
         console.log('[EditProfile] load options error:', e.message)
@@ -139,6 +152,7 @@ export default function HandymanEditProfileScreen() {
 
   updateData.availability = JSON.stringify(availability);
   updateData.services = selServices;
+  updateData.categories = selCategories;
 
   if (profilePicture) {
     try {
@@ -287,10 +301,36 @@ export default function HandymanEditProfileScreen() {
             })}
           </View>
 
+          <Text style={styles.sectionTitle}>{t('handyman_profile.categories', 'Categories')}</Text>
+          <View style={styles.chipGrid}>
+            {categories.map(c => {
+              const selected = selCategories.includes(c.id)
+              return (
+                <TouchableOpacity
+                  key={c.id}
+                  style={[styles.chip, selected && styles.chipActive]}
+                  onPress={() => {
+                    setSelCategories(prev =>
+                      prev.includes(c.id) ? prev.filter(x => x !== c.id) : [...prev, c.id]
+                    )
+                  }}
+                >
+                  <Ionicons name="pricetag-outline" size={13}
+                    color={selected ? 'white' : theme.textSecondary} />
+                  <Text style={[styles.chipText, selected && styles.chipTextActive]}>
+                    {c.name}
+                  </Text>
+                  {selected && <Ionicons name="checkmark" size={13} color="white" />}
+                </TouchableOpacity>
+              )
+            })}
+          </View>
+
           <Text style={styles.sectionTitle}>{t('handyman_profile.location')}</Text>
           <View style={styles.chipGrid}>
             {locations.map(l => {
-              const selected = selLocation === l.id
+              // Convert both to string to ensure reliable comparison
+              const selected = String(selLocation) === String(l.id)
 
               return (
                 <TouchableOpacity

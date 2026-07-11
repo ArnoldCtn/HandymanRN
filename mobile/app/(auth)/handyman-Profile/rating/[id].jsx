@@ -10,7 +10,8 @@ import {
   TextInput,
   ActivityIndicator,
   Dimensions,
-  Platform
+  Platform,
+  KeyboardAvoidingView
 } from 'react-native';
 import { Rating } from '@kolking/react-native-rating';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -162,123 +163,133 @@ const RatingPage = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()}>
-            <Text style={styles.backButton}>← Back</Text>
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Rate & Review</Text>
-          <View style={styles.placeholder} />
-        </View>
-
-        {/* Handyman Profile Card */}
-        <View style={styles.profileCard}>
-          <View style={styles.profileHeader}>
-            <Image 
-              source={{ 
-                uri: avatarUrl || 'https://ui-avatars.com/api/?name=' + handyman.username + '&background=random' 
-              }} 
-              style={styles.avatar}
-            />
-            <View style={styles.profileInfo}>
-              <Text style={styles.handymanName}>{handyman.username}</Text>
-              <Text style={styles.handymanTitle}>Professional Handyman</Text>
-              {handyman.average_rating && (
-                <View style={styles.ratingRow}>
-                  <Text style={styles.averageRating}>
-                    ⭐ {handyman.average_rating}/10
-                  </Text>
-                  <Text style={styles.ratingCount}>
-                    ({handyman.total_ratings} {handyman.total_ratings === 1 ? 'rating' : 'ratings'})
-                  </Text>
-                </View>
-              )}
-            </View>
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+      >
+        <ScrollView
+          style={styles.scrollView}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          {/* Header */}
+          <View style={styles.header}>
+            <TouchableOpacity onPress={() => router.back()}>
+              <Text style={styles.backButton}>← Back</Text>
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>Rate & Review</Text>
+            <View style={styles.placeholder} />
           </View>
 
-          {/* Bio */}
-          {handyman.bio && (
-            <View style={styles.bioSection}>
-              <Text style={styles.bioTitle}>About</Text>
-              <Text style={styles.bioText}>{handyman.bio}</Text>
-            </View>
-          )}
-
-          {/* Services */}
-          {handyman.services && handyman.services.length > 0 && (
-            <View style={styles.servicesSection}>
-              <Text style={styles.servicesTitle}>Services</Text>
-              <View style={styles.servicesList}>
-                {handyman.services.map((service, index) => (
-                  <View key={index} style={styles.serviceTag}>
-                    <Text style={styles.serviceText}>{service.name}</Text>
+          {/* Handyman Profile Card */}
+          <View style={styles.profileCard}>
+            <View style={styles.profileHeader}>
+              <Image 
+                source={{ 
+                  uri: avatarUrl || 'https://ui-avatars.com/api/?name=' + handyman.username + '&background=random' 
+                }} 
+                style={styles.avatar}
+              />
+              <View style={styles.profileInfo}>
+                <Text style={styles.handymanName}>{handyman.username}</Text>
+                <Text style={styles.handymanTitle}>Professional Handyman</Text>
+                {handyman.average_rating && (
+                  <View style={styles.ratingRow}>
+                    <Text style={styles.averageRating}>
+                      ⭐ {handyman.average_rating}/10
+                    </Text>
+                    <Text style={styles.ratingCount}>
+                      ({handyman.total_ratings} {handyman.total_ratings === 1 ? 'rating' : 'ratings'})
+                    </Text>
                   </View>
-                ))}
+                )}
               </View>
             </View>
-          )}
-        </View>
 
-        {/* Rating Form */}
-        <View style={styles.ratingForm}>
-          <Text style={styles.formTitle}>
-            {userExistingRating ? 'Update Your Rating' : 'Rate Your Experience'}
-          </Text>
-          
-          {/* Rating Stars */}
-          <View style={styles.ratingSection}>
-            <Text style={styles.ratingLabel}>How was your experience?</Text>
-            <View style={styles.starsContainer}>
-              <Rating 
-                size={20} 
-                rating={rating} 
-                onChange={handleRatingChange}
-                style={styles.ratingStars}
+            {/* Bio */}
+            {handyman.bio && (
+              <View style={styles.bioSection}>
+                <Text style={styles.bioTitle}>About</Text>
+                <Text style={styles.bioText}>{handyman.bio}</Text>
+              </View>
+            )}
+
+            {/* Services */}
+            {handyman.services && handyman.services.length > 0 && (
+              <View style={styles.servicesSection}>
+                <Text style={styles.servicesTitle}>Services</Text>
+                <View style={styles.servicesList}>
+                  {handyman.services.map((service, index) => (
+                    <View key={index} style={styles.serviceTag}>
+                      <Text style={styles.serviceText}>{service.name}</Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            )}
+          </View>
+
+          {/* Rating Form */}
+          <View style={styles.ratingForm}>
+            <Text style={styles.formTitle}>
+              {userExistingRating ? 'Update Your Rating' : 'Rate Your Experience'}
+            </Text>
+            
+            {/* Rating Stars */}
+            <View style={styles.ratingSection}>
+              <Text style={styles.ratingLabel}>How was your experience?</Text>
+              <View style={styles.starsContainer}>
+                <Rating 
+                  size={20} 
+                  rating={rating} 
+                  onChange={handleRatingChange}
+                  style={styles.ratingStars}
+                />
+              </View>
+              <Text style={styles.ratingValue}>
+                {rating}/10 {rating === 0 ? '(No rating)' : rating <= 3 ? '(Poor)' : rating <= 6 ? '(Good)' : rating <= 8 ? '(Very Good)' : '(Excellent)'}
+              </Text>
+            </View>
+
+            {/* Review Text */}
+            <View style={styles.reviewSection}>
+              <Text style={styles.reviewLabel}>Tell us more (optional)</Text>
+              <TextInput
+                style={styles.reviewInput}
+                placeholder="Share details about your experience..."
+                multiline
+                numberOfLines={4}
+                value={review}
+                onChangeText={setReview}
+                textAlignVertical="top"
               />
             </View>
-            <Text style={styles.ratingValue}>
-              {rating}/10 {rating === 0 ? '(No rating)' : rating <= 3 ? '(Poor)' : rating <= 6 ? '(Good)' : rating <= 8 ? '(Very Good)' : '(Excellent)'}
+
+            {/* Submit Button */}
+            <TouchableOpacity 
+              style={[styles.submitButton, (rating === 0 || submitting) && styles.submitButtonDisabled]}
+              onPress={handleSubmit}
+              disabled={rating === 0 || submitting}
+            >
+              {submitting ? (
+                <ActivityIndicator color="white" size="small" />
+              ) : (
+                <Text style={styles.submitButtonText}>
+                  {userExistingRating ? 'Update Rating' : 'Submit Rating'}
+                </Text>
+              )}
+            </TouchableOpacity>
+          </View>
+
+          {/* Footer */}
+          <View style={styles.footer}>
+            <Text style={styles.footerText}>
+              Your feedback helps {handyman.username} improve their service
             </Text>
           </View>
-
-          {/* Review Text */}
-          <View style={styles.reviewSection}>
-            <Text style={styles.reviewLabel}>Tell us more (optional)</Text>
-            <TextInput
-              style={styles.reviewInput}
-              placeholder="Share details about your experience..."
-              multiline
-              numberOfLines={4}
-              value={review}
-              onChangeText={setReview}
-              textAlignVertical="top"
-            />
-          </View>
-
-          {/* Submit Button */}
-          <TouchableOpacity 
-            style={[styles.submitButton, (rating === 0 || submitting) && styles.submitButtonDisabled]}
-            onPress={handleSubmit}
-            disabled={rating === 0 || submitting}
-          >
-            {submitting ? (
-              <ActivityIndicator color="white" size="small" />
-            ) : (
-              <Text style={styles.submitButtonText}>
-                {userExistingRating ? 'Update Rating' : 'Submit Rating'}
-              </Text>
-            )}
-          </TouchableOpacity>
-        </View>
-
-        {/* Footer */}
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>
-            Your feedback helps {handyman.username} improve their service
-          </Text>
-        </View>
-      </ScrollView>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };

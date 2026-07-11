@@ -22,6 +22,8 @@ export default function WorkPicturesScreen() {
   const [loading, setLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState(null);
 
+  const screenStyles = createStyles(theme);
+
   useEffect(() => {
     const fetchPictures = async () => {
       try {
@@ -41,13 +43,12 @@ export default function WorkPicturesScreen() {
 
   if (loading) {
     return (
-      <View style={[styles.centered, { backgroundColor: theme.background }]}>
+      <View style={[screenStyles.centered, { backgroundColor: theme.background }]}>
         <ActivityIndicator size="large" color={theme.primary} />
       </View>
     );
   }
 
-  const screenStyles = createStyles(theme);
 
   return (
     <View style={screenStyles.root}>

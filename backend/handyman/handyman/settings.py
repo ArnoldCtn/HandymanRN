@@ -34,7 +34,7 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 # ── MeSomb Configuration ───────────────────────────────────────────
 # Load from environment variables for security
-MESOMB_ACCESS_KEY = os.getenv('MESOMB_ACCESS_KEY', 'e3c418a5-043f-4a2b-aeb4-4c8207384932 ')
+MESOMB_ACCESS_KEY = os.getenv('MESOMB_ACCESS_KEY', 'e3c418a5-043f-4a2b-aeb4-4c8207384932')
 MESOMB_SECRET_KEY = os.getenv('MESOMB_SECRET_KEY', '9733680c-1139-4901-9fd3-59802a786af6')
 MESOMB_APPLICATION_KEY = os.getenv('MESOMB_APPLICATION_KEY', 'e96d73249360397e619946b8913a87763658bc3d')
 
@@ -62,6 +62,7 @@ FIREBASE_SERVICE_ACCOUNT_PATH = BASE_DIR / 'handyman/firebase-service-account.js
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'django-insecure-+1-rgp&271)w)qu%guby%7c9dw!*(($1lnfc5b2r+eq&6favh7'
+SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'django-insecure-+1-rgp&271)w)qu%guby%7c9dw!*(($1lnfc5b2r+eq&6favh7')  # Override with env var if available
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -144,6 +145,7 @@ INSTALLED_APPS = [
     'notifications.apps.NotificationsConfig',
     'ratings',
     'favorites',
+    'django_extensions',
 ]
 
 SITE_ID = 1 
@@ -151,11 +153,21 @@ SITE_ID = 1
 
 ASGI_APPLICATION = 'handyman.asgi.application'
 
+# CHANNEL_LAYERS = {
+#     "default": {
+#         "BACKEND": "channels_redis.core.RedisChannelLayer",
+#         "CONFIG": {
+#             "hosts": [os.environ.get('REDIS_URL', 'redis://localhost:6379/1')],
+#         },
+#     },
+# }
+
 CHANNEL_LAYERS = {
     "default": {
-        "BACKEND": "channels.layers.InMemoryChannelLayer"  # Use Redis in production
+        "BACKEND": "channels.layers.InMemoryChannelLayer"
     },
 }
+
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
@@ -211,16 +223,37 @@ TEMPLATES = [
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'handyman_db',
-        'USER': 'postgres',        # The default PostgreSQL username
-        'PASSWORD': '0000', # The password you set during installation
-        'HOST': '127.0.0.1',       # Or 'localhost'
-        'PORT': '5432',            # The default PostgreSQL port
+import dj_database_url
+import os
+
+# DATABASES = {
+#     'default': dj_database_url.config(
+#         default=os.environ.get('DATABASE_URL','postgresql://postgres:-Dragoncity10_@db.qqimawaskgvgrxtkdirf.supabase.co:5432/postgres'),
+#         conn_max_age=600
+#     )
+# }
+
+# Use DOCKER_ENV flag to switch between Docker and local database
+# Docker: set DOCKER_ENV=true in .env.docker → uses DATABASE_URL from env
+# Local: no DOCKER_ENV → uses hardcoded local PostgreSQL config
+if os.environ.get('DOCKER_ENV') == 'true':
+    DATABASES = {
+        'default': dj_database_url.config(
+            default=os.environ.get('DATABASE_URL'),
+            conn_max_age=600
+        )
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': 'handyman_db',
+            'USER': 'postgres',
+            'PASSWORD': '0000',
+            'HOST': '127.0.0.1',
+            'PORT': '5432',
+        }
+    }
 
 try:
     with open(FIREBASE_SERVICE_ACCOUNT_PATH, 'r', encoding='utf-8') as f:

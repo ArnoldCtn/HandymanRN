@@ -13,6 +13,7 @@ import { useTranslation } from 'react-i18next'
 import { useAppTheme } from '@/hooks/use-theme-color'
 import { ThemedText } from '@/components/themed-text'
 import { ThemedView } from '@/components/themed-view'
+import PulseView from '@/components/PulseView'
 
 export default function RequestScreen() {
   const { t } = useTranslation()
@@ -180,6 +181,11 @@ export default function RequestScreen() {
             </TouchableOpacity>
           </View>
         </View>
+        {/* Security Notice */}
+        <PulseView style={styles.securityNotice}>
+          <Ionicons name="shield-outline" size={20} color={theme.accent} />
+          <ThemedText style={styles.securityNoticeText}>{t('dashboard.security_notice')}</ThemedText>
+        </PulseView>
 
         {/* Footer */}
         <View style={styles.footer}>
@@ -396,4 +402,17 @@ const createStyles = (theme) => StyleSheet.create({
   reviewTextSmall: { fontSize: 13, color: theme.text, lineHeight: 18, fontStyle: 'italic' },
   reviewAuthor: { fontSize: 11, fontWeight: '700', textAlign: 'right', marginTop: 4, color: theme.textSecondary },
   noReviewsText: { textAlign: 'center', fontSize: 14, marginVertical: 20, color: theme.textSecondary },
+  
+  securityNotice: {
+    backgroundColor: theme.accent + '22',
+    padding: 12,
+    margin: 16,
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    borderWidth: 1,
+    borderColor: theme.accent + '44'
+  },
+  securityNoticeText: { fontSize: 12, color: theme.text, flex: 1, fontWeight: '500' }
 })
