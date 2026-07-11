@@ -14,7 +14,7 @@ from .models import User, PasswordResetOTP
 
 @admin.register(User)
 class UserAdmin(admin.ModelAdmin):
-    list_display = ['username','email','image_preview',
+    list_display = ['id','username','email','image_preview',
                     'last_seen_display','status_badge','user_type'
                     ]
     search_fields = ['username','email']
