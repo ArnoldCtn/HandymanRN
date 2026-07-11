@@ -5,7 +5,7 @@ from rest_framework import serializers
 from django.utils import timezone
 from datetime import timedelta
 from .models import Handyman, JobPicture
-from services.models import Service
+from services.models import Service, Category
 from locations.models import Location
 from services.serializers import ServiceSerializer
 from django.core.files.base import ContentFile
@@ -89,6 +89,9 @@ class HandymanSignUpSerializer(serializers.ModelSerializer):
     services     = serializers.PrimaryKeyRelatedField(
         queryset=Service.objects.all(), many=True, required=True
     )
+    categories   = serializers.PrimaryKeyRelatedField(
+        queryset=Category.objects.all(), many=True, required=False
+    )
     location     = serializers.PrimaryKeyRelatedField(
         queryset=Location.objects.all(), required=True
     )
@@ -100,7 +103,7 @@ class HandymanSignUpSerializer(serializers.ModelSerializer):
         fields = [
             'username', 'email', 'password', 'phone', 'bio',
             'birth_date', 'gender',
-            'availability', 'thumbnail', 'services', 'location',
+            'availability', 'thumbnail', 'services', 'categories', 'location',
         ]
         extra_kwargs = {
             'password':   {'write_only': True},
@@ -127,6 +130,7 @@ class HandymanSignUpSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         services     = validated_data.pop('services', [])
+        categories   = validated_data.pop('categories', [])
         thumbnail    = validated_data.pop('thumbnail', None)
         location     = validated_data.pop('location', None)
         availability = validated_data.pop('availability', {})
@@ -149,6 +153,8 @@ class HandymanSignUpSerializer(serializers.ModelSerializer):
             handyman.thumbnail = thumbnail
         if services:
             handyman.services.set(services)
+        if categories:
+            handyman.categories.set(categories)
         handyman.save()
         return handyman
 
@@ -175,18 +181,6 @@ class JobPictureUploadSerializer(serializers.ModelSerializer):
         model = JobPicture
         fields = ['image', 'description']
 
-    def validate(self, data):
-        handyman = self.context['request'].user
-        limit = 2
-        if handyman.subscription_level == 'pro':
-            limit = 6
-        elif handyman.subscription_level == 'premium':
-            limit = float('inf')
-        
-        if handyman.job_pictures.count() >= limit:
-            raise serializers.ValidationError(f"Your current subscription ({handyman.subscription_level}) allows a maximum of {limit} pictures.")
-        return data
-
     def create(self, validated_data):
         validated_data['handyman'] = self.context['request'].user
         return super().create(validated_data)
@@ -196,6 +190,7 @@ class HandymanSerializer(serializers.ModelSerializer):
     thumbnail = serializers.SerializerMethodField()
     last_seen = serializers.SerializerMethodField()
     services  = ServiceSerializer(many=True, read_only=True)
+    categories = serializers.SerializerMethodField()
     location  = serializers.StringRelatedField()
     job_pictures = serializers.SerializerMethodField()
 
@@ -204,10 +199,9 @@ class HandymanSerializer(serializers.ModelSerializer):
         fields = ['id', 'username', 'email', 'phone', 'bio',
                   'legal_name', 'birth_date', 'gender',
                   'id_verification_status', 'id_verified_at',
-                  'thumbnail', 'availability', 'services', 'location',
+                  'thumbnail', 'availability', 'services', 'categories', 'location',
                   'is_online', 'last_seen', 'is_verified', 'is_available',
-                  'average_rating', 'total_ratings', 'job_pictures',
-                  'subscription_level']
+                  'average_rating', 'total_ratings', 'job_pictures']
 
     def get_thumbnail(self, obj):
         if obj.thumbnail:
@@ -218,17 +212,12 @@ class HandymanSerializer(serializers.ModelSerializer):
         return None
     
     def get_job_pictures(self, obj):
-        limit = 2
-        if obj.subscription_level == 'pro':
-            limit = 6
-        elif obj.subscription_level == 'premium':
-            limit = None
-        
         pics = obj.job_pictures.all()
-        if limit is not None:
-            pics = pics[:limit]
-        
         return JobPictureSerializer(pics, many=True, context=self.context).data
+
+    def get_categories(self, obj):
+        from services.serializers import CategorySerializer
+        return CategorySerializer(obj.categories.all(), many=True, context=self.context).data
 
     def get_last_seen(self, obj):
         if not obj.last_seen: return None
@@ -244,6 +233,9 @@ class HandymanUpdateSerializer(serializers.ModelSerializer):
     services     = serializers.PrimaryKeyRelatedField(
         queryset=Service.objects.all(), many=True, required=False
     )
+    categories   = serializers.PrimaryKeyRelatedField(
+        queryset=Category.objects.all(), many=True, required=False
+    )
     # location     = serializers.PrimaryKeyRelatedField(
     #     queryset=Location.objects.all(), required=False, allow_null=True
     # )
@@ -254,7 +246,7 @@ class HandymanUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model  = Handyman
         fields = ['username', 'email', 'phone', 'bio', 'availability',
-                  'thumbnail', 'services', 'location', 'is_available', 'password',
+                  'thumbnail', 'services', 'categories', 'location', 'is_available', 'password',
                   'birth_date', 'gender']
         extra_kwargs = {
             'password':     {'write_only': True, 'required': False},
@@ -273,6 +265,7 @@ class HandymanUpdateSerializer(serializers.ModelSerializer):
         
         password = validated_data.pop('password', None)
         services = validated_data.pop('services', None)
+        categories = validated_data.pop('categories', None)
         location_value = validated_data.pop('location', None)
 
         # Handle location flexibly (ID or name)
@@ -299,6 +292,9 @@ class HandymanUpdateSerializer(serializers.ModelSerializer):
         if services is not None:
             print(f'[HandymanUpdateSerializer] Setting {len(services)} services')
             instance.services.set(services)
+        if categories is not None:
+            print(f'[HandymanUpdateSerializer] Setting {len(categories)} categories')
+            instance.categories.set(categories)
 
         instance.save()
         print(f'[HandymanUpdateSerializer] Handyman saved successfully')

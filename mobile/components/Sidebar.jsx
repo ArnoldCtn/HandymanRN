@@ -6,6 +6,7 @@ import {
 } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
+import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import { useAppTheme } from '@/hooks/use-theme-color';
 
@@ -16,6 +17,7 @@ export default function Sidebar({ visible, onClose, user, isHandyman, onLogout }
   const { t } = useTranslation();
   const theme = useAppTheme();
   const router = useRouter();
+  const navigation = useNavigation();
   const slideAnim = useRef(new Animated.Value(-SIDEBAR_WIDTH)).current;
 
   useEffect(() => {
@@ -43,29 +45,30 @@ export default function Sidebar({ visible, onClose, user, isHandyman, onLogout }
   const avatarUrl = resolveAvatar(user?.thumbnail);
 
   const menuItems = isHandyman ? [
-    { label: t('sidebar.dashboard', 'Dashboard'), icon: 'grid-outline', route: '/handyman/Home' },
-    { label: t('sidebar.bookings', 'Bookings'), icon: 'calendar-outline', route: '/handyman/Bookings' },
-    { label: t('sidebar.my_services', 'My Services'), icon: 'briefcase-outline', route: '/handyman/Myservices' },
-    { label: t('sidebar.favorited_by', 'Favorited By'), icon: 'heart-outline', route: '/handyman/FavoritedBy' },
-    { label: t('sidebar.reviews', 'Reviews'), icon: 'star-outline', route: '/handyman/Reviews' },
-    { label: t('sidebar.notifications', 'Notifications'), icon: 'notifications-outline', route: '/handyman/Notifications' },
-    { label: t('sidebar.messages', 'Messages'), icon: 'chatbubbles-outline', route: '/handyman/ChatsList' },
+    { label: t('sidebar.dashboard', 'Dashboard'), icon: 'grid-outline', route: 'Dashboard' },
+    { label: t('sidebar.bookings', 'Bookings'), icon: 'calendar-outline', route: 'Bookings' },
+    { label: t('sidebar.my_services', 'My Services'), icon: 'briefcase-outline', route: 'Myservices' },
+    { label: t('sidebar.notifications', 'Notifications'), icon: 'notifications-outline', route: 'Notifications' },
+    { label: t('sidebar.messages', 'Messages'), icon: 'chatbubbles-outline', route: 'ChatsList' },
     { label: t('sidebar.wallet', 'Wallet'), icon: 'wallet-outline', route: '/wallet?source=handyman' },
-    { label: t('sidebar.subscription', 'Subscription'), icon: 'card-outline', route: '/handyman/Subscription' },
     { label: t('sidebar.support', 'Support'), icon: 'help-circle-outline', route: '/chat/support?source=handyman' },
   ] : [
-    { label: t('sidebar.home', 'Home'), icon: 'grid-outline', route: '/(auth)/Home' },
-    { label: t('sidebar.my_bookings', 'My Bookings'), icon: 'book-outline', route: '/(auth)/Mybookings' },
+    { label: t('sidebar.home', 'Home'), icon: 'grid-outline', route: 'Request' },
+    { label: t('sidebar.my_bookings', 'My Bookings'), icon: 'book-outline', route: 'Mybookings' },
     { label: t('sidebar.favorites', 'Favorites'), icon: 'heart-outline', route: '/(auth)/Favorites' },
-    { label: t('sidebar.notifications', 'Notifications'), icon: 'notifications-outline', route: '/(auth)/Notifications' },
-    { label: t('sidebar.messages', 'Messages'), icon: 'chatbubbles-outline', route: '/(auth)/ChatsList' },
+    { label: t('sidebar.notifications', 'Notifications'), icon: 'notifications-outline', route: 'Notifications' },
+    { label: t('sidebar.messages', 'Messages'), icon: 'chatbubbles-outline', route: 'ChatsList' },
     { label: t('sidebar.wallet', 'Wallet'), icon: 'wallet-outline', route: '/wallet' },
     { label: t('sidebar.support', 'Support'), icon: 'help-circle-outline', route: '/chat/support' },
   ];
 
   const handleNavigate = (route) => {
     onClose();
-    router.push(route);
+    if (route.startsWith('/')) {
+        router.push(route);
+    } else {
+        navigation.navigate(route);
+    }
   };
 
   const styles = createStyles(theme);

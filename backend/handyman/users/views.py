@@ -9,14 +9,21 @@ from django.contrib.auth import authenticate, get_user_model
 from .serializers import UserSerializer, SignUpSerializer, UserUpdateSerializer
 from axes.handlers.proxy import AxesProxyHandler
 from django.conf import settings
-from django.core.mail import send_mail
+from django.core.mail import send_mail, get_connection
+from django.core.mail.backends.console import EmailBackend as ConsoleEmailBackend
 from django.utils import timezone
 from .models import PasswordResetOTP
 from handymen.models import Handyman
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 from datetime import timedelta
 from django.utils import timezone
+from django.utils.decorators import method_decorator
+from django.views.decorators.cache import never_cache
+from django.views.decorators.csrf import csrf_exempt
 from axes.models import AccessAttempt
 
 
@@ -110,6 +117,18 @@ class SignInView(APIView):
             return Response({'detail': msg}, status=429)
 
         # ── Try to authenticate ──────────────────────────
+        # Check if user exists and is active first
+        try:
+            user = User.objects.get(username=username)
+            if not user.is_active:
+                return Response(
+                    {'detail': 'You cannot login anymore. Please contact the administrator.'},
+                    status=403
+                )
+        except User.DoesNotExist:
+            # User doesn't exist, will be handled by authenticate()
+            pass
+
         user = authenticate(
             request=request, username=username, password=password)
 
@@ -133,7 +152,7 @@ class SignInView(APIView):
                 msg = 'Invalid username or password.'
 
             return Response({'detail': msg}, status=401)
-
+        
         # ── Success ──────────────────────────────────────
         user.mark_online()
         return Response(get_auth_for_user(user, request), status=200)
@@ -190,12 +209,44 @@ class MarkOfflineView(APIView):
         request.user.mark_offline()
         return Response({'status': 'offline'})
 
+def _get_client_ip(request):
+    """Extract client IP address from request."""
+    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    if x_forwarded_for:
+        ip = x_forwarded_for.split(',')[0].strip()
+    else:
+        ip = request.META.get('REMOTE_ADDR')
+    return ip
+
+
+def _get_user_agent(request):
+    """Extract user agent from request."""
+    return request.META.get('HTTP_USER_AGENT', '')[:500]  # Limit length
+
+
+def _check_rate_limit(email):
+    """
+    Check if rate limit exceeded for OTP requests.
+    Max 3 OTPs per hour per email.
+    """
+    one_hour_ago = timezone.now() - timedelta(hours=1)
+    recent_otps = PasswordResetOTP.objects.filter(
+        email=email,
+        created_at__gte=one_hour_ago
+    )
+    
+    if recent_otps.count() >= 3:
+        return False, 'Too many OTP requests. Please try again in 1 hour.'
+    return True, None
+
+
 class PasswordResetRequestView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
         email = request.data.get('email')
-        if not email: return Response({'detail': 'Email required'}, status=400)
+        if not email: 
+            return Response({'detail': 'Email required'}, status=400)
         
         email = email.strip().lower()
         print(f"[DEBUG] PasswordReset for email: '{email}'")
@@ -210,33 +261,66 @@ class PasswordResetRequestView(APIView):
         
         if user_matches.exists():
             print(f"[DEBUG] Email '{email}' found in Users.")
+            user_type = 'user'
         elif handyman_matches.exists():
             print(f"[DEBUG] Email '{email}' found in Handymen.")
+            user_type = 'handyman'
         else:
             print(f"[DEBUG] Email '{email}' NOT found in DB.")
             return Response({'detail': 'This email does not exist.'}, status=404)
         
-        # Determine which one exists to create the OTP for
-        target_email = email 
+        # Check rate limit
+        can_request, error_msg = _check_rate_limit(email)
+        if not can_request:
+            return Response({'detail': error_msg}, status=429)
         
-        otp = PasswordResetOTP.objects.create(email=target_email)
+        # Get request metadata
+        ip_address = _get_client_ip(request)
+        user_agent = _get_user_agent(request)
         
-        send_mail(
-            'Password Reset OTP',
-            f'Your OTP code is {otp.otp_code}. It expires in 5 minutes.',
-            settings.DEFAULT_FROM_EMAIL,
-            [target_email],
-            fail_silently=False,
-            html_message=f"""
-                <div style="font-family: Arial, sans-serif; text-align: center;">
-                    <h2 style="color: #6366F1;">Password Reset</h2>
-                    <p>Your OTP code is:</p>
-                    <h1 style="color: #6366F1; font-size: 32px;">{otp.otp_code}</h1>
-                    <p>It expires in 5 minutes.</p>
-                </div>
-            """
+        # Create OTP with tracking data
+        otp = PasswordResetOTP.objects.create(
+            email=email,
+            user_type=user_type,
+            ip_address=ip_address,
+            user_agent=user_agent
         )
-        return Response({'detail': 'OTP sent'})
+        
+        print(f"[DEBUG] OTP created: {otp.otp_code} for {email} from {ip_address}")
+        
+        # Try to send email, fall back to console logging if SMTP fails
+        email_sent = False
+        try:
+            send_mail(
+                'Password Reset OTP',
+                f'Your OTP code is {otp.otp_code}. It expires in 5 minutes.',
+                settings.DEFAULT_FROM_EMAIL,
+                [email],
+                fail_silently=False,
+                html_message=f"""
+                    <div style="font-family: Arial, sans-serif; text-align: center;">
+                        <h2 style="color: #6366F1;">Password Reset</h2>
+                        <p>Your OTP code is:</p>
+                        <h1 style="color: #6366F1; font-size: 32px;">{otp.otp_code}</h1>
+                        <p>It expires in 5 minutes.</p>
+                    </div>
+                """
+            )
+            email_sent = True
+            print(f"[DEBUG] Email sent successfully to {email}")
+        except Exception as e:
+            # SMTP failed (e.g. DNS resolution error on mobile hotspot)
+            # Fall back to console logging so development doesn't break
+            print(f"[DEBUG] Email sending failed (SMTP): {e}")
+            print(f"[DEBUG] FALLBACK: OTP for {email} is: {otp.otp_code}")
+            print(f"[DEBUG] FALLBACK: OTP expires in 5 minutes")
+            logger.warning(f"Email sending failed for {email}: {e}. OTP {otp.otp_code} logged to console.")
+            email_sent = False
+        
+        return Response({
+            'detail': 'OTP sent successfully' if email_sent else 'OTP generated (email unavailable - check server console)',
+            'otp_code': otp.otp_code if not email_sent else None
+        })
 
 class PasswordResetVerifyView(APIView):
     permission_classes = [AllowAny]
@@ -244,11 +328,44 @@ class PasswordResetVerifyView(APIView):
     def post(self, request):
         email = request.data.get('email')
         code = request.data.get('otp_code')
-        otp = PasswordResetOTP.objects.filter(email=email, otp_code=code).last()
         
-        if not otp or otp.is_expired():
+        if not email or not code:
+            return Response({'detail': 'Email and OTP code are required'}, status=400)
+        
+        # Get the most recent valid OTP for this email
+        otp = PasswordResetOTP.objects.filter(
+            email=email, 
+            otp_code=code,
+            is_used=False
+        ).order_by('-created_at').first()
+        
+        # Validate OTP
+        if not otp:
             return Response({'detail': 'Invalid or expired OTP'}, status=400)
-        return Response({'detail': 'Verified'})
+        
+        if otp.is_expired():
+            return Response({'detail': 'OTP has expired. Please request a new one.'}, status=400)
+        
+        if otp.is_locked():
+            return Response({
+                'detail': 'OTP locked due to too many failed attempts. Please request a new one.'
+            }, status=400)
+        
+        # Increment attempt counter
+        otp.increment_attempts()
+        
+        # Check if locked after increment
+        if otp.is_locked():
+            return Response({
+                'detail': 'Too many failed attempts. OTP locked. Please request a new one.'
+            }, status=400)
+        
+        # Success - mark as verified
+        otp.mark_as_used()
+        
+        print(f"[DEBUG] OTP verified successfully for {email} from {otp.ip_address}")
+        
+        return Response({'detail': 'OTP verified successfully'})
 
 class PasswordResetConfirmView(APIView):
     permission_classes = [AllowAny]
@@ -258,10 +375,29 @@ class PasswordResetConfirmView(APIView):
         code = request.data.get('otp_code')
         password = request.data.get('password')
         
-        otp = PasswordResetOTP.objects.filter(email=email, otp_code=code).last()
-        if not otp or otp.is_expired():
+        if not email or not code or not password:
+            return Response({'detail': 'Email, OTP code, and password are required'}, status=400)
+        
+        # Get the most recent valid OTP
+        otp = PasswordResetOTP.objects.filter(
+            email=email, 
+            otp_code=code,
+            is_used=False
+        ).order_by('-created_at').first()
+        
+        # Validate OTP
+        if not otp:
             return Response({'detail': 'Invalid or expired OTP'}, status=400)
-            
+        
+        if otp.is_expired():
+            return Response({'detail': 'OTP has expired. Please request a new one.'}, status=400)
+        
+        if otp.is_locked():
+            return Response({
+                'detail': 'OTP locked due to too many failed attempts. Please request a new one.'
+            }, status=400)
+        
+        # Find and update the user
         user = User.objects.filter(email=email).first()
         if user:
             user.set_password(password)
@@ -274,5 +410,9 @@ class PasswordResetConfirmView(APIView):
             else:
                 return Response({'detail': 'User not found'}, status=404)
         
-        otp.delete()
-        return Response({'detail': 'Password updated'})
+        # Mark OTP as used and record verification time
+        otp.mark_as_used()
+        
+        print(f"[DEBUG] Password reset completed for {email} (user_type: {otp.user_type})")
+        
+        return Response({'detail': 'Password updated successfully'})

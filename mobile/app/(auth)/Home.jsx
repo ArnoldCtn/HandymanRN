@@ -4,11 +4,10 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 import { useNavigation } from '@react-navigation/native'
 import Feather from '@expo/vector-icons/Feather';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { ThemedView } from '@/components/themed-view';
 import { useTranslation } from 'react-i18next'
 import { useAppTheme } from '@/hooks/use-theme-color'
 import { ThemedText } from '@/components/themed-text'
-import { ThemedView } from '@/components/themed-view'
-import PulseView from '@/components/PulseView'
 
 import RequestScreen from '@/app/(auth)/Request';
 import ProfileScreen from '@/app/(auth)/Profile';
@@ -156,15 +155,7 @@ export default function Home() {
       }}>
         <Tab.Screen 
           name='Request' 
-          component={(props) => (
-            <View style={{flex:1}}>
-              <PulseView style={styles.securityNotice}>
-                <Ionicons name="shield-alert-outline" size={20} color={theme.accent} />
-                <Text style={styles.securityNoticeText}>{t('dashboard.security_notice')}</Text>
-              </PulseView>
-              <RequestScreen {...props} />
-            </View>
-          )}
+          component={RequestScreen}
           options={{
             title: t('tabs.home', 'Home'),
             tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,

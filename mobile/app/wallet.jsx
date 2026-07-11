@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
-  ActivityIndicator, SafeAreaView, RefreshControl, Dimensions, Platform
+  ActivityIndicator, SafeAreaView, RefreshControl, Dimensions, Platform, Image
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import api from '@/services/api';
 import handymanApi from '@/services/handymanApi';
+import Sidebar from '@/components/Sidebar';
+import useGlobal from '@/services/global';
+import { useAppTheme } from '@/hooks/use-theme-color';
 
 const { width } = Dimensions.get('window');
 
@@ -39,6 +42,10 @@ export default function WalletScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
+  const [sidebarVisible, setSidebarVisible] = useState(false);
+
+  const user = useGlobal(state => state.user);
+  const theme = useAppTheme();
 
   const fetchWallet = async () => {
     try {
@@ -116,60 +123,83 @@ export default function WalletScreen() {
     return <View style={styles.center}><ActivityIndicator size="large" color="#6366F1" /></View>;
   }
 
+  const avatarUrl = user?.thumbnail
+    ? user.thumbnail.startsWith('http')
+      ? user.thumbnail
+      : user.thumbnail
+    : null;
+
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <Ionicons name="arrow-back" size={24} color="#1F2937" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>My Wallet</Text>
-        <View style={{ width: 40 }} />
-      </View>
-
-      <FlatList
-        data={transactions}
-        keyExtractor={item => item.id.toString()}
-        renderItem={renderTransaction}
-        contentContainerStyle={styles.list}
-        onEndReached={loadMore}
-        onEndReachedThreshold={0.3}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-        ListHeaderComponent={
-          <View style={styles.balanceCard}>
-            <View style={styles.balanceHeader}>
-              <WalletIcon color="#fff" size={28} />
-              <Text style={styles.balanceLabel}>Current Balance</Text>
-            </View>
-            <Text style={styles.balanceAmount}>
-              {parseFloat(wallet?.balance || 0).toLocaleString()} <Text style={styles.currency}>FCFA</Text>
-            </Text>
-
-            {isHandyman && (
-              <View style={styles.statsRow}>
-                <View style={styles.statItem}>
-                  <Text style={styles.statLabel}>Total Gross</Text>
-                  <Text style={styles.statValue}>{parseFloat(wallet?.total_earned_gross || 0).toLocaleString()}</Text>
-                </View>
-                <View style={[styles.statItem, { borderLeftWidth: 1, borderLeftColor: 'rgba(255,255,255,0.2)' }]}>
-                  <Text style={styles.statLabel}>App Fees</Text>
-                  <Text style={styles.statValue}>{parseFloat(wallet?.total_app_commissions || 0).toLocaleString()}</Text>
-                </View>
-                <View style={[styles.statItem, { borderLeftWidth: 1, borderLeftColor: 'rgba(255,255,255,0.2)' }]}>
-                  <Text style={styles.statLabel}>Net Earned</Text>
-                  <Text style={styles.statValue}>{parseFloat(wallet?.total_earned_net || 0).toLocaleString()}</Text>
-                </View>
+    <View style={{ flex: 1, backgroundColor: theme.background }}>
+      <Sidebar
+        visible={sidebarVisible}
+        onClose={() => setSidebarVisible(false)}
+        user={user}
+        isHandyman={isHandyman}
+        onLogout={() => {}}
+      />
+      <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.headerLeftBtn}>
+            <Ionicons name="arrow-back" size={24} color="#202020" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitleText}>My Wallet</Text>
+          <TouchableOpacity onPress={() => setSidebarVisible(true)} style={styles.headerLeftBtn}>
+            {avatarUrl ? (
+              <Image source={{ uri: avatarUrl }} style={styles.avatar} />
+            ) : (
+              <View style={styles.avatarPlaceholder}>
+                <Text style={styles.avatarInitial}>{user?.username?.[0]?.toUpperCase() ?? '?'}</Text>
               </View>
             )}
-          </View>
-        }
-        ListEmptyComponent={
-          <View style={styles.empty}>
-            <Ionicons name="receipt-outline" size={60} color="#d1d5db" />
-            <Text style={styles.emptyText}>No transactions yet</Text>
-          </View>
-        }
-      />
-    </SafeAreaView>
+          </TouchableOpacity>
+        </View>
+
+        <FlatList
+          data={transactions}
+          keyExtractor={item => item.id.toString()}
+          renderItem={renderTransaction}
+          contentContainerStyle={styles.list}
+          onEndReached={loadMore}
+          onEndReachedThreshold={0.3}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+          ListHeaderComponent={
+            <View style={styles.balanceCard}>
+              <View style={styles.balanceHeader}>
+                <WalletIcon color="#fff" size={28} />
+                <Text style={styles.balanceLabel}>Current Balance</Text>
+              </View>
+              <Text style={styles.balanceAmount}>
+                {parseFloat(wallet?.balance || 0).toLocaleString()} <Text style={styles.currency}>FCFA</Text>
+              </Text>
+
+              {isHandyman && (
+                <View style={styles.statsRow}>
+                  <View style={styles.statItem}>
+                    <Text style={styles.statLabel}>Total Gross</Text>
+                    <Text style={styles.statValue}>{parseFloat(wallet?.total_earned_gross || 0).toLocaleString()}</Text>
+                  </View>
+                  <View style={[styles.statItem, { borderLeftWidth: 1, borderLeftColor: 'rgba(255,255,255,0.2)' }]}>
+                    <Text style={styles.statLabel}>App Fees</Text>
+                    <Text style={styles.statValue}>{parseFloat(wallet?.total_app_commissions || 0).toLocaleString()}</Text>
+                  </View>
+                  <View style={[styles.statItem, { borderLeftWidth: 1, borderLeftColor: 'rgba(255,255,255,0.2)' }]}>
+                    <Text style={styles.statLabel}>Net Earned</Text>
+                    <Text style={styles.statValue}>{parseFloat(wallet?.total_earned_net || 0).toLocaleString()}</Text>
+                  </View>
+                </View>
+              )}
+            </View>
+          }
+          ListEmptyComponent={
+            <View style={styles.empty}>
+              <Ionicons name="receipt-outline" size={60} color="#d1d5db" />
+              <Text style={styles.emptyText}>No transactions yet</Text>
+            </View>
+          }
+        />
+      </SafeAreaView>
+    </View>
   );
 }
 
@@ -183,6 +213,14 @@ const styles = StyleSheet.create({
   },
   backBtn: { padding: 8 },
   headerTitle: { fontSize: 18, fontWeight: '700', color: '#1f2937' },
+  headerLeftBtn: { padding: 4, marginRight: 12 },
+  avatar: { width: 36, height: 36, borderRadius: 18 },
+  avatarPlaceholder: {
+    width: 36, height: 36, borderRadius: 18,
+    backgroundColor: '#6366F1', alignItems: 'center', justifyContent: 'center'
+  },
+  avatarInitial: { color: 'white', fontSize: 16, fontWeight: 'bold' },
+  headerTitleText: { fontSize: 18, fontWeight: '700', color: '#1f2937', flex: 1, textAlign: 'center' },
   list: { padding: 16, paddingBottom: 40 },
   balanceCard: {
     backgroundColor: '#6366F1',

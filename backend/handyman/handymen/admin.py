@@ -10,15 +10,15 @@ from .models import Handyman
 class HandymanAdmin(admin.ModelAdmin):
     list_display  = ['id','username', 'email', 'thumbnail_preview',
                      'status_badge', 'last_seen_display',
-                     'is_verified', 'is_available', 'location','subscription_level']
-    list_filter   = ['is_online', 'is_active','subscription_level',
+                     'is_verified', 'is_available', 'location']
+    list_filter   = ['is_online', 'is_active',
                      'is_verified', 'is_available']  
-    search_fields = ['username', 'email', 'phone','subscription_level']
+    search_fields = ['username', 'email', 'phone']
     ordering      = ['-is_online', '-last_seen']
     readonly_fields = ['thumbnail_preview', 'last_seen']
 
-    # Shows services as checkboxes in the change form
-    filter_horizontal = ['services']   # ← nice UI for M2M
+    # Shows services/categories as checkboxes in the change form
+    filter_horizontal = ['services', 'categories']
 
     fieldsets = (
         ('Account', {
@@ -29,7 +29,10 @@ class HandymanAdmin(admin.ModelAdmin):
                        'bio', 'availability', 'location')
         }),
         ('Services', {
-            'fields': ('services',)                  # ← M2M picker
+            'fields': ('services',)
+        }),
+        ('Categories', {
+            'fields': ('categories',)
         }),
         ('Status', {
             'fields': ('is_online', 'last_seen',

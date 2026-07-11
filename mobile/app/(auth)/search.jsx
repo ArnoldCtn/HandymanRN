@@ -26,13 +26,14 @@ export default function AllServicesScreen() {
 
   const [minRating, setMinRating] = useState(0);
 
-  // Fetch both Services and Handymen
+  // Fetch both Services, Categories and Handymen
   const fetchAllData = async () => {
     try {
       setLoading(true);
       const ratingQuery = minRating > 0 ? `?min_rating=${minRating}` : '';
-      const [servicesRes, handymenRes] = await Promise.all([
+      const [servicesRes, categoriesRes, handymenRes] = await Promise.all([
         api.get('/services/'),
+        api.get('/services/categories/'),
         handymanApi.get(`/handymen/search/${ratingQuery}`)
       ]);
 
@@ -42,16 +43,24 @@ export default function AllServicesScreen() {
         searchKey: item.name.toLowerCase()
       }));
 
+      const categories = categoriesRes.data.map(item => ({
+        ...item,
+        type: 'category',
+        searchKey: item.name.toLowerCase(),
+        service_id: item.service,
+      }));
+
       const handymen = handymenRes.data.map(item => {
         const serviceNames = (item.services || []).map(s => (s.name || s).toLowerCase()).join(' ');
+        const categoryNames = (item.categories || []).map(c => (c.name || c).toLowerCase()).join(' ');
         return {
           ...item,
           type: 'handyman',
-          searchKey: `${item.username.toLowerCase() || ''} ${item.location?.toLowerCase() || ''} ${serviceNames}`
+          searchKey: `${item.username.toLowerCase() || ''} ${item.location?.toLowerCase() || ''} ${serviceNames} ${categoryNames}`
         };
       });
 
-      const combined = [...services, ...handymen];
+      const combined = [...services, ...categories, ...handymen];
       setAllData(combined);
       setFiltered([]); // Start empty
     } catch (e) {
@@ -102,6 +111,7 @@ export default function AllServicesScreen() {
 
   const renderCard = ({ item }) => {
     const isHandyman = item.type === 'handyman';
+    const isCategory = item.type === 'category';
 
     return (
       <TouchableOpacity
@@ -110,6 +120,17 @@ export default function AllServicesScreen() {
         onPress={() => {
           if (isHandyman) {
             router.push(`/(auth)/handyman-Profile/${item.id}`);
+          } else if (isCategory) {
+            // Navigate to the service with the category pre-filtered
+            router.push({
+              pathname: '/(services)/ServiceHandymen',
+              params: { 
+                id: item.service_id, 
+                name: item.name,
+                description: item.description || '',
+                categoryId: item.id
+              }
+            });
           } else {
             router.push({
               pathname: '/(services)/ServiceHandymen',
@@ -122,7 +143,7 @@ export default function AllServicesScreen() {
           }
         }}
       >
-        {item.image || item.thumbnail ? (
+        {(item.image || item.thumbnail) && !isCategory ? (
           <Image 
             source={{ uri: item.image || item.thumbnail }} 
             style={styles.cardImage} 
@@ -131,7 +152,7 @@ export default function AllServicesScreen() {
         ) : (
           <View style={styles.cardImagePlaceholder}>
             <Ionicons 
-              name={isHandyman ? "person-outline" : "construct-outline"} 
+              name={isHandyman ? "person-outline" : isCategory ? "pricetag-outline" : "construct-outline"} 
               size={32} 
               color={theme.textSecondary} 
             />
@@ -143,18 +164,25 @@ export default function AllServicesScreen() {
             {isHandyman ? item.username : item.name}
           </Text>
           {isHandyman ? <Text style={{ color: theme.textSecondary }}>
-            {(item.location && isHandyman) ? item.location : ''}
-          </Text> : ''}
+            {item.location || ''}
+          </Text> : null}
 
-          {isHandyman ? <Text style={styles.cardDesc} numberOfLines={1}>
-            {(item.average_rating && isHandyman)  ? item.average_rating : ( isHandyman ? t('search.no_ratings') : '')}
-        { (item.average_rating && isHandyman) ?  < Ionicons  name="star" size={18} color={theme.accent} /> : ''}
-          </Text> : ''}
+          {isHandyman ? (
+            <Text style={styles.cardDesc} numberOfLines={1}>
+              {item.average_rating ? `${item.average_rating} ` : t('search.no_ratings', 'No ratings')}
+              {item.average_rating ? <Ionicons name="star" size={14} color={theme.accent} /> : null}
+            </Text>
+          ) : null}
+
+          {isCategory && item.price ? (
+            <Text style={styles.cardPrice}>{parseFloat(item.price).toLocaleString()} FCFA</Text>
+          ) : null}
+
           <Text style={styles.cardDesc} numberOfLines={2}>
             {isHandyman ? (item.bio || t('search.type_handyman')) : (item.description || '')}
           </Text>
           <Text style={styles.typeBadge}>
-            {isHandyman ? t('search.type_handyman') : t('search.type_service')}
+            {isHandyman ? t('search.type_handyman') : isCategory ? t('search.type_category', 'Category') : t('search.type_service')}
           </Text>
         </View>
       </TouchableOpacity>
@@ -283,6 +311,7 @@ const createStyles = (theme) => StyleSheet.create({
   cardBody: { padding: 12 },
   cardName: { fontSize: 15, fontWeight: '700', color: theme.text },
   cardDesc: { fontSize: 12, color: theme.textSecondary, marginTop: 4, lineHeight: 16 },
+  cardPrice: { fontSize: 13, fontWeight: '700', color: theme.primary, marginTop: 4 },
   typeBadge: {
     fontSize: 11,
     color: theme.primary,

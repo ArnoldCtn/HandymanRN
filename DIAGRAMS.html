@@ -1,0 +1,509 @@
+<!DOCTYPE html><html><head>
+      <title>DIAGRAMS</title>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      
+      <link rel="stylesheet" href="file:///c:\Users\ArnoldCtn\.vscode\extensions\shd101wyy.markdown-preview-enhanced-0.8.30\crossnote\dependencies\katex\katex.min.css">
+      
+      
+      
+      <script type="text/javascript" src="file:///c:\Users\ArnoldCtn\.vscode\extensions\shd101wyy.markdown-preview-enhanced-0.8.30\crossnote\dependencies\mermaid\mermaid.min.js" charset="UTF-8"></script>
+      
+      
+      
+      <style>
+      code[class*=language-],pre[class*=language-]{color:#333;background:0 0;font-family:Consolas,"Liberation Mono",Menlo,Courier,monospace;text-align:left;white-space:pre;word-spacing:normal;word-break:normal;word-wrap:normal;line-height:1.4;-moz-tab-size:8;-o-tab-size:8;tab-size:8;-webkit-hyphens:none;-moz-hyphens:none;-ms-hyphens:none;hyphens:none}pre[class*=language-]{padding:.8em;overflow:auto;border-radius:3px;background:#f5f5f5}:not(pre)>code[class*=language-]{padding:.1em;border-radius:.3em;white-space:normal;background:#f5f5f5}.token.blockquote,.token.comment{color:#969896}.token.cdata{color:#183691}.token.doctype,.token.macro.property,.token.punctuation,.token.variable{color:#333}.token.builtin,.token.important,.token.keyword,.token.operator,.token.rule{color:#a71d5d}.token.attr-value,.token.regex,.token.string,.token.url{color:#183691}.token.atrule,.token.boolean,.token.code,.token.command,.token.constant,.token.entity,.token.number,.token.property,.token.symbol{color:#0086b3}.token.prolog,.token.selector,.token.tag{color:#63a35c}.token.attr-name,.token.class,.token.class-name,.token.function,.token.id,.token.namespace,.token.pseudo-class,.token.pseudo-element,.token.url-reference .token.variable{color:#795da3}.token.entity{cursor:help}.token.title,.token.title .token.punctuation{font-weight:700;color:#1d3e81}.token.list{color:#ed6a43}.token.inserted{background-color:#eaffea;color:#55a532}.token.deleted{background-color:#ffecec;color:#bd2c00}.token.bold{font-weight:700}.token.italic{font-style:italic}.language-json .token.property{color:#183691}.language-markup .token.tag .token.punctuation{color:#333}.language-css .token.function,code.language-css{color:#0086b3}.language-yaml .token.atrule{color:#63a35c}code.language-yaml{color:#183691}.language-ruby .token.function{color:#333}.language-markdown .token.url{color:#795da3}.language-makefile .token.symbol{color:#795da3}.language-makefile .token.variable{color:#183691}.language-makefile .token.builtin{color:#0086b3}.language-bash .token.keyword{color:#0086b3}pre[data-line]{position:relative;padding:1em 0 1em 3em}pre[data-line] .line-highlight-wrapper{position:absolute;top:0;left:0;background-color:transparent;display:block;width:100%}pre[data-line] .line-highlight{position:absolute;left:0;right:0;padding:inherit 0;margin-top:1em;background:hsla(24,20%,50%,.08);background:linear-gradient(to right,hsla(24,20%,50%,.1) 70%,hsla(24,20%,50%,0));pointer-events:none;line-height:inherit;white-space:pre}pre[data-line] .line-highlight:before,pre[data-line] .line-highlight[data-end]:after{content:attr(data-start);position:absolute;top:.4em;left:.6em;min-width:1em;padding:0 .5em;background-color:hsla(24,20%,50%,.4);color:#f4f1ef;font:bold 65%/1.5 sans-serif;text-align:center;vertical-align:.3em;border-radius:999px;text-shadow:none;box-shadow:0 1px #fff}pre[data-line] .line-highlight[data-end]:after{content:attr(data-end);top:auto;bottom:.4em}html body{font-family:'Helvetica Neue',Helvetica,'Segoe UI',Arial,freesans,sans-serif;font-size:16px;line-height:1.6;color:#333;background-color:#fff;overflow:initial;box-sizing:border-box;word-wrap:break-word}html body>:first-child{margin-top:0}html body h1,html body h2,html body h3,html body h4,html body h5,html body h6{line-height:1.2;margin-top:1em;margin-bottom:16px;color:#000}html body h1{font-size:2.25em;font-weight:300;padding-bottom:.3em}html body h2{font-size:1.75em;font-weight:400;padding-bottom:.3em}html body h3{font-size:1.5em;font-weight:500}html body h4{font-size:1.25em;font-weight:600}html body h5{font-size:1.1em;font-weight:600}html body h6{font-size:1em;font-weight:600}html body h1,html body h2,html body h3,html body h4,html body h5{font-weight:600}html body h5{font-size:1em}html body h6{color:#5c5c5c}html body strong{color:#000}html body del{color:#5c5c5c}html body a:not([href]){color:inherit;text-decoration:none}html body a{color:#08c;text-decoration:none}html body a:hover{color:#00a3f5;text-decoration:none}html body img{max-width:100%}html body>p{margin-top:0;margin-bottom:16px;word-wrap:break-word}html body>ol,html body>ul{margin-bottom:16px}html body ol,html body ul{padding-left:2em}html body ol.no-list,html body ul.no-list{padding:0;list-style-type:none}html body ol ol,html body ol ul,html body ul ol,html body ul ul{margin-top:0;margin-bottom:0}html body li{margin-bottom:0}html body li.task-list-item{list-style:none}html body li>p{margin-top:0;margin-bottom:0}html body .task-list-item-checkbox{margin:0 .2em .25em -1.8em;vertical-align:middle}html body .task-list-item-checkbox:hover{cursor:pointer}html body blockquote{margin:16px 0;font-size:inherit;padding:0 15px;color:#5c5c5c;background-color:#f0f0f0;border-left:4px solid #d6d6d6}html body blockquote>:first-child{margin-top:0}html body blockquote>:last-child{margin-bottom:0}html body hr{height:4px;margin:32px 0;background-color:#d6d6d6;border:0 none}html body table{margin:10px 0 15px 0;border-collapse:collapse;border-spacing:0;display:block;width:100%;overflow:auto;word-break:normal;word-break:keep-all}html body table th{font-weight:700;color:#000}html body table td,html body table th{border:1px solid #d6d6d6;padding:6px 13px}html body dl{padding:0}html body dl dt{padding:0;margin-top:16px;font-size:1em;font-style:italic;font-weight:700}html body dl dd{padding:0 16px;margin-bottom:16px}html body code{font-family:Menlo,Monaco,Consolas,'Courier New',monospace;font-size:.85em;color:#000;background-color:#f0f0f0;border-radius:3px;padding:.2em 0}html body code::after,html body code::before{letter-spacing:-.2em;content:'\00a0'}html body pre>code{padding:0;margin:0;word-break:normal;white-space:pre;background:0 0;border:0}html body .highlight{margin-bottom:16px}html body .highlight pre,html body pre{padding:1em;overflow:auto;line-height:1.45;border:#d6d6d6;border-radius:3px}html body .highlight pre{margin-bottom:0;word-break:normal}html body pre code,html body pre tt{display:inline;max-width:initial;padding:0;margin:0;overflow:initial;line-height:inherit;word-wrap:normal;background-color:transparent;border:0}html body pre code:after,html body pre code:before,html body pre tt:after,html body pre tt:before{content:normal}html body blockquote,html body dl,html body ol,html body p,html body pre,html body ul{margin-top:0;margin-bottom:16px}html body kbd{color:#000;border:1px solid #d6d6d6;border-bottom:2px solid #c7c7c7;padding:2px 4px;background-color:#f0f0f0;border-radius:3px}@media print{html body{background-color:#fff}html body h1,html body h2,html body h3,html body h4,html body h5,html body h6{color:#000;page-break-after:avoid}html body blockquote{color:#5c5c5c}html body pre{page-break-inside:avoid}html body table{display:table}html body img{display:block;max-width:100%;max-height:100%}html body code,html body pre{word-wrap:break-word;white-space:pre}}.markdown-preview{width:100%;height:100%;box-sizing:border-box}.markdown-preview ul{list-style:disc}.markdown-preview ul ul{list-style:circle}.markdown-preview ul ul ul{list-style:square}.markdown-preview ol{list-style:decimal}.markdown-preview ol ol,.markdown-preview ul ol{list-style-type:lower-roman}.markdown-preview ol ol ol,.markdown-preview ol ul ol,.markdown-preview ul ol ol,.markdown-preview ul ul ol{list-style-type:lower-alpha}.markdown-preview .newpage,.markdown-preview .pagebreak{page-break-before:always}.markdown-preview pre.line-numbers{position:relative;padding-left:3.8em;counter-reset:linenumber}.markdown-preview pre.line-numbers>code{position:relative}.markdown-preview pre.line-numbers .line-numbers-rows{position:absolute;pointer-events:none;top:1em;font-size:100%;left:0;width:3em;letter-spacing:-1px;border-right:1px solid #999;-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;user-select:none}.markdown-preview pre.line-numbers .line-numbers-rows>span{pointer-events:none;display:block;counter-increment:linenumber}.markdown-preview pre.line-numbers .line-numbers-rows>span:before{content:counter(linenumber);color:#999;display:block;padding-right:.8em;text-align:right}.markdown-preview .mathjax-exps .MathJax_Display{text-align:center!important}.markdown-preview:not([data-for=preview]) .code-chunk .code-chunk-btn-group{display:none}.markdown-preview:not([data-for=preview]) .code-chunk .status{display:none}.markdown-preview:not([data-for=preview]) .code-chunk .output-div{margin-bottom:16px}.markdown-preview .md-toc{padding:0}.markdown-preview .md-toc .md-toc-details{margin:0;padding:0;border:none}.markdown-preview .md-toc summary.md-toc-link-wrapper{cursor:pointer;list-style-position:outside}.markdown-preview .md-toc summary.md-toc-link-wrapper::marker{font-size:.85em}.markdown-preview .md-toc .md-toc-link-wrapper .md-toc-link{display:inline;padding:.25rem 0}.markdown-preview .md-toc .md-toc-link-wrapper .md-toc-link div,.markdown-preview .md-toc .md-toc-link-wrapper .md-toc-link p{display:inline}.markdown-preview .md-toc .md-toc-link-wrapper.highlighted .md-toc-link{font-weight:800}.markdown-preview .md-toc .md-toc-link-wrapper[data-level='0']{margin-left:12px}.markdown-preview .md-toc .md-toc-link-wrapper[data-level='1']{margin-left:28px}.markdown-preview .md-toc .md-toc-link-wrapper[data-level='2']{margin-left:44px}.markdown-preview .md-toc .md-toc-link-wrapper[data-level='3']{margin-left:60px}.markdown-preview .md-toc .md-toc-link-wrapper[data-level='4']{margin-left:76px}.markdown-preview .md-toc .md-toc-link-wrapper[data-level='5']{margin-left:80px}.markdown-preview a.tag,.markdown-preview a.tag:active,.markdown-preview a.tag:link,.markdown-preview a.tag:visited,.markdown-preview span.tag:not(.token){display:inline-block;background-color:var(--vscode-badge-background,rgba(127,127,127,.18));color:var(--vscode-badge-foreground,currentColor);border-radius:2em;font-size:.85em;font-weight:500;padding:.05em .55em;line-height:1.5;white-space:nowrap;text-decoration:none;text-shadow:none;box-shadow:none;transition:background-color .12s ease,opacity .12s ease}.markdown-preview a.tag{cursor:pointer}.markdown-preview a.tag:focus,.markdown-preview a.tag:hover{background-color:var(--vscode-badge-background,rgba(127,127,127,.32));color:var(--vscode-badge-foreground,currentColor);opacity:.85;text-decoration:none;outline:0}.markdown-preview .wikilink-embed-content{border-left:3px solid var(--vscode-textBlockQuote-border,rgba(128,128,128,.3));background:var(--vscode-textBlockQuote-background,rgba(128,128,128,.05));margin:.5em 0;padding:.5em .75em;border-radius:0 3px 3px 0}.markdown-preview .wikilink-embed-content.wikilink-embed-error{border-left-color:var(--vscode-errorForeground,#cf222e);color:var(--vscode-errorForeground,#cf222e);font-style:italic;opacity:.8}.markdown-preview .wikilink-embed-content h1:first-child,.markdown-preview .wikilink-embed-content h2:first-child,.markdown-preview .wikilink-embed-content h3:first-child,.markdown-preview .wikilink-embed-content h4:first-child,.markdown-preview .wikilink-embed-content h5:first-child,.markdown-preview .wikilink-embed-content h6:first-child{margin-top:.25em}.markdown-preview .wikilink-embed-content .wikilink-embed-content{margin:.25em 0;padding:.25em .5em}.markdown-preview .block-id{display:none}.scrollbar-style::-webkit-scrollbar{width:8px}.scrollbar-style::-webkit-scrollbar-track{border-radius:10px;background-color:transparent}.scrollbar-style::-webkit-scrollbar-thumb{border-radius:5px;background-color:var(--vscode-scrollbarSlider-background,rgba(150,150,150,.66));border:4px solid var(--vscode-scrollbarSlider-background,rgba(150,150,150,.66));background-clip:content-box}.scrollbar-style::-webkit-scrollbar-thumb:hover{background-color:var(--vscode-scrollbarSlider-hoverBackground,rgba(120,120,120,.66))}html body[for=html-export]:not([data-presentation-mode]){position:relative;width:100%;height:100%;top:0;left:0;margin:0;padding:0;overflow:auto}html body[for=html-export]:not([data-presentation-mode]) .markdown-preview{position:relative;top:0;min-height:100vh}@media screen and (min-width:914px){html body[for=html-export]:not([data-presentation-mode]) .markdown-preview{padding:2em calc(50% - 457px + 2em)}}@media screen and (max-width:914px){html body[for=html-export]:not([data-presentation-mode]) .markdown-preview{padding:2em}}@media screen and (max-width:450px){html body[for=html-export]:not([data-presentation-mode]) .markdown-preview{font-size:14px!important;padding:1em}}@media print{html body[for=html-export]:not([data-presentation-mode]) #sidebar-toc-btn{display:none}}html body[for=html-export]:not([data-presentation-mode]) #sidebar-toc-btn{position:fixed;bottom:8px;left:8px;font-size:28px;cursor:pointer;color:inherit;z-index:99;width:32px;text-align:center;opacity:.4}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] #sidebar-toc-btn{opacity:1}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc{position:fixed;top:0;left:0;width:300px;height:100%;padding:32px 0 48px 0;font-size:14px;box-shadow:0 0 4px rgba(150,150,150,.33);box-sizing:border-box;overflow:auto;background-color:inherit}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc::-webkit-scrollbar{width:8px}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc::-webkit-scrollbar-track{border-radius:10px;background-color:transparent}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc::-webkit-scrollbar-thumb{border-radius:5px;background-color:var(--vscode-scrollbarSlider-background,rgba(150,150,150,.66));border:4px solid var(--vscode-scrollbarSlider-background,rgba(150,150,150,.66));background-clip:content-box}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc::-webkit-scrollbar-thumb:hover{background-color:var(--vscode-scrollbarSlider-hoverBackground,rgba(120,120,120,.66))}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc a{text-decoration:none}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc .md-toc{padding:0 16px}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc .md-toc .md-toc-details{margin:0;padding:0;border:none}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc .md-toc .md-toc-link-wrapper .md-toc-link{display:inline;padding:.25rem 0}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc .md-toc .md-toc-link-wrapper .md-toc-link div,html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc .md-toc .md-toc-link-wrapper .md-toc-link p{display:inline}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc .md-toc .md-toc-link-wrapper.highlighted .md-toc-link{font-weight:800}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc .md-toc .md-toc-link-wrapper[data-level='0']{padding-left:0}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc .md-toc .md-toc-link-wrapper[data-level='1']{padding-left:16px}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc .md-toc .md-toc-link-wrapper[data-level='2']{padding-left:32px}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc .md-toc .md-toc-link-wrapper[data-level='3']{padding-left:48px}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc .md-toc .md-toc-link-wrapper[data-level='4']{padding-left:64px}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc .md-toc .md-toc-link-wrapper[data-level='5']{padding-left:80px}html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .markdown-preview{left:300px;width:calc(100% - 300px);padding:2em calc(50% - 457px - 300px / 2);margin:0;box-sizing:border-box}@media screen and (max-width:1274px){html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .markdown-preview{padding:2em}}@media screen and (max-width:450px){html body[for=html-export]:not([data-presentation-mode])[html-show-sidebar-toc] .markdown-preview{width:100%}}html body[for=html-export]:not([data-presentation-mode]):not([html-show-sidebar-toc]) .markdown-preview{left:50%;transform:translateX(-50%)}html body[for=html-export]:not([data-presentation-mode]):not([html-show-sidebar-toc]) .md-sidebar-toc{display:none}
+/* Please visit the URL below for more information: */
+/*   https://shd101wyy.github.io/markdown-preview-enhanced/#/customize-css */
+
+      </style>
+      <!-- The content below will be included at the end of the <head> element. -->
+<script type="text/javascript">
+  document.addEventListener("DOMContentLoaded", function () {
+    // your code here
+  });
+</script>
+    </head>
+    <body for="html-export">
+      <div class="crossnote markdown-preview  ">
+      
+<h1 id="handymanrn--uml-diagrams">HandymanRN — UML Diagrams </h1>
+<h2 id="1-class-diagram-complete-model-schema">1. Class Diagram (Complete Model Schema) </h2>
+<div class="mermaid">classDiagram
+    class User {
+        +String username
+        +String email
+        +String user_type
+        +ImageField thumbnail
+        +Boolean is_online
+        +DateTime last_seen
+        +Boolean two_fa_enabled
+        +String two_fa_secret
+    }
+
+    class PasswordResetOTP {
+        +String email
+        +String otp_code
+        +DateTime expires_at
+        +String user_type
+        +String ip_address
+        +String user_agent
+        +Integer attempts
+        +Boolean is_used
+    }
+
+    class Handyman {
+        +String username
+        +String email
+        +String phone
+        +String legal_name
+        +Date birth_date
+        +String gender
+        +String id_number
+        +ImageField id_card_image
+        +String id_verification_status
+        +Text bio
+        +JSON availability
+        +Decimal average_rating
+        +Integer total_ratings
+        +Boolean is_available
+        +Boolean is_verified
+        +String subscription_level
+        +Boolean two_fa_enabled
+    }
+
+    class JobPicture {
+        +ImageField image
+        +String description
+        +DateTime created_at
+    }
+
+    class Service {
+        +String name
+        +Text description
+        +ImageField image
+        +DateTime created_at
+    }
+
+    class Location {
+        +String location
+        +String region
+        +String handyman_per_location
+        +DateTime created_at
+    }
+
+    class Booking {
+        +DateTime scheduled_date
+        +Text job_description
+        +Decimal total_amount
+        +String status
+        +DateTime completed_at
+        +DateTime cancelled_at
+        +Text cancellation_reason
+        +DateTime created_at
+    }
+
+    class BookingMessage {
+        +Text message
+        +ImageField image
+        +Boolean is_read
+        +DateTime created_at
+    }
+
+    class SupportConversation {
+        +Boolean is_active
+        +DateTime created_at
+        +DateTime updated_at
+    }
+
+    class SupportMessage {
+        +Boolean is_from_admin
+        +Text message
+        +ImageField image
+        +Boolean is_read
+        +DateTime created_at
+    }
+
+    class Payment {
+        +Decimal gross_amount
+        +Decimal platform_fee
+        +Decimal handyman_amount
+        +String method
+        +String payer_number
+        +String collect_ref
+        +String payout_ref
+        +String handyman_withdrawal_status
+        +Boolean admin_withdrawal_requested
+        +String status
+        +Text error_message
+        +DateTime created_at
+    }
+
+    class Wallet {
+        +Decimal balance
+        +Decimal total_earned_gross
+        +Decimal total_earned_net
+        +Decimal total_app_commissions
+        +DateTime created_at
+    }
+
+    class Transaction {
+        +Decimal amount
+        +String transaction_type
+        +String status
+        +String description
+        +DateTime created_at
+    }
+
+    class Rating {
+        +Integer rating
+        +Text review
+        +DateTime created_at
+    }
+
+    class Favorite {
+        +DateTime created_at
+    }
+
+    class Notification {
+        +String title
+        +String body
+        +String notification_type
+        +Boolean is_read
+        +DateTime created_at
+    }
+
+    class Subscription {
+        +String plan
+        +Decimal price
+        +Duration duration
+        +DateTime created_at
+    }
+
+    User "1" -- "*" Booking : creates
+    User "1" -- "*" Rating : gives
+    User "1" -- "*" Favorite : saves
+    User "1" -- "1" Wallet : owns
+    User "1" -- "*" BookingMessage : sends
+    User "1" -- "*" SupportConversation : participates
+    User "1" -- "*" Notification : receives
+    User "1" -- "*" PasswordResetOTP : requests
+    User "1" -- "*" Service : creates
+    User "1" -- "*" Payment : makes
+    User "1" -- "*" Transaction : has
+
+    Handyman "1" -- "*" Booking : assigned to
+    Handyman "1" -- "*" JobPicture : has
+    Handyman "*" -- "*" Service : provides
+    Handyman "1" -- "1" Location : works at
+    Handyman "1" -- "*" Rating : receives
+    Handyman "1" -- "*" Favorite : saved by
+    Handyman "1" -- "1" Wallet : owns
+    Handyman "1" -- "*" BookingMessage : sends
+    Handyman "1" -- "*" SupportConversation : participates
+    Handyman "1" -- "*" Notification : receives
+    Handyman "1" -- "1" Subscription : has
+    Handyman "1" -- "*" Payment : receives
+    Handyman "1" -- "*" Transaction : has
+
+    Booking "1" -- "1" Payment : has
+    Booking "1" -- "*" BookingMessage : contains
+    Booking "1" -- "1" Notification : triggers
+
+    SupportConversation "1" -- "*" SupportMessage : contains
+
+    Wallet "1" -- "*" Transaction : contains
+    Payment "1" -- "*" Transaction : generates
+</div><hr>
+<h2 id="2-use-case-diagram--booking--payment-system">2. Use Case Diagram — Booking &amp; Payment System </h2>
+<div class="mermaid">usecaseDiagram
+    actor "User (Client)" as client
+    actor "Handyman" as handyman
+    actor "Admin" as admin
+    actor "MeSomb Payment" as mesomb
+
+    rectangle "Authentication" {
+        client --&gt; (Register)
+        client --&gt; (Login)
+        client --&gt; (Reset Password via OTP)
+        client --&gt; (Enable 2FA)
+        handyman --&gt; (Register)
+        handyman --&gt; (Login)
+        handyman --&gt; (Reset Password via OTP)
+    }
+
+    rectangle "Service Discovery" {
+        client --&gt; (Browse Services)
+        client --&gt; (Search Handymen)
+        client --&gt; (View Handyman Profile)
+        client --&gt; (View Job Portfolio)
+        client --&gt; (Save to Favorites)
+    }
+
+    rectangle "Booking Management" {
+        client --&gt; (Create Booking)
+        client --&gt; (Modify Booking Price)
+        client --&gt; (Cancel Booking)
+        client --&gt; (Mark as Complete)
+        handyman --&gt; (Accept Booking)
+        handyman --&gt; (Decline Booking)
+    }
+
+    rectangle "Payment Processing" {
+        client --&gt; (Pay via MTN Money)
+        client --&gt; (Pay via Orange Money)
+        mesomb --&gt; (Collect Payment)
+        mesomb --&gt; (Process Payout)
+        handyman --&gt; (Receive Payment)
+        admin --&gt; (View Platform Revenue)
+        admin --&gt; (Process Admin Withdrawal)
+    }
+
+    rectangle "Rating &amp; Reviews" {
+        client --&gt; (Rate Handyman 1-10)
+        client --&gt; (Write Review)
+        handyman --&gt; (View Ratings)
+    }
+
+    rectangle "Communication" {
+        client --&gt; (Send Booking Message)
+        handyman --&gt; (Send Booking Message)
+        client --&gt; (Contact Support)
+        handyman --&gt; (Contact Support)
+        admin --&gt; (Reply to Support)
+    }
+
+    rectangle "Notifications" {
+        client --&gt; (Receive Notifications)
+        handyman --&gt; (Receive Notifications)
+        admin --&gt; (Send Notifications)
+    }
+
+    rectangle "Handyman Profile" {
+        handyman --&gt; (Upload ID Card)
+        handyman --&gt; (Set Availability)
+        handyman --&gt; (Upload Job Pictures)
+        handyman --&gt; (Subscribe to Plan)
+    }
+</div><hr>
+<h2 id="3-sequence-diagrams">3. Sequence Diagrams </h2>
+<h3 id="31-booking-creation--acceptance-flow">3.1 Booking Creation &amp; Acceptance Flow </h3>
+<div class="mermaid">sequenceDiagram
+    actor Client
+    participant API as Django REST API
+    participant DB as Database
+    participant WS as WebSocket
+    participant Handyman
+
+    Client-&gt;&gt;API: POST /api/bookings/
+    Note over Client,API: {service, location, scheduled_date, job_description}
+    API-&gt;&gt;DB: Create Booking (status=pending)
+    DB--&gt;&gt;API: Booking ID
+    API--&gt;&gt;Client: 201 Created (Booking details)
+
+    API-&gt;&gt;WS: Emit "new_booking" to handyman
+    WS--&gt;&gt;Handyman: Real-time notification
+
+    Handyman-&gt;&gt;API: PATCH /api/bookings/{id}/
+    Note over Handyman,API: {action: "accept"}
+    API-&gt;&gt;DB: Update status=accepted
+    DB--&gt;&gt;API: Updated booking
+    API--&gt;&gt;Handyman: 200 OK
+
+    API-&gt;&gt;WS: Emit "booking_accepted" to client
+    WS--&gt;&gt;Client: Real-time notification
+</div><h3 id="32-payment-collection--payout-flow">3.2 Payment Collection &amp; Payout Flow </h3>
+<div class="mermaid">sequenceDiagram
+    actor Client
+    participant API as Django REST API
+    participant DB as Database
+    participant MeSomb as MeSomb Payment Gateway
+    participant HandymanWallet as Handyman Wallet
+
+    Client-&gt;&gt;API: PATCH /api/bookings/{id}/
+    Note over Client,API: {action: "complete", payment_provider, payment_number}
+    API-&gt;&gt;DB: Create Payment (status=pending)
+    API-&gt;&gt;DB: Create Wallet if not exists
+    API--&gt;&gt;Client: 202 Accepted (Check phone for PIN)
+
+    API-&gt;&gt;MeSomb: collect_payment(amount, phone, service)
+    MeSomb--&gt;&gt;Client: SMS with PIN prompt
+    Client-&gt;&gt;MeSomb: Enter PIN on phone
+
+    MeSomb-&gt;&gt;API: Webhook: payment.success
+    API-&gt;&gt;DB: Update Payment (status=collected, collect_ref)
+    API-&gt;&gt;DB: Create Transaction (credit to client wallet)
+
+    API-&gt;&gt;MeSomb: process_automatic_payout(payment)
+    MeSomb-&gt;&gt;HandymanWallet: Transfer funds (70% - platform fee)
+    MeSomb--&gt;&gt;API: Payout success (payout_ref)
+    API-&gt;&gt;DB: Update Payment (status=split)
+    API-&gt;&gt;DB: Create Transaction (debit from platform, credit to handyman)
+    API-&gt;&gt;DB: Update Handyman Wallet balance
+
+    API-&gt;&gt;API: Trigger Notification to both parties
+</div><h3 id="33-authentication--otp-flow">3.3 Authentication &amp; OTP Flow </h3>
+<div class="mermaid">sequenceDiagram
+    actor User
+    participant API as Django REST API
+    participant DB as Database
+    participant Email as Email Service
+
+    User-&gt;&gt;API: POST /api/auth/login/
+    Note over User,API: {username, password}
+    API-&gt;&gt;DB: Validate credentials
+    alt Invalid credentials
+        DB--&gt;&gt;API: AuthenticationFailed
+        API--&gt;&gt;User: 401 Unauthorized
+    else Valid credentials
+        DB--&gt;&gt;API: User object
+        API--&gt;&gt;User: 200 OK (JWT Access + Refresh tokens)
+    end
+
+    User-&gt;&gt;API: POST /api/auth/password-reset/
+    Note over User,API: {email}
+    API-&gt;&gt;DB: Create PasswordResetOTP (6-digit code, expires=5min)
+    API-&gt;&gt;Email: Send OTP to email
+    Email--&gt;&gt;User: Email with OTP code
+
+    User-&gt;&gt;API: POST /api/auth/password-reset/verify/
+    Note over User,API: {email, otp_code, new_password}
+    API-&gt;&gt;DB: Validate OTP (check expiry, attempts)
+    alt Invalid OTP
+        DB--&gt;&gt;API: Increment attempts
+        API--&gt;&gt;User: 400 Invalid OTP
+    else Valid OTP
+        API-&gt;&gt;DB: Mark OTP as used
+        API-&gt;&gt;DB: Update user password
+        API--&gt;&gt;User: 200 Password reset successful
+    end
+</div><h3 id="34-chat-messaging-flow-websocket">3.4 Chat Messaging Flow (WebSocket) </h3>
+<div class="mermaid">sequenceDiagram
+    actor Client
+    participant WS as WebSocket (Channels)
+    participant DB as Database
+    participant Handyman
+
+    Client-&gt;&gt;WS: Connect to ws://.../ws/chat/{booking_id}/
+    WS-&gt;&gt;DB: Validate booking access
+    DB--&gt;&gt;WS: Authorized
+    WS--&gt;&gt;Client: Connection accepted
+
+    Client-&gt;&gt;WS: Send message
+    Note over Client,WS: {message: "When can you come?"}
+    WS-&gt;&gt;DB: Save BookingMessage
+    DB--&gt;&gt;WS: Message saved
+    WS--&gt;&gt;Client: Message delivered
+
+    par Parallel broadcast
+        WS-&gt;&gt;Handyman: Push message via WebSocket
+        Handyman--&gt;&gt;WS: Read receipt
+        WS-&gt;&gt;DB: Update is_read=True
+    end
+
+    Handyman-&gt;&gt;WS: Send reply
+    Note over Handyman,WS: {message: "Tomorrow at 2pm"}
+    WS-&gt;&gt;DB: Save BookingMessage
+    WS--&gt;&gt;Client: Push reply via WebSocket
+    Client--&gt;&gt;WS: Read receipt
+</div><hr>
+<h2 id="4-deployment-architecture-diagram">4. Deployment Architecture Diagram </h2>
+<div class="mermaid">graph TB
+    subgraph "Client Side"
+        MobileApp[React Native Mobile App]
+    end
+
+    subgraph "Backend (Django)"
+        API[REST API - Django REST Framework]
+        WS[WebSocket - Django Channels]
+        Auth[JWT Authentication]
+        DB[(PostgreSQL/SQLite)]
+        Media[Media Storage]
+    end
+
+    subgraph "External Services"
+        Firebase[Firebase Admin SDK]
+        MeSomb[MeSomb Payment Gateway]
+        Email[SMTP Email Service]
+    end
+
+    MobileApp --&gt;|HTTPS| API
+    MobileApp --&gt;|WebSocket| WS
+    API --&gt; Auth
+    API --&gt; DB
+    WS --&gt; DB
+    API --&gt; Media
+    API --&gt; Firebase
+    API --&gt; MeSomb
+    API --&gt; Email
+    MeSomb --&gt;|Webhook| API
+</div><hr>
+<h2 id="how-to-use-these-diagrams">How to Use These Diagrams </h2>
+<h3 id="in-github-markdown-auto-renders">In GitHub Markdown (auto-renders): </h3>
+<p>Just paste the code blocks above into any <code>.md</code> file. GitHub will render them automatically.</p>
+<h3 id="in-vs-code">In VS Code: </h3>
+<ol>
+<li>Install extension: <strong>"Markdown Preview Mermaid Support"</strong></li>
+<li>Open this file</li>
+<li>Press <code>Ctrl+Shift+V</code> to preview</li>
+</ol>
+<h3 id="in-your-thesisdocument">In Your Thesis/Document: </h3>
+<ol>
+<li>Use the <strong><a href="http://draw.io">draw.io</a></strong> VS Code extension to recreate these diagrams visually</li>
+<li>Or use <strong>PlantUML</strong> with the same syntax (Mermaid and PlantUML are very similar)</li>
+<li>Export as PNG/SVG and embed in your Word/LaTeX document</li>
+</ol>
+<h3 id="for-presentations">For Presentations: </h3>
+<ul>
+<li>Copy the Mermaid code into <a href="https://mermaid.live/">https://mermaid.live/</a></li>
+<li>Export as SVG/PNG</li>
+<li>Insert into PowerPoint/Google Slides</li>
+</ul>
+
+      </div>
+      
+      
+    
+    
+    <script type="module">
+// TODO: If ZenUML gets integrated into mermaid in the future,
+//      we can remove the following lines.
+
+
+var MERMAID_CONFIG = ({"startOnLoad":false});
+if (typeof MERMAID_CONFIG !== 'undefined') {
+  MERMAID_CONFIG.startOnLoad = false
+  MERMAID_CONFIG.cloneCssStyles = false
+  MERMAID_CONFIG.theme = "default"
+}
+
+mermaid.initialize(MERMAID_CONFIG || {})
+if (typeof(window['Reveal']) !== 'undefined') {
+  function mermaidRevealHelper(event) {
+    var currentSlide = event.currentSlide
+    var diagrams = currentSlide.querySelectorAll('div.mermaid')
+    for (var i = 0; i < diagrams.length; i++) {
+      var diagram = diagrams[i]
+      if (!diagram.hasAttribute('data-processed')) {
+        mermaid.init(null, diagram, ()=> {
+          Reveal.slide(event.indexh, event.indexv)
+        })
+      }
+    }
+  }
+  Reveal.addEventListener('slidetransitionend', mermaidRevealHelper)
+  Reveal.addEventListener('ready', mermaidRevealHelper)
+  await mermaid.run({
+    nodes: document.querySelectorAll('div.mermaid')
+  })
+} else {
+  await mermaid.run({
+    nodes: document.querySelectorAll('div.mermaid')
+  })
+}
+</script>
+    
+    
+    
+  
+    </body></html>

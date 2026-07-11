@@ -101,8 +101,10 @@ export default function HandymanSignUpScreen() {
 
   // ── Step 2 fields ─────────────────────────────────────
   const [services,     setServices]   = useState([])      // all available
+  const [categories,   setCategories] = useState([])      // all available categories
   const [locations,    setLocations]  = useState([])      // all available
   const [selServices,  setSelServices] = useState([])     // selected IDs
+  const [selCategories,setSelCategories] = useState([])   // selected category IDs
   const [selLocation,  setSelLocation] = useState(null)   // selected ID
   const [availability, setAvailability] = useState(
     Object.fromEntries(DAYS.map(d => [d.key, []]))
@@ -124,11 +126,13 @@ export default function HandymanSignUpScreen() {
   async function loadOptions() {
     setFetching(true)
     try {
-      const [sRes, lRes] = await Promise.all([
+      const [sRes, cRes, lRes] = await Promise.all([
         handymanApi.get('/handymen/services/'),
+        handymanApi.get('/services/categories/'),
         handymanApi.get('/handymen/locations/'),
       ])
       setServices(sRes.data)
+      setCategories(cRes.data)
       setLocations(lRes.data)
     } catch (e) {
       showToast(t('common.error'), 'error')
@@ -243,7 +247,8 @@ export default function HandymanSignUpScreen() {
       gender:       gender,
       location:     selLocation,
       availability: JSON.stringify(availability),
-      services:     selServices
+      services:     selServices,
+      categories:   selCategories
     }
     if (base64Image) {
       signupData.thumbnail = base64Image
@@ -489,6 +494,36 @@ export default function HandymanSignUpScreen() {
                   )}
                   <Text style={[styles.chipText, { color: theme.text }, selected && styles.chipTextSelected]}>
                     {s.name}
+                  </Text>
+                  {selected && (
+                    <Ionicons name="checkmark-circle" size={16} color="white" />
+                  )}
+                </TouchableOpacity>
+              )
+            })}
+          </View>
+
+          <ThemedText style={[styles.sectionTitle, { marginTop: 24 }]}>
+            {t('handyman_profile.categories', 'Categories')}
+            <ThemedText type="secondary" style={styles.sectionSub}> ({t('auth.select_all_apply', 'select all that apply')})</ThemedText>
+          </ThemedText>
+          <View style={styles.chipGrid}>
+            {categories.map(c => {
+              const selected = selCategories.includes(c.id)
+              return (
+                <TouchableOpacity
+                  key={c.id}
+                  style={[styles.chip, { backgroundColor: theme.surface, borderColor: theme.border }, selected && { backgroundColor: theme.accent, borderColor: theme.accent }]}
+                  onPress={() => {
+                    setSelCategories(prev =>
+                      prev.includes(c.id) ? prev.filter(x => x !== c.id) : [...prev, c.id]
+                    )
+                  }}
+                >
+                  <Ionicons name="pricetag-outline" size={16}
+                    color={selected ? 'white' : theme.textSecondary} />
+                  <Text style={[styles.chipText, { color: theme.text }, selected && styles.chipTextSelected]}>
+                    {c.name}
                   </Text>
                   {selected && (
                     <Ionicons name="checkmark-circle" size={16} color="white" />

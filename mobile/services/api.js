@@ -9,6 +9,11 @@ const YOUR_LAN_IP = process.env.EXPO_PUBLIC_API_URL;
 
 function getBaseURL() {
   if (Platform.OS === 'web') return `http://localhost:${DJANGO_PORT}`
+  // Fallback to a default localhost address for development if env var is missing
+  if (!YOUR_LAN_IP) {
+    console.warn('[API] EXPO_PUBLIC_API_URL not set – falling back to http://10.0.2.2:8000')
+    return 'http://10.0.2.2:8000'
+  }
   return YOUR_LAN_IP
 }
 

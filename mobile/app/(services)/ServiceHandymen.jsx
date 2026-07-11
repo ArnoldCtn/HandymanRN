@@ -12,6 +12,7 @@ import {
   Alert,
   SafeAreaView,
   Animated,
+  ScrollView,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -19,43 +20,73 @@ import handymanApi from '@/services/handymanApi';
 
 export default function ServiceHandymenScreen() {
   const router = useRouter();
-  const { id, name, description } = useLocalSearchParams();
+  const { id, name, description, categoryId } = useLocalSearchParams();
 
-  const [handymen, setHandymen] = useState([]);        // Fixed: removed <any[]>
+  const [handymen, setHandymen] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState(
+    categoryId ? Number(categoryId) : null
+  );
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  async function fetchHandymen() {
-  if (!id) {
-    console.log("No service ID received");
-    setLoading(false);
-    return;
+  async function fetchHandymen(categoryId = null) {
+    if (!id) {
+      console.log("No service ID received");
+      setLoading(false);
+      return;
+    }
+
+    console.log(`Fetching handymen for service ID: ${id}, category: ${categoryId || 'all'}`);
+
+    try {
+      setLoading(true);
+      const params = categoryId ? `?category=${categoryId}` : '';
+      const res = await handymanApi.get(`/handymen/services/${id}/handymen/${params}`);
+      
+      console.log("API Response:", res.data);
+      setHandymen(Array.isArray(res.data) ? res.data : []);
+    } catch (error) {
+      console.log("Full Error:", error?.response?.data || error.message);
+      Alert.alert('Error', 'Failed to load handymen');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
   }
 
-  console.log(`Fetching handymen for service ID: ${id}`);
-
-  try {
-    setLoading(true);
-const res = await handymanApi.get(`/handymen/services/${id}/handymen/`);
-    
-    console.log("API Response:", res.data);   // ← Important for debugging
-    setHandymen(Array.isArray(res.data) ? res.data : []);
-  } catch (error) {
-    console.log("Full Error:", error?.response?.data || error.message);
-    Alert.alert('Error', 'Failed to load handymen');
-  } finally {
-    setLoading(false);
-    setRefreshing(false);
+  async function fetchCategories() {
+    try {
+      const res = await handymanApi.get('/services/categories/');
+      const serviceId = Number(id);
+      const filtered = (res.data || []).filter(
+        (c) => Number(c.service) === serviceId
+      );
+      setCategories(filtered);
+    } catch (error) {
+      console.log("Failed to fetch categories:", error);
+    }
   }
-}
+
+  function handleCategoryPress(categoryId) {
+    if (selectedCategory === categoryId) {
+      // Deselect: show all
+      setSelectedCategory(null);
+      fetchHandymen(null);
+    } else {
+      setSelectedCategory(categoryId);
+      fetchHandymen(categoryId);
+    }
+  }
 
   useEffect(() => {
-    fetchHandymen();
+    fetchHandymen(selectedCategory);
+    fetchCategories();
   }, [id]);
 
   const onRefresh = () => {
     setRefreshing(true);
-    fetchHandymen();
+    fetchHandymen(selectedCategory);
   };
 
   function resolveAvatar(thumbnail) {
@@ -123,6 +154,55 @@ const res = await handymanApi.get(`/handymen/services/${id}/handymen/`);
       </View>
 
       {description && <Text style={styles.headerDescription}>{description}</Text>}
+
+      {categories.length > 0 && (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.categoryTabsContainer}
+          contentContainerStyle={styles.categoryTabsContent}
+        >
+          <TouchableOpacity
+            style={[
+              styles.categoryTab,
+              !selectedCategory && styles.categoryTabActive,
+            ]}
+            onPress={() => handleCategoryPress(null)}
+          >
+            <Text
+              style={[
+                styles.categoryTabText,
+                !selectedCategory && styles.categoryTabTextActive,
+              ]}
+            >
+              All
+            </Text>
+          </TouchableOpacity>
+
+          {categories.map((category) => {
+            const isSelected = selectedCategory === category.id;
+            return (
+              <TouchableOpacity
+                key={category.id}
+                style={[
+                  styles.categoryTab,
+                  isSelected && styles.categoryTabActive,
+                ]}
+                onPress={() => handleCategoryPress(category.id)}
+              >
+                <Text
+                  style={[
+                    styles.categoryTabText,
+                    isSelected && styles.categoryTabTextActive,
+                  ]}
+                >
+                  {category.name}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+      )}
 
       <FlatList
         data={handymen}
@@ -205,4 +285,36 @@ const styles = StyleSheet.create({
 
   emptyContainer: { alignItems: 'center', marginTop: 100 },
   emptyText: { color: '#9ca3af', marginTop: 16, fontSize: 16 },
+
+  categoryTabsContainer: {
+    backgroundColor: 'white',
+    borderBottomWidth: 1,
+    borderColor: '#f0f0f0',
+  },
+  categoryTabsContent: {
+    paddingHorizontal: 16,
+    paddingVertical: 0,
+  },
+  categoryTab: {
+    paddingVertical: 12,
+    paddingHorizontal: 4,
+    marginRight: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'transparent',
+    borderBottomWidth: 2,
+    borderBottomColor: 'transparent',
+  },
+  categoryTabActive: {
+    borderBottomColor: '#6366F1',
+  },
+  categoryTabText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#64748b',
+  },
+  categoryTabTextActive: {
+    color: '#6366F1',
+    fontWeight: '700',
+  },
 });

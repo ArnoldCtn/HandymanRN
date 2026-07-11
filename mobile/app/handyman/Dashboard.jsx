@@ -146,34 +146,7 @@ export default function HandymanDashboard() {
         </View>
       </View>
 
-      {/* ── Recent Reviews ────────────────────────── */}
-      <View style={styles.rowBetween}>
-        <Text style={styles.sectionLabel}>Recent Reviews</Text>
-        <TouchableOpacity onPress={() => router.push('/handyman/Reviews')}>
-          <Text style={styles.viewAll}>View All</Text>
-        </TouchableOpacity>
-      </View>
       
-      <View style={styles.reviewsList}>
-        {loadingReviews ? (
-          <ActivityIndicator color="#f59e0b" style={{ marginVertical: 20 }} />
-        ) : recentReviews.length > 0 ? (
-          recentReviews.map((item, i) => (
-            <View key={item.id} style={styles.miniReviewCard}>
-              <View style={styles.miniReviewHeader}>
-                <Ionicons name="star" size={12} color="#f59e0b" />
-                <Text style={styles.miniRating}>{item.rating}/10</Text>
-                <Text style={styles.miniUser}>by {item.user_info?.username || 'Anonymous'}</Text>
-              </View>
-              {item.review ? (
-                <Text style={styles.miniText} numberOfLines={2}>{item.review}</Text>
-              ) : null}
-            </View>
-          ))
-        ) : (
-          <Text style={styles.noReviews}>No ratings yet</Text>
-        )}
-      </View>
 
       {/* ── Quick actions ─────────────────────────── */}
       <Text style={styles.sectionLabel}>Quick Actions</Text>
@@ -261,6 +234,36 @@ export default function HandymanDashboard() {
         </TouchableOpacity>
       </View>
 
+
+      {/* ── Recent Reviews ────────────────────────── */}
+      <View style={styles.rowBetween}>
+        <Text style={styles.sectionLabel}>Recent Reviews</Text>
+        <TouchableOpacity onPress={() => router.push('/handyman/Reviews')}>
+          <Text style={styles.viewAll}>View All</Text>
+        </TouchableOpacity>
+      </View>
+      
+      <View style={styles.reviewsList}>
+        {loadingReviews ? (
+          <ActivityIndicator color="#f59e0b" style={{ marginVertical: 20 }} />
+        ) : recentReviews.length > 0 ? (
+          recentReviews.map((item, i) => (
+            <View key={item.id} style={styles.miniReviewCard}>
+              <View style={styles.miniReviewHeader}>
+                <Ionicons name="star" size={12} color="#f59e0b" />
+                <Text style={styles.miniRating}>{item.rating}/10</Text>
+                <Text style={styles.miniUser}>by {item.user_info?.username || 'Anonymous'}</Text>
+              </View>
+              {item.review ? (
+                <Text style={styles.miniText} numberOfLines={2}>{item.review}</Text>
+              ) : null}
+            </View>
+          ))
+        ) : (
+          <Text style={styles.noReviews}>No ratings yet</Text>
+        )}
+      </View>
+
       {/* Support Button at Bottom */}
       <View style={styles.supportContainer}>
         <TouchableOpacity 
@@ -274,7 +277,7 @@ export default function HandymanDashboard() {
 
       {/* Footer */}
       <View style={styles.footer}>
-        <Text style={styles.footerText}>© 2024 Handyman Connect. All rights reserved.</Text>
+        <Text style={styles.footerText}>© 2026 Handyman Connect. All rights reserved.</Text>
         <Text style={styles.footerSubText}>Quality service at your fingertips</Text>
       </View>
 

@@ -10,7 +10,6 @@ import ProfileScreen from '@/app/handyman/Profile'
 import Myservices from '@/app/handyman/Myservices'
 import BookingsScreen from '@/app/handyman/Bookings'
 import NotificationsScreen from '@/app/handyman/Notifications'
-import SubscriptionScreen from '@/app/handyman/Subscription'
 import SupportChatScreen from '@/app/chat/support'
 import Sidebar from '@/components/Sidebar'
 import PulseView from '@/components/PulseView'
@@ -235,12 +234,6 @@ export default function HandymanHomeLayout() {
         <Tab.Screen name="Bookings" component={BookingsScreen}
           options={{ title: t('sidebar.bookings'), tabBarIcon: ({color,size}) =>
             <Ionicons name="calendar-outline" size={size} color={color} /> }} />
-        <Tab.Screen name="Subscription" component={SubscriptionScreen}
-          options={{ 
-            title: t('sidebar.subscription'),  
-            tabBarIcon: ({color,size}) =>
-              <Ionicons name="card-outline" size={size} color={color} />
-          }} />
         <Tab.Screen name="Myservices" component={Myservices}
           options={{ title: t('sidebar.my_services'),  tabBarIcon: ({color,size}) =>
             <Ionicons name="briefcase-outline" size={size} color={color} /> }} />

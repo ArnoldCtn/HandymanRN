@@ -14,6 +14,8 @@ import { useRouter } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import api from '@/services/api';
 import useGlobal from '@/services/global';
+import Sidebar from '@/components/Sidebar';
+import { useAppTheme } from '@/hooks/use-theme-color';
 
 export default function ChatsListScreen() {
   const router = useRouter();
@@ -21,8 +23,10 @@ export default function ChatsListScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [sidebarVisible, setSidebarVisible] = useState(false);
   
   const user = useGlobal(state => state.user);
+  const theme = useAppTheme();
 
   const fetchChats = async () => {
     try {
@@ -55,7 +59,7 @@ export default function ChatsListScreen() {
     const avatarUrl = item.other_thumbnail 
       ? (item.other_thumbnail.startsWith('http') 
          ? item.other_thumbnail 
-         : `http://192.168.43.188:8000/media/${item.other_thumbnail}`)
+         : `${api.defaults.baseURL.replace(/^https?:/, 'http:')}/media/${item.other_thumbnail}`)
       : `https://ui-avatars.com/api/?name=${item.other_username}&background=random`;
 
     return (
@@ -101,7 +105,7 @@ export default function ChatsListScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <View style={{ flex: 1, backgroundColor: theme.background }}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()}>
             <Ionicons name="arrow-back" size={24} color="#202020" />
@@ -112,41 +116,65 @@ export default function ChatsListScreen() {
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#0277BD" />
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
-  return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={24} color="#202020" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Chats</Text>
-        {unreadCount > 0 && (
-          <View style={styles.headerBadge}>
-            <Text style={styles.headerBadgeText}>{unreadCount}</Text>
-          </View>
-        )}
-      </View>
+  const avatarUrl = user?.thumbnail
+    ? user.thumbnail.startsWith('http')
+      ? user.thumbnail
+      : user.thumbnail
+    : null;
 
-      <FlatList
-        data={chats}
-        keyExtractor={(item) => item.booking_id.toString()}
-        renderItem={renderChatItem}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
-        contentContainerStyle={styles.listContainer}
-        ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Ionicons name="chatbubble-outline" size={64} color="#9ca3af" />
-            <Text style={styles.emptyText}>No chats yet</Text>
-            <Text style={styles.emptySubText}>Start a conversation from your bookings</Text>
-          </View>
-        }
+  return (
+    <View style={{ flex: 1, backgroundColor: theme.background }}>
+      <Sidebar
+        visible={sidebarVisible}
+        onClose={() => setSidebarVisible(false)}
+        user={user}
+        isHandyman={false}
+        onLogout={() => {}}
       />
-    </SafeAreaView>
+      <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.headerLeftBtn}>
+            <Ionicons name="arrow-back" size={24} color="#202020" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitleText}>Messages</Text>
+          {unreadCount > 0 && (
+            <View style={styles.headerBadge}>
+              <Text style={styles.headerBadgeText}>{unreadCount}</Text>
+            </View>
+          )}
+          <TouchableOpacity onPress={() => setSidebarVisible(true)} style={styles.headerLeftBtn}>
+            {avatarUrl ? (
+              <Image source={{ uri: avatarUrl }} style={styles.avatar} />
+            ) : (
+              <View style={styles.avatarPlaceholder}>
+                <Text style={styles.avatarInitial}>{user?.username?.[0]?.toUpperCase() ?? '?'}</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+        </View>
+
+        <FlatList
+          data={chats}
+          keyExtractor={(item) => item.booking_id.toString()}
+          renderItem={renderChatItem}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
+          contentContainerStyle={styles.listContainer}
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Ionicons name="chatbubble-outline" size={64} color="#9ca3af" />
+              <Text style={styles.emptyText}>No chats yet</Text>
+              <Text style={styles.emptySubText}>Start a conversation from your bookings</Text>
+            </View>
+          }
+        />
+      </SafeAreaView>
+    </View>
   );
 }
 
@@ -186,6 +214,14 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: 'bold',
   },
+  headerLeftBtn: { padding: 4, marginRight: 12 },
+  avatar: { width: 36, height: 36, borderRadius: 18 },
+  avatarPlaceholder: {
+    width: 36, height: 36, borderRadius: 18,
+    backgroundColor: '#6366F1', alignItems: 'center', justifyContent: 'center'
+  },
+  avatarInitial: { color: 'white', fontSize: 16, fontWeight: 'bold' },
+  headerTitleText: { fontSize: 18, fontWeight: '700', color: '#1f2937', flex: 1, textAlign: 'center' },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',

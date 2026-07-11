@@ -406,15 +406,18 @@ class HandymanListByServiceView(APIView):
         if not service_id:
             return Response({"detail": "Service ID is required"}, status=400)
 
-        # Efficient query: filter handymen who offer this service
         handymen = Handyman.objects.filter(
             services=service_id,
             is_active=True,
             is_verified=True,
-        ).select_related('location').prefetch_related('services')
+        ).select_related('location').prefetch_related('services', 'categories')
+
+        category_id = request.query_params.get('category')
+        if category_id:
+            handymen = handymen.filter(categories=category_id)
 
         print(
-            f"[HandymenByService] Service {service_id} → {handymen.count()} handymen found")
+            f"[HandymenByService] Service {service_id} | category={category_id} → {handymen.count()} handymen found")
 
         serializer = HandymanSerializer(
             handymen,

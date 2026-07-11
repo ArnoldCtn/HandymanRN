@@ -6,11 +6,13 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { useTranslation } from 'react-i18next';
 import api from '@/services/api';
 
 export default function UserBookingDetailScreen() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
+  const { t } = useTranslation();
 
   const [booking, setBooking] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -35,7 +37,7 @@ export default function UserBookingDetailScreen() {
         setBooking(res.data);
       } catch (err) {
         console.error('[U-BookingDetail] Fetch ERROR:', err.response?.status, err.response?.data || err.message);
-        Alert.alert('Error', 'Failed to load booking details');
+        Alert.alert(t('common.error'), t('bookings.load_failed'));
         router.back();
       } finally {
         setLoading(false);
@@ -67,14 +69,15 @@ export default function UserBookingDetailScreen() {
     setPaymentNumber(number);
     
     if (!selectedProvider) {
-      setPhoneError('Please select a payment provider first');
+      setPhoneError(t('payment.select_provider_first'));
       return;
     }
     
     if (validatePhoneNumber(number, selectedProvider)) {
       setPhoneError('');
     } else {
-      setPhoneError(`Invalid ${selectedProvider === 'orange' ? 'Orange Money' : 'MTN Mobile Money'} number format`);
+      const providerName = selectedProvider === 'orange' ? t('payment.orange_money') : t('payment.mtn_money');
+      setPhoneError(t('payment.invalid_number', { provider: providerName }));
     }
   };
 
@@ -82,6 +85,27 @@ export default function UserBookingDetailScreen() {
     setSelectedProvider(provider);
     setPaymentNumber('');
     setPhoneError('');
+  };
+
+  const getErrorTranslation = (errorCode, fallbackMessage) => {
+    const errorMap = {
+      'INSUFFICIENT_BALANCE': t('payment.error_insufficient_balance'),
+      'WRONG_PIN': t('payment.error_wrong_pin'),
+      'CANCELLED_BY_USER': t('payment.error_cancelled_by_user'),
+      'PAYMENT_REFUSED': t('payment.error_payment_refused'),
+      'INVALID_NUMBER': t('payment.error_invalid_number'),
+      'ACCOUNT_INACTIVE': t('payment.error_account_inactive'),
+      'ACCOUNT_BLOCKED': t('payment.error_account_blocked'),
+      'ACCOUNT_SUSPENDED': t('payment.error_account_inactive'),
+      'LIMIT_EXCEEDED': t('payment.error_limit_exceeded'),
+      'TIMEOUT_PIN': t('payment.error_timeout_pin'),
+      'TIMEOUT': t('payment.error_timeout_pin'),
+      'SERVICE_UNAVAILABLE': t('payment.error_service_unavailable'),
+      'NETWORK_ERROR': t('payment.error_network'),
+      'MISSING_PAYMENT_DETAILS': t('payment.no_provider'),
+    };
+    
+    return errorMap[errorCode] || fallbackMessage || t('payment.error_generic');
   };
 
   const handlePaymentSubmit = async () => {
@@ -94,25 +118,24 @@ export default function UserBookingDetailScreen() {
     
     if (!selectedProvider) {
       console.log('[U-BookingDetail] VALIDATION FAIL: no provider');
-      Alert.alert('Error', 'Please select a payment provider');
+      Alert.alert(t('common.error'), t('payment.no_provider'));
       return;
     }
     
     if (!paymentNumber) {
       console.log('[U-BookingDetail] VALIDATION FAIL: no number');
-      Alert.alert('Error', 'Please enter your payment number');
+      Alert.alert(t('common.error'), t('payment.no_number'));
       return;
     }
     
     if (phoneError) {
       console.log('[U-BookingDetail] VALIDATION FAIL: phoneError=', phoneError);
-      Alert.alert('Error', phoneError);
+      Alert.alert(t('common.error'), phoneError);
       return;
     }
     
-    // Start payment flow directly
-    console.log('[U-BookingDetail] Starting payment flow directly...');
-    console.log('[U-BookingDetail] About to call runPaymentFlow()');
+    // Start payment flow
+    console.log('[U-BookingDetail] Starting payment flow...');
     try {
       await runPaymentFlow();
       console.log('[U-BookingDetail] runPaymentFlow() completed');
@@ -122,8 +145,6 @@ export default function UserBookingDetailScreen() {
   };
   
   const runPaymentFlow = async () => {
-    let shouldClearLoading = true; // Track if we should clear loading in finally
-    
     setPaymentLoading(true);
     setPaymentResult(null);
     console.log('[U-BookingDetail] Calling API: PATCH /bookings/' + id + '/action/');
@@ -145,68 +166,45 @@ export default function UserBookingDetailScreen() {
       console.log('[U-BookingDetail] Response data:', JSON.stringify(response.data, null, 2));
       console.log('[U-BookingDetail] ==============================');
       
-      // Handle 202 ACCEPTED - payment initiated, waiting for PIN
-      if (response.status === 202) {
+      // Handle 200 OK - payment completed successfully
+      if (response.status === 200) {
         setPaymentResult({
-          type: 'pending',
+          type: 'success',
           ...response.data
         });
         
+        // Show detailed success alert with translations
+        const successMsg = t('payment.success_message', {
+          status: response.data.payment_status || 'Completed',
+          amount: response.data.amount || 'N/A',
+          handyman_amount: response.data.handyman_amount || 'N/A',
+          fee: response.data.platform_fee || 'N/A',
+          transaction_id: response.data.transaction_id || 'N/A',
+          detail: response.data.detail || ''
+        });
+        
         Alert.alert(
-          'Payment Initiated',
-          `${response.data.detail}\n\nAmount: ${response.data.amount} XAF\n\nPlease enter your PIN when you receive the SMS.`,
+          t('payment.success_title'),
+          successMsg,
           [
             {
-              text: 'Waiting for SMS...',
-              style: 'cancel'
+              text: t('common.ok'),
+              onPress: () => {
+                setPaymentModal(false);
+                setSelectedProvider(null);
+                setPaymentNumber('');
+                setPhoneError('');
+                setPaymentResult(null);
+              }
             }
           ]
         );
         
-        // Keep loading active - user should see the waiting screen
-        shouldClearLoading = false; // Don't clear loading in finally
-        console.log('[U-BookingDetail] Payment initiated, waiting for user PIN...');
-        return; // Don't clear loading yet
+        // Refresh booking data to show updated status
+        const res = await api.get(`/bookings/${id}/`);
+        console.log('[U-BookingDetail] Booking refreshed after payment');
+        setBooking(res.data);
       }
-      
-      // Handle 200 OK - payment completed immediately
-      setPaymentResult({
-        type: 'success',
-        ...response.data
-      });
-      
-      // Show detailed success alert
-      const successMsg = [
-        `Payment Status: ${response.data.payment_status || 'Completed'}`,
-        `Amount Paid: ${response.data.amount || 'N/A'} XAF`,
-        `Handyman Amount: ${response.data.handyman_amount || 'N/A'} XAF`,
-        `Platform Fee: ${response.data.platform_fee || 'N/A'} XAF`,
-        `Transaction ID: ${response.data.transaction_id || 'N/A'}`,
-        '',
-        response.data.detail
-      ].join('\n');
-      
-      Alert.alert(
-        'Payment Successful',
-        successMsg,
-        [
-          {
-            text: 'OK',
-            onPress: () => {
-              setPaymentModal(false);
-              setSelectedProvider(null);
-              setPaymentNumber('');
-              setPhoneError('');
-              setPaymentResult(null);
-            }
-          }
-        ]
-      );
-      
-      // Refresh booking data
-      const res = await api.get(`/bookings/${id}/`);
-      console.log('[U-BookingDetail] Booking refreshed after payment');
-      setBooking(res.data);
       
     } catch (err) {
       console.log('[U-BookingDetail] ==============================');
@@ -224,71 +222,58 @@ export default function UserBookingDetailScreen() {
         ...errorData
       });
       
-      // Build detailed error message
-      // Backend now sends mapped user-friendly messages in errorData.detail
-      let errorMsg = errorData.detail || 'Payment processing failed';
+      // Get the error code and map to translated message
+      const errorCode = errorData.error_code || 'UNKNOWN_ERROR';
+      const rawError = errorData.detail || errorData.mesomb_raw_error || '';
+      
+      // Use translated error message based on error code
+      let errorMsg = getErrorTranslation(errorCode, rawError);
       
       if (statusCode === 402) {
-        // Use the specific mapped message from backend if available
-        const specificReason = errorData.detail || 'Payment failed';
-        const rawError = errorData.mesomb_raw_error || errorData.mesomb_error || 'N/A';
-        const errorCode = errorData.mesomb_error_code || errorData.error_code || 'N/A';
-        
+        // Payment-specific errors with helpful tips
         errorMsg = [
-          specificReason,
+          errorMsg,
           '',
-          'Error Code: ' + errorCode,
-          'Raw Error: ' + rawError,
-          '',
-          'What to do:',
-          '- Make sure your phone has enough balance',
-          '- Check that the phone number is correct and active',
-          '- Ensure your mobile money account is not blocked',
-          '- Try again in a few moments',
+          t('payment.error_what_to_do'),
         ].join('\n');
       } else if (statusCode === 400) {
         errorMsg = [
-          'Invalid Request',
+          t('common.error'),
           '',
-          errorData.detail || '',
-          'Error Code: ' + (errorData.error_code || 'N/A')
+          errorMsg,
         ].join('\n');
       } else if (statusCode === 500) {
         errorMsg = [
-          'Server Error',
+          t('common.error'),
           '',
-          errorData.detail || 'Internal server error occurred',
-          '',
-          'Please try again. If the problem persists, contact support.'
+          errorMsg,
         ].join('\n');
       }
       
-      Alert.alert('Payment Failed', errorMsg);
+      Alert.alert(t('payment.failed_title'), errorMsg);
     } finally {
-      if (shouldClearLoading) {
-        setPaymentLoading(false);
-      }
+      setPaymentLoading(false);
       console.log('[U-BookingDetail] handlePaymentSubmit END');
     }
   };
 
   const handleModifyPrice = async () => {
     if (!newPrice || isNaN(parseFloat(newPrice))) {
-      Alert.alert('Error', 'Enter a valid price');
+      Alert.alert(t('common.error'), t('bookings.invalid_price'));
       return;
     }
     console.log('[U-BookingDetail] Modify price to', newPrice);
     try {
       await api.patch(`/bookings/${id}/modify-price/`, { total_amount: parseFloat(newPrice) });
       console.log('[U-BookingDetail] Price modified OK');
-      Alert.alert('Success', 'Price updated');
+      Alert.alert(t('common.success'), t('bookings.price_updated'));
       setModifyModal(false);
       setNewPrice('');
       const res = await api.get(`/bookings/${id}/`);
       setBooking(res.data);
     } catch (err) {
       console.error('[U-BookingDetail] Modify ERROR:', err.response?.status, err.response?.data || err.message);
-      Alert.alert('Error', err.response?.data?.detail || 'Failed to modify price');
+      Alert.alert(t('common.error'), err.response?.data?.detail || t('bookings.modify_failed'));
     }
   };
 
@@ -303,13 +288,14 @@ export default function UserBookingDetailScreen() {
   if (!booking) {
     return (
       <View style={styles.center}>
-        <Text style={{ color: '#9ca3af' }}>Booking not found</Text>
+        <Text style={{ color: '#9ca3af' }}>{t('bookings.no_bookings')}</Text>
       </View>
     );
   }
 
   const isPending = booking.status === 'pending';
   const isAccepted = booking.status === 'accepted';
+  const isCompleted = booking.status === 'completed';
 
   return (
     <SafeAreaView style={styles.container}>
@@ -317,14 +303,14 @@ export default function UserBookingDetailScreen() {
         <TouchableOpacity onPress={() => router.back()}>
           <Ionicons name="arrow-back" size={28} color="#1F2937" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Booking Details</Text>
+        <Text style={styles.headerTitle}>{t('bookings.title')}</Text>
         <View style={{ width: 28 }} />
       </View>
 
       <ScrollView style={styles.content}>
         {/* Handyman Info */}
         <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Handyman</Text>
+          <Text style={styles.sectionTitle}>{t('handyman_profile.title')}</Text>
           <View style={styles.personRow}>
             <Image
               source={{
@@ -334,32 +320,32 @@ export default function UserBookingDetailScreen() {
             />
             <View>
               <Text style={styles.personName}>{booking.handyman?.username}</Text>
-              <Text style={styles.personPhone}>{booking.handyman?.phone || 'No phone'}</Text>
+              <Text style={styles.personPhone}>{booking.handyman?.phone || t('common.not_set')}</Text>
             </View>
           </View>
         </View>
 
         {/* Booking Info */}
         <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Service Information</Text>
+          <Text style={styles.sectionTitle}>{t('bookings.title')}</Text>
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Service</Text>
+            <Text style={styles.infoLabel}>{t('handyman_profile.services')}</Text>
             <Text style={styles.infoValue}>{booking.service_name}</Text>
           </View>
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Location</Text>
+            <Text style={styles.infoLabel}>{t('handyman_profile.location')}</Text>
             <Text style={styles.infoValue}>{booking.location_name || 'N/A'}</Text>
           </View>
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Date</Text>
+            <Text style={styles.infoLabel}>{t('request.feature_book_title')}</Text>
             <Text style={styles.infoValue}>{new Date(booking.scheduled_date).toLocaleString()}</Text>
           </View>
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Amount</Text>
+            <Text style={styles.infoLabel}>{t('handyman_profile.rate')}</Text>
             <Text style={styles.infoValue}>{booking.total_amount} FCFA</Text>
           </View>
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Status</Text>
+            <Text style={styles.infoLabel}>{t('bookings.tab_all')}</Text>
             <Text style={[styles.status, { color: getStatusColor(booking.status) }]}>
               {booking.status.toUpperCase()}
             </Text>
@@ -368,15 +354,15 @@ export default function UserBookingDetailScreen() {
 
         {/* Description */}
         <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Job Description</Text>
-          <Text style={styles.description}>{booking.job_description || 'No description'}</Text>
+          <Text style={styles.sectionTitle}>{t('handyman_profile.about')}</Text>
+          <Text style={styles.description}>{booking.job_description || t('bookings.no_description')}</Text>
         </View>
 
         {/* Actions */}
         <View style={styles.actionsContainer}>
-          {isAccepted && (
+          {isAccepted && !isCompleted && (
             <TouchableOpacity style={styles.completeButton} onPress={handleComplete}>
-              <Text style={styles.completeText}>Mark as Completed</Text>
+              <Text style={styles.completeText}>{t('payment.complete_pay')}</Text>
             </TouchableOpacity>
           )}
 
@@ -385,15 +371,15 @@ export default function UserBookingDetailScreen() {
               style={styles.modifyButton}
               onPress={() => { setNewPrice(String(booking.total_amount || '')); setModifyModal(true); }}
             >
-              <Text style={styles.modifyText}>Modify Price</Text>
+              <Text style={styles.modifyText}>{t('bookings.modify_price')}</Text>
             </TouchableOpacity>
           )}
         </View>
 
-        {( isAccepted) && (
+        {(isAccepted || isCompleted) && (
           <TouchableOpacity style={styles.chatButton} onPress={() => router.push(`/chat/${id}?source=user`)}>
             <Ionicons name="chatbubble-outline" size={20} color="#6366F1" />
-            <Text style={styles.chatButtonText}>Chat with Handyman</Text>
+            <Text style={styles.chatButtonText}>{t('bookings.chat')}</Text>
           </TouchableOpacity>
         )}
       </ScrollView>
@@ -401,17 +387,17 @@ export default function UserBookingDetailScreen() {
       <Modal visible={modifyModal} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Modify Price</Text>
+            <Text style={styles.modalTitle}>{t('bookings.modify_modal_title')}</Text>
             <TextInput
               style={styles.priceInput} keyboardType="numeric" value={newPrice}
-              onChangeText={setNewPrice} placeholder="Enter new price (FCFA)"
+              onChangeText={setNewPrice} placeholder={t('bookings.price_placeholder')}
             />
             <View style={styles.modalButtons}>
               <TouchableOpacity style={styles.modalCancel} onPress={() => { setModifyModal(false); setNewPrice(''); }}>
-                <Text style={styles.modalCancelText}>Cancel</Text>
+                <Text style={styles.modalCancelText}>{t('common.cancel')}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.modalConfirm} onPress={handleModifyPrice}>
-                <Text style={styles.modalConfirmText}>Confirm</Text>
+                <Text style={styles.modalConfirmText}>{t('common.confirm')}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -423,19 +409,19 @@ export default function UserBookingDetailScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.paymentHeader}>
-              <Text style={styles.modalTitle}>Complete Booking</Text>
+              <Text style={styles.modalTitle}>{t('payment.title')}</Text>
               <TouchableOpacity onPress={() => { setPaymentModal(false); setSelectedProvider(null); setPaymentNumber(''); setPhoneError(''); }}>
                 <Ionicons name="close" size={24} color="#64748b" />
               </TouchableOpacity>
             </View>
 
             <Text style={styles.paymentDescription}>
-              Select your payment provider and enter your mobile money number
+              {t('payment.description')}
             </Text>
 
             {/* Payment Provider Selection */}
             <View style={styles.providerContainer}>
-              <Text style={styles.providerLabel}>Payment Provider</Text>
+              <Text style={styles.providerLabel}>{t('payment.provider_label')}</Text>
               <View style={styles.providerButtons}>
                 <TouchableOpacity
                   style={[
@@ -449,7 +435,7 @@ export default function UserBookingDetailScreen() {
                     style={styles.providerImage} 
                     resizeMode="contain"
                   />
-                  <Text style={styles.providerName}>Orange Money</Text>
+                  <Text style={styles.providerName}>{t('payment.orange_money')}</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -464,7 +450,7 @@ export default function UserBookingDetailScreen() {
                     style={styles.providerImage} 
                     resizeMode="contain"
                   />
-                  <Text style={styles.providerName}>MTN Mobile Money</Text>
+                  <Text style={styles.providerName}>{t('payment.mtn_money')}</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -472,7 +458,7 @@ export default function UserBookingDetailScreen() {
             {/* Phone Number Input */}
             {selectedProvider && (
               <View style={styles.phoneContainer}>
-                <Text style={styles.phoneLabel}>Payment Number</Text>
+                <Text style={styles.phoneLabel}>{t('payment.phone_label')}</Text>
                 <TextInput
                   style={[
                     styles.phoneInput,
@@ -481,7 +467,7 @@ export default function UserBookingDetailScreen() {
                   keyboardType="phone-pad"
                   value={paymentNumber}
                   onChangeText={handlePaymentNumberChange}
-                  placeholder={`Enter ${selectedProvider === 'orange' ? 'Orange Money' : 'MTN Mobile Money'} number`}
+                  placeholder={selectedProvider === 'orange' ? t('payment.phone_placeholder_orange') : t('payment.phone_placeholder_mtn')}
                   maxLength={9}
                 />
                 {phoneError ? (
@@ -489,8 +475,8 @@ export default function UserBookingDetailScreen() {
                 ) : (
                   <Text style={styles.hintText}>
                     {selectedProvider === 'orange' 
-                      ? 'Format: 69XXXXXXX or 655XXXXXX' 
-                      : 'Format: 67XXXXXXX or 650XXXXXX'
+                      ? t('payment.phone_hint_orange')
+                      : t('payment.phone_hint_mtn')
                     }
                   </Text>
                 )}
@@ -517,10 +503,10 @@ export default function UserBookingDetailScreen() {
                   paymentResult.type === 'pending' ? styles.resultTextPending : styles.resultTextError
                 ]}>
                   {paymentResult.type === 'success' 
-                    ? 'Payment successful! See alert for details.' 
+                    ? t('payment.result_success')
                     : paymentResult.type === 'pending'
-                    ? `${paymentResult.detail || 'Payment initiated... Check your phone for SMS'}`
-                    : paymentResult.detail || paymentResult.mesomb_error || 'Payment processing failed'
+                    ? t('payment.result_pending')
+                    : getErrorTranslation(paymentResult.error_code, paymentResult.detail || paymentResult.mesomb_error)
                   }
                 </Text>
               </View>
@@ -539,7 +525,7 @@ export default function UserBookingDetailScreen() {
                 }}
                 disabled={paymentLoading}
               >
-                <Text style={styles.modalCancelText}>Cancel</Text>
+                <Text style={styles.modalCancelText}>{t('payment.cancel')}</Text>
               </TouchableOpacity>
               <TouchableOpacity 
                 style={[
@@ -553,7 +539,7 @@ export default function UserBookingDetailScreen() {
                 {paymentLoading ? (
                   <ActivityIndicator color="#ffffff" size="small" />
                 ) : (
-                  <Text style={styles.modalConfirmText}>Complete & Pay</Text>
+                  <Text style={styles.modalConfirmText}>{t('payment.complete_pay')}</Text>
                 )}
               </TouchableOpacity>
             </View>
@@ -562,14 +548,12 @@ export default function UserBookingDetailScreen() {
             {paymentLoading && (
               <View style={styles.loadingOverlay}>
                 <ActivityIndicator size="large" color="#2563eb" />
-                <Text style={styles.loadingText}>Waiting for payment confirmation...</Text>
+                <Text style={styles.loadingText}>{t('payment.waiting_title')}</Text>
                 <Text style={styles.loadingSubtext}>
-                  1. Check your phone for an SMS from MTN/Orange{'\n'}
-                  2. Enter your PIN immediately to confirm{'\n'}
-                  3. Do NOT close this screen until done
+                  {t('payment.waiting_instructions')}
                 </Text>
                 <Text style={[styles.loadingSubtext, {color: '#ef4444', fontWeight: '600', marginTop: 8}]}>
-                  You have about 60 seconds to enter your PIN
+                  {t('payment.waiting_timeout')}
                 </Text>
                 <TouchableOpacity 
                   style={styles.cancelLoadingButton}
@@ -577,11 +561,11 @@ export default function UserBookingDetailScreen() {
                     setPaymentLoading(false);
                     setPaymentResult({
                       type: 'error',
-                      detail: 'Payment cancelled. You can try again if you did not receive the SMS.'
+                      detail: t('payment.payment_cancelled')
                     });
                   }}
                 >
-                  <Text style={styles.cancelLoadingText}>Cancel / Did not receive SMS</Text>
+                  <Text style={styles.cancelLoadingText}>{t('payment.cancel_loading')}</Text>
                 </TouchableOpacity>
               </View>
             )}
