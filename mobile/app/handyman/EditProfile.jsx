@@ -302,29 +302,41 @@ export default function HandymanEditProfileScreen() {
           </View>
 
           <Text style={styles.sectionTitle}>{t('handyman_profile.categories', 'Categories')}</Text>
-          <View style={styles.chipGrid}>
-            {categories.map(c => {
-              const selected = selCategories.includes(c.id)
+          {services
+            .filter(service => selServices.includes(service.id))
+            .map(service => {
+              const serviceCategories = categories.filter(c => c.service === service.id || c.service_id === service.id)
               return (
-                <TouchableOpacity
-                  key={c.id}
-                  style={[styles.chip, selected && styles.chipActive]}
-                  onPress={() => {
-                    setSelCategories(prev =>
-                      prev.includes(c.id) ? prev.filter(x => x !== c.id) : [...prev, c.id]
-                    )
-                  }}
-                >
-                  <Ionicons name="pricetag-outline" size={13}
-                    color={selected ? 'white' : theme.textSecondary} />
-                  <Text style={[styles.chipText, selected && styles.chipTextActive]}>
-                    {c.name}
+                <View key={service.id} style={{ marginBottom: 12, width: '100%' }}>
+                  <Text style={[styles.serviceLabel, { color: theme.text }]}>
+                    {service.name}
                   </Text>
-                  {selected && <Ionicons name="checkmark" size={13} color="white" />}
-                </TouchableOpacity>
+                  <View style={styles.chipGrid}>
+                    {serviceCategories.map(cat => {
+                      const selected = selCategories.includes(cat.id)
+                      return (
+                        <TouchableOpacity
+                          key={cat.id}
+                          style={[styles.chip, selected && styles.chipActive]}
+                          onPress={() => {
+                            setSelCategories(prev =>
+                              prev.includes(cat.id) ? prev.filter(x => x !== cat.id) : [...prev, cat.id]
+                            )
+                          }}
+                        >
+                          <Ionicons name="pricetag-outline" size={13}
+                            color={selected ? 'white' : theme.textSecondary} />
+                          <Text style={[styles.chipText, selected && styles.chipTextActive]}>
+                            {cat.name}
+                          </Text>
+                          {selected && <Ionicons name="checkmark" size={13} color="white" />}
+                        </TouchableOpacity>
+                      )
+                    })}
+                  </View>
+                </View>
               )
             })}
-          </View>
 
           <Text style={styles.sectionTitle}>{t('handyman_profile.location')}</Text>
           <View style={styles.chipGrid}>
@@ -415,6 +427,7 @@ const createStyles = (theme) => StyleSheet.create({
   cameraBtn:         { position:'absolute', bottom:0, right:0, width:28, height:28, borderRadius:14, backgroundColor: theme.primary, alignItems:'center', justifyContent:'center', borderWidth:2, borderColor: theme.surface },
   eye:               { position:'absolute', right:16, top:40, padding:4 },
   sectionTitle:      { fontSize:15, fontWeight:'700', color: theme.text, marginTop:20, marginBottom:10 },
+  serviceLabel:      { fontSize:13, fontWeight:'600', marginBottom:6, marginTop:4 },
   chipGrid:          { flexDirection:'row', flexWrap:'wrap', gap:8, marginBottom:8 },
   chip:              { flexDirection:'row', alignItems:'center', gap:5, paddingVertical:7, paddingHorizontal:12, borderRadius:20, borderWidth:1.5, borderColor: theme.border, backgroundColor: theme.surface },
   chipActive:        { backgroundColor: theme.primary, borderColor: theme.primary },

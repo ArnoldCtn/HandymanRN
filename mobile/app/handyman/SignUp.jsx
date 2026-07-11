@@ -503,35 +503,54 @@ export default function HandymanSignUpScreen() {
             })}
           </View>
 
-          <ThemedText style={[styles.sectionTitle, { marginTop: 24 }]}>
-            {t('handyman_profile.categories', 'Categories')}
-            <ThemedText type="secondary" style={styles.sectionSub}> ({t('auth.select_all_apply', 'select all that apply')})</ThemedText>
-          </ThemedText>
-          <View style={styles.chipGrid}>
-            {categories.map(c => {
-              const selected = selCategories.includes(c.id)
-              return (
-                <TouchableOpacity
-                  key={c.id}
-                  style={[styles.chip, { backgroundColor: theme.surface, borderColor: theme.border }, selected && { backgroundColor: theme.accent, borderColor: theme.accent }]}
-                  onPress={() => {
-                    setSelCategories(prev =>
-                      prev.includes(c.id) ? prev.filter(x => x !== c.id) : [...prev, c.id]
-                    )
-                  }}
-                >
-                  <Ionicons name="pricetag-outline" size={16}
-                    color={selected ? 'white' : theme.textSecondary} />
-                  <Text style={[styles.chipText, { color: theme.text }, selected && styles.chipTextSelected]}>
-                    {c.name}
-                  </Text>
-                  {selected && (
-                    <Ionicons name="checkmark-circle" size={16} color="white" />
-                  )}
-                </TouchableOpacity>
-              )
-            })}
-          </View>
+          {/* Categories Section - Dynamic based on selected services */}
+          {selServices.length > 0 && (
+            <>
+              <ThemedText style={[styles.sectionTitle, { marginTop: 24 }]}>
+                {t('handyman_profile.categories', 'Categories')}
+                <ThemedText type="secondary" style={styles.sectionSub}> ({t('auth.select_all_apply', 'select all that apply')})</ThemedText>
+              </ThemedText>
+              
+              {/* Group categories by service */}
+              {services
+                .filter(service => selServices.includes(service.id))
+                .map(service => {
+                  const serviceCategories = categories.filter(c => c.service === service.id || c.service_id === service.id)
+                  return (
+                    <View key={service.id} style={{ marginBottom: 16, width: '100%' }}>
+                      <ThemedText type="default" style={{ fontSize: 14, fontWeight: '600', marginBottom: 8, color: theme.text }}>
+                        {service.name}
+                      </ThemedText>
+                      <View style={styles.chipGrid}>
+                        {serviceCategories.map(cat => {
+                          const selected = selCategories.includes(cat.id)
+                          return (
+                            <TouchableOpacity
+                              key={cat.id}
+                              style={[styles.chip, { backgroundColor: theme.surface, borderColor: theme.border }, selected && { backgroundColor: theme.accent, borderColor: theme.accent }]}
+                              onPress={() => {
+                                setSelCategories(prev =>
+                                  prev.includes(cat.id) ? prev.filter(x => x !== cat.id) : [...prev, cat.id]
+                                )
+                              }}
+                            >
+                              <Ionicons name="pricetag-outline" size={16}
+                                color={selected ? 'white' : theme.textSecondary} />
+                              <Text style={[styles.chipText, { color: theme.text }, selected && styles.chipTextSelected]}>
+                                {cat.name}
+                              </Text>
+                              {selected && (
+                                <Ionicons name="checkmark-circle" size={16} color="white" />
+                              )}
+                            </TouchableOpacity>
+                          )
+                        })}
+                      </View>
+                    </View>
+                  )
+                })}
+            </>
+          )}
 
           <ThemedText style={[styles.sectionTitle, { marginTop: 24 }]}>
             {t('handyman_profile.location')}

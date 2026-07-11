@@ -152,17 +152,43 @@ export default function HandymanProfileScreen() {
           </View>
         )}
 
-        {/* Services */}
+        {/* Services with Categories */}
         <View style={styles.card}>
           <Text style={styles.cardTitle}>{t('handyman_profile.services', 'Services Offered')}</Text>
           {handyman?.services?.length > 0 ? (
-            <View style={styles.chipRow}>
-              {handyman.services.map((s, i) => (
-                <View key={i} style={styles.chip}>
-                  <Ionicons name="construct-outline" size={13} color={theme.primary} />
-                  <Text style={styles.chipText}>{s.name ?? s}</Text>
-                </View>
-              ))}
+            <View style={styles.servicesContainer}>
+              {handyman.services.map((service, i) => {
+                const serviceCategories = handyman?.categories?.filter(cat => {
+                  const catServiceId = typeof cat === 'object' ? (cat.service ?? cat.service_id) : null
+                  return catServiceId === service.id
+                }) || []
+                
+                return (
+                  <View key={i} style={styles.serviceGroup}>
+                    <View style={styles.serviceHeader}>
+                      <Ionicons name="construct-outline" size={16} color={theme.primary} />
+                      <Text style={styles.serviceName}>{service.name ?? service}</Text>
+                    </View>
+                    
+                    {serviceCategories.length > 0 ? (
+                      <View style={styles.categoriesList}>
+                        {serviceCategories.map((cat, catIndex) => (
+                          <View key={catIndex} style={styles.categoryItem}>
+                            <Ionicons name="pricetag-outline" size={12} color={theme.accent} />
+                            <Text style={styles.categoryName}>
+                              {typeof cat === 'object' ? cat.name : cat}
+                            </Text>
+                          </View>
+                        ))}
+                      </View>
+                    ) : (
+                      <Text style={styles.noCategoriesText}>
+                        {t('handyman_profile.no_categories', 'No categories selected')}
+                      </Text>
+                    )}
+                  </View>
+                )
+              })}
             </View>
           ) : (
             <EmptyRow theme={theme} text={t('handyman_profile.no_services', 'No services added yet')} />
@@ -361,6 +387,16 @@ const createStyles = (theme) => StyleSheet.create({
   chipRow:   { flexDirection:'row', flexWrap:'wrap', gap:8 },
   chip:      { flexDirection:'row', alignItems:'center', gap:5, backgroundColor: theme.primary + '11', paddingVertical:5, paddingHorizontal:10, borderRadius:20 },
   chipText:  { fontSize:12, color: theme.primary, fontWeight:'600' },
+
+  // Services with categories
+  servicesContainer: { gap:12 },
+  serviceGroup: { backgroundColor: theme.background, padding:12, borderRadius:12, borderWidth:1, borderColor: theme.border },
+  serviceHeader: { flexDirection:'row', alignItems:'center', gap:8, marginBottom:8 },
+  serviceName: { fontSize:14, fontWeight:'700', color: theme.text, flex:1 },
+  categoriesList: { marginLeft:24, gap:6 },
+  categoryItem: { flexDirection:'row', alignItems:'center', gap:6, marginVertical:2 },
+  categoryName: { fontSize:13, color: theme.textSecondary, fontWeight:'500' },
+  noCategoriesText: { fontSize:12, color: theme.textSecondary, fontStyle:'italic', marginLeft:24, marginTop:4 },
 
   // Availability
   availRow:   { flexDirection:'row', alignItems:'center', gap:10, marginBottom:10 },

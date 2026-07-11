@@ -1,32 +1,13 @@
 # notifications/services.py
 
-import firebase_admin
-
-from firebase_admin import credentials, messaging
-
 from django.conf import settings
 
 from .models import Notification
 
 
 
-# Initialize Firebase Admin SDK (only once)
-
-if not firebase_admin._apps:
-
-    if settings.FIREBASE_SERVICE_ACCOUNT:
-
-        cred = credentials.Certificate(settings.FIREBASE_SERVICE_ACCOUNT)
-
-        firebase_admin.initialize_app(cred)
-
-        print("✅ Firebase Admin SDK initialized successfully")
-
-    else:
-
-        print("⚠️  Firebase Admin SDK not initialized - service account missing")
-
-
+# Firebase Admin SDK is lazily imported inside send_push_notification()
+# to avoid crashes when firebase-admin is not installed.
 
 
 
