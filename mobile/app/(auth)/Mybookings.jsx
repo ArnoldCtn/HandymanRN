@@ -122,6 +122,13 @@ export default function MyBookingsScreen() {
         {item.job_description || t('bookings.no_description', "No description provided")}
       </Text>
 
+      <View style={styles.serviceInfo}>
+        <Text style={styles.serviceName}>Service: {item.service_name}</Text>
+        {item.category_name && (
+          <Text style={styles.categoryName}>{t('bookings.category', 'Category')}: {item.category_name}</Text>
+        )}
+      </View>
+
       <View style={styles.footer}>
         <Text style={styles.amount}>
           {item.total_amount ? `${item.total_amount} FCFA` : t('bookings.negotiable', "Negotiable")}
@@ -260,7 +267,10 @@ const createStyles = (theme) => StyleSheet.create({
   date: { fontSize: 13, color: theme.textSecondary, marginTop: 2 },
   statusBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
   statusText: { fontSize: 12, fontWeight: '700' },
-  jobDesc: { fontSize: 14, color: theme.text, marginBottom: 12, lineHeight: 20 },
+  jobDesc: { fontSize: 14, color: theme.text, marginBottom: 8, lineHeight: 20 },
+  serviceInfo: { marginBottom: 8 },
+  serviceName: { fontSize: 13, color: theme.textSecondary, marginBottom: 2 },
+  categoryName: { fontSize: 12, color: theme.textSecondary, fontStyle: 'italic' },
   footer: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   amount: { fontSize: 15, fontWeight: '600', color: theme.text },
   footerActions: { flexDirection: 'row', gap: 10 },

@@ -109,23 +109,20 @@ class BookingAcceptDeclineView(generics.UpdateAPIView):
                 }, status=status.HTTP_400_BAD_REQUEST)
             
             # Import here to avoid circular imports
-            from payments.services import process_payment_sync
+            from payments.services import process_payment_async
             
-            # Process payment synchronously - waits for MeSomb response
-            result = process_payment_sync(booking, payment_provider, payment_number)
+            # Process payment asynchronously - returns immediately
+            result = process_payment_async(booking, payment_provider, payment_number)
             
-            logger.info(f"[PAYMENT] Result for booking {booking.id}: success={result['success']}")
+            logger.info(f"[PAYMENT] Async result for booking {booking.id}: success={result['success']}")
             
             if result['success']:
+                # Return immediately with pending status - webhook will update later
                 return Response({
-                    "detail": result['detail'],
+                    "detail": "Payment initiated. Please check your phone for PIN entry.",
                     "payment_id": result['payment_id'],
-                    "transaction_id": result['transaction_id'],
-                    "amount": result['amount'],
-                    "handyman_amount": result['handyman_amount'],
-                    "platform_fee": result['platform_fee'],
-                    "payment_status": result['payment_status'],
-                    "booking_status": result['booking_status']
+                    "status": "pending",
+                    "message": "You will receive a PIN request on your phone. Please enter your PIN to complete the payment."
                 }, status=status.HTTP_200_OK)
             else:
                 # Return specific error with proper HTTP status
@@ -171,6 +168,69 @@ class BookingModifyPriceView(generics.UpdateAPIView):
         except (ValueError, TypeError):
             return Response({"detail": "Invalid amount"}, status=status.HTTP_400_BAD_REQUEST)
 
+        # Enforce category minimum price floor on modification
+        if booking.category and booking.category.price is not None:
+            if new_amount < float(booking.category.price):
+                return Response({
+                    "detail": f"Price cannot be less than the category minimum of {booking.category.price} FCFA"
+                }, status=status.HTTP_400_BAD_REQUEST)
+
         booking.total_amount = new_amount
         booking.save()
         return Response(BookingSerializer(booking, context={'request': request}).data)
+
+
+class PaymentStatusView(generics.RetrieveAPIView):
+    """Get payment status for a booking (for polling)"""
+    permission_classes = [permissions.IsAuthenticated]
+    authentication_classes = [DualJWTAuthentication]
+
+    def get(self, request, pk):
+        try:
+            booking = get_object_or_404(Booking, pk=pk)
+            
+            # Check permissions
+            if isinstance(request.user, Handyman):
+                if booking.handyman != request.user:
+                    return Response({"detail": "Not authorized"}, status=status.HTTP_403_FORBIDDEN)
+            else:
+                if booking.user != request.user:
+                    return Response({"detail": "Not authorized"}, status=status.HTTP_403_FORBIDDEN)
+            
+            # Get payment info
+            try:
+                # Use related_name='payment' from the Payment model
+                payment = booking.payment.first()
+                if not payment:
+                    return Response({
+                        "status": "no_payment",
+                        "booking_status": booking.status,
+                        "message": "No payment initiated"
+                    })
+                
+                # Safely get payment fields with defaults
+                return Response({
+                    "payment_id": payment.id,
+                    "status": payment.status or 'pending',
+                    "booking_status": booking.status,
+                    "amount": float(payment.gross_amount) if payment.gross_amount else 0.0,
+                    "method": payment.method or 'mtn',
+                    "payer_number": payment.payer_number or '',
+                    "collect_ref": payment.collect_ref or '',
+                    "error_message": payment.error_message if payment.status == 'failed' else None,
+                    "handyman_amount": float(payment.handyman_amount) if payment.handyman_amount else 0.0,
+                    "platform_fee": float(payment.platform_fee) if payment.platform_fee else 0.0
+                })
+            except Exception as e:
+                logger.error(f"Error fetching payment status: {e}", exc_info=True)
+                return Response({
+                    "status": "error",
+                    "message": f"Failed to fetch payment status: {str(e)}"
+                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                
+        except Exception as e:
+            logger.error(f"Critical error in PaymentStatusView: {e}", exc_info=True)
+            return Response({
+                "status": "error",
+                "message": "Critical server error"
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

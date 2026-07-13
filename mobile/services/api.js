@@ -70,7 +70,10 @@ api.interceptors.response.use(
     const isSignIn = original.url.includes('/signin/') || original.url.includes('/signup/')
     
     if (error.response?.status === 401 && !original._retry && !isSignIn) {
+      console.log('[User API] 401 detected, attempting token refresh...')
+      
       if (isRefreshing) {
+        console.log('[User API] Token refresh already in progress, queuing request')
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject })
         }).then(token => {
@@ -82,9 +85,17 @@ api.interceptors.response.use(
       isRefreshing    = true
       try {
         const refresh = await AsyncStorage.getItem('refresh_token')
-        if (!refresh) throw new Error('No refresh token')
+        console.log('[User API] Refresh token:', refresh ? 'present' : 'MISSING')
+        
+        if (!refresh) {
+          throw new Error('No refresh token available')
+        }
+        
+        console.log('[User API] Attempting to refresh token...')
         const res = await axios.post(`${getBaseURL()}/users/token/refresh/`, { refresh })
         const newAccess = res.data.access
+        console.log('[User API] Token refresh successful')
+        
         await AsyncStorage.setItem('access_token', newAccess)
         if (res.data.refresh) {
           await AsyncStorage.setItem('refresh_token', res.data.refresh)
@@ -93,11 +104,13 @@ api.interceptors.response.use(
         original.headers.Authorization = `Bearer ${newAccess}`
         return api(original)
       } catch (e) {
+        console.error('[User API] Token refresh failed:', e.message)
         processQueue(e, null)
         await AsyncStorage.multiRemove([
           'access_token', 'refresh_token', 'user'
         ])
         if (typeof global.__forceUserLogout === 'function') {
+          console.log('[User API] Forcing logout due to auth failure')
           global.__forceUserLogout()
         }
         return Promise.reject(e)
@@ -105,6 +118,16 @@ api.interceptors.response.use(
         isRefreshing = false
       }
     }
+    
+    // Log other errors with more detail
+    if (error.response) {
+      console.error(`[User API] Error ${error.response.status}:`, error.response.data)
+    } else if (error.request) {
+      console.error('[User API] No response received:', error.request)
+    } else {
+      console.error('[User API] Request setup error:', error.message)
+    }
+    
     return Promise.reject(error)
   }
 )

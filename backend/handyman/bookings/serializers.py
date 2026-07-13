@@ -7,6 +7,7 @@ from handymen.serializers import HandymanSerializer  # if you have it
 
 class BookingSerializer(serializers.ModelSerializer):
     service_name = serializers.CharField(source='service.name', read_only=True)
+    category_name = serializers.CharField(source='category.name', read_only=True, default=None)
     location_name = serializers.CharField(source='location.location', read_only=True, default=None)
     handyman = serializers.SerializerMethodField()
     user = serializers.SerializerMethodField()
@@ -14,7 +15,9 @@ class BookingSerializer(serializers.ModelSerializer):
     class Meta:
         model = Booking
         fields = [
-            'id', 'user', 'handyman', 'service', 'service_name', 'location', 'location_name',
+            'id', 'user', 'handyman', 'service', 'service_name',
+            'category', 'category_name',
+            'location', 'location_name',
             'scheduled_date', 'job_description', 'total_amount',
             'status', 'completed_at', 'cancelled_at', 'cancellation_reason',
             'created_at', 'updated_at'
@@ -66,5 +69,18 @@ class BookingCreateSerializer(serializers.ModelSerializer):
     """Used when user creates a new booking"""
     class Meta:
         model = Booking
-        fields = ['handyman', 'service', 'location', 'scheduled_date',
+        fields = ['handyman', 'service', 'category', 'location', 'scheduled_date',
                   'job_description', 'total_amount']
+
+    def validate(self, attrs):
+        category = attrs.get('category')
+        total_amount = attrs.get('total_amount', 0)
+
+        # Enforce category minimum price floor
+        if category and category.price is not None:
+            if total_amount < category.price:
+                raise serializers.ValidationError({
+                    'total_amount': f"Amount cannot be less than the category minimum price of {category.price} FCFA"
+                })
+
+        return attrs

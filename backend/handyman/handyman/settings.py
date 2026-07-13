@@ -146,6 +146,7 @@ INSTALLED_APPS = [
     'ratings',
     'favorites',
     'django_extensions',
+    'reports',
 ]
 
 SITE_ID = 1 

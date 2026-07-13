@@ -331,6 +331,180 @@ class MeSombService:
             }
 
 
+def process_payment_async(booking, payment_provider, payment_number):
+    """
+    Process payment asynchronously - initiate payment and return immediately.
+    The webhook will update the status when payment completes.
+    Returns a dict with payment_id and status.
+    """
+    from decimal import Decimal
+    
+    handyman = booking.handyman
+    
+    total = float(booking.total_amount)
+    handyman_pct = 0.70
+    platform_fee = round(total * (1 - handyman_pct), 2)
+    handyman_amount = round(total * handyman_pct, 2)
+    
+    logger.info(f"[process_payment_async] booking={booking.id} | total={total} | provider={payment_provider} | number={payment_number}")
+    
+    # Create Payment record
+    try:
+        payment = Payment.objects.create(
+            booking=booking,
+            user=booking.user,
+            handyman=handyman,
+            gross_amount=total,
+            platform_fee=platform_fee,
+            handyman_amount=handyman_amount,
+            method=payment_provider,
+            payer_number=payment_number,
+            status='pending'
+        )
+        logger.info(f"[process_payment_async] Payment record created | id={payment.id}")
+    except Exception as e:
+        logger.error(f"[process_payment_async] FAILED to create Payment record: {e}")
+        return {
+            'success': False,
+            'error_code': 'PAYMENT_RECORD_ERROR',
+            'error': f'Failed to create payment record: {str(e)}',
+            'http_status': 500
+        }
+    
+    # Start payment collection in background thread
+    try:
+        import threading
+        thread = threading.Thread(
+            target=_collect_payment_background,
+            args=(payment.id, booking.id, total, payment_provider, payment_number),
+            daemon=True
+        )
+        thread.start()
+        logger.info(f"[process_payment_async] Background payment thread started for payment={payment.id}")
+        
+        return {
+            'success': True,
+            'payment_id': payment.id,
+            'status': 'pending',
+            'message': 'Payment initiated. Please check your phone for PIN entry.'
+        }
+    except Exception as e:
+        logger.error(f"[process_payment_async] FAILED to start background thread: {e}")
+        payment.status = 'failed'
+        payment.error_message = str(e)
+        payment.save()
+        return {
+            'success': False,
+            'error_code': 'THREAD_ERROR',
+            'error': f'Failed to initiate payment: {str(e)}',
+            'http_status': 500
+        }
+
+
+def _collect_payment_background(payment_id, booking_id, amount, service, payer_number):
+    """
+    Background task to collect payment via MeSomb.
+    This runs in a separate thread and doesn't block the HTTP response.
+    """
+    from django.utils import timezone
+    
+    logger.info(f"[_collect_payment_background] START | payment={payment_id} | booking={booking_id}")
+    
+    try:
+        payment = Payment.objects.get(id=payment_id)
+        booking = Booking.objects.get(id=booking_id)
+    except (Payment.DoesNotExist, Booking.DoesNotExist) as e:
+        logger.error(f"[_collect_payment_background] Record not found: {e}")
+        return
+    
+    # Call MeSomb to initiate payment
+    mesomb = MeSombService()
+    collect_result = mesomb.collect_payment(
+        amount=amount,
+        payer_number=payer_number,
+        service=service,
+        booking_id=booking_id,
+        user_id=booking.user.id
+    )
+    
+    logger.info(f"[_collect_payment_background] MeSomb result for payment {payment_id}: success={collect_result.get('success')}")
+    
+    if collect_result['success']:
+        # Payment successful - update all records atomically
+        try:
+            with transaction.atomic():
+                payment.collect_ref = collect_result.get('transaction_id')
+                payment.collect_status = collect_result.get('status')
+                payment.status = 'collected'
+                payment.save()
+                
+                booking.status = 'completed'
+                booking.completed_at = timezone.now()
+                booking.save()
+                
+                # Create wallet transaction for user (debit)
+                wallet, _ = Wallet.objects.get_or_create(user=booking.user)
+                service_name = booking.service.name if booking.service else 'Service'
+                
+                Transaction.objects.create(
+                    wallet=wallet,
+                    payment=payment,
+                    amount=amount,
+                    transaction_type='debit',
+                    status='success',
+                    description=f'Payment for booking #{booking.id} - {service_name}',
+                    related_handyman=booking.handyman
+                )
+                
+                # Create wallet transaction for handyman (credit)
+                handyman_amount = payment.handyman_amount
+                platform_fee = payment.platform_fee
+                handyman_wallet, _ = Wallet.objects.get_or_create(handyman=booking.handyman)
+                handyman_wallet.balance += handyman_amount
+                handyman_wallet.total_earned_gross += amount
+                handyman_wallet.total_earned_net += handyman_amount
+                handyman_wallet.total_app_commissions += platform_fee
+                handyman_wallet.save()
+                
+                Transaction.objects.create(
+                    wallet=handyman_wallet,
+                    payment=payment,
+                    amount=handyman_amount,
+                    transaction_type='credit',
+                    status='success',
+                    description=f'Payment received for booking #{booking.id} - {service_name}',
+                    related_user=booking.user
+                )
+            
+            # Trigger automatic payout to handyman in background
+            try:
+                payout_result = mesomb.process_automatic_payout(payment)
+                if payout_result:
+                    payment.status = 'completed'
+                    payment.handyman_withdrawal_status = 'completed'
+                    payment.save()
+                    logger.info(f"[_collect_payment_background] Payment FULLY COMPLETED | payment={payment.id}")
+                else:
+                    logger.warning(f"[_collect_payment_background] Payment COLLECTED but payout failed | payment={payment.id}")
+            except Exception as e:
+                logger.error(f"[_collect_payment_background] Payout error: {e}")
+            
+        except Exception as e:
+            logger.error(f"[_collect_payment_background] Error updating records: {e}")
+    else:
+        # Payment failed - update payment record
+        error_code = collect_result.get('error_code', 'UNKNOWN_ERROR')
+        error_msg = collect_result.get('error', 'Payment failed')
+        
+        try:
+            payment.status = 'failed'
+            payment.error_message = error_msg
+            payment.save()
+            logger.info(f"[_collect_payment_background] Payment FAILED | payment={payment.id} | code={error_code}")
+        except Exception as e:
+            logger.error(f"[_collect_payment_background] Error updating failed payment: {e}")
+
+
 def process_payment_sync(booking, payment_provider, payment_number):
     """
     Process payment synchronously - wait for MeSomb response.

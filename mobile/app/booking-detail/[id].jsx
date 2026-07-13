@@ -143,7 +143,7 @@ export default function UserBookingDetailScreen() {
       console.log('[U-BookingDetail] runPaymentFlow() error:', error);
     }
   };
-  
+   
   const runPaymentFlow = async () => {
     setPaymentLoading(true);
     setPaymentResult(null);
@@ -166,14 +166,24 @@ export default function UserBookingDetailScreen() {
       console.log('[U-BookingDetail] Response data:', JSON.stringify(response.data, null, 2));
       console.log('[U-BookingDetail] ==============================');
       
-      // Handle 200 OK - payment completed successfully
-      if (response.status === 200) {
+      // Handle 200 OK - payment initiated (async)
+      if (response.status === 200 && response.data.status === 'pending') {
+        // Show pending state - user should receive PIN on phone
+        setPaymentResult({
+          type: 'pending',
+          payment_id: response.data.payment_id,
+          message: response.data.message || 'Please check your phone for PIN entry'
+        });
+        
+        // Start polling for payment status
+        startPaymentPolling(response.data.payment_id);
+      } else if (response.status === 200) {
+        // Immediate success (unlikely with async, but handle it)
         setPaymentResult({
           type: 'success',
           ...response.data
         });
         
-        // Show detailed success alert with translations
         const successMsg = t('payment.success_message', {
           status: response.data.payment_status || 'Completed',
           amount: response.data.amount || 'N/A',
@@ -200,9 +210,8 @@ export default function UserBookingDetailScreen() {
           ]
         );
         
-        // Refresh booking data to show updated status
+        // Refresh booking data
         const res = await api.get(`/bookings/${id}/`);
-        console.log('[U-BookingDetail] Booking refreshed after payment');
         setBooking(res.data);
       }
       
@@ -255,6 +264,85 @@ export default function UserBookingDetailScreen() {
       setPaymentLoading(false);
       console.log('[U-BookingDetail] handlePaymentSubmit END');
     }
+  };
+
+  // Poll for payment status updates
+  const startPaymentPolling = (paymentId) => {
+    let pollCount = 0;
+    const maxPolls = 60; // Poll for 3 minutes (60 * 3 seconds)
+    
+    const pollInterval = setInterval(async () => {
+      pollCount++;
+      console.log(`[U-BookingDetail] Polling payment status... (${pollCount}/${maxPolls})`);
+      
+      try {
+        const res = await api.get(`/bookings/${id}/payment-status/`);
+        const paymentStatus = res.data;
+        
+        console.log('[U-BookingDetail] Payment status:', paymentStatus);
+        
+        // Check if payment is no longer pending
+        if (paymentStatus.status !== 'pending' && paymentStatus.status !== 'no_payment') {
+          clearInterval(pollInterval);
+          
+          if (paymentStatus.status === 'collected' || paymentStatus.status === 'completed') {
+            // Payment successful!
+            setPaymentResult({
+              type: 'success',
+              payment_id: paymentStatus.payment_id,
+              amount: paymentStatus.amount,
+              handyman_amount: paymentStatus.handyman_amount,
+              platform_fee: paymentStatus.platform_fee,
+              message: 'Payment completed successfully!'
+            });
+            
+            // Refresh booking data
+            const bookingRes = await api.get(`/bookings/${id}/`);
+            setBooking(bookingRes.data);
+            
+            Alert.alert(
+              t('payment.success_title'),
+              t('payment.success_message', {
+                status: 'Completed',
+                amount: paymentStatus.amount,
+                transaction_id: paymentStatus.collect_ref || 'N/A',
+                detail: 'Your payment has been processed successfully.'
+              }),
+              [
+                {
+                  text: t('common.ok'),
+                  onPress: () => {
+                    setPaymentModal(false);
+                    setSelectedProvider(null);
+                    setPaymentNumber('');
+                    setPhoneError('');
+                    setPaymentResult(null);
+                  }
+                }
+              ]
+            );
+          } else if (paymentStatus.status === 'failed') {
+            // Payment failed
+            setPaymentResult({
+              type: 'error',
+              error_code: 'PAYMENT_FAILED',
+              detail: paymentStatus.error_message || 'Payment failed. Please try again.'
+            });
+            
+            Alert.alert(
+              t('payment.failed_title'),
+              paymentStatus.error_message || 'Payment failed. Please try again.'
+            );
+          }
+        } else if (pollCount >= maxPolls) {
+          // Timeout - stop polling
+          clearInterval(pollInterval);
+          console.log('[U-BookingDetail] Payment polling timeout');
+        }
+      } catch (err) {
+        console.error('[U-BookingDetail] Polling error:', err);
+      }
+    }, 3000); // Poll every 3 seconds
   };
 
   const handleModifyPrice = async () => {
@@ -332,6 +420,12 @@ export default function UserBookingDetailScreen() {
             <Text style={styles.infoLabel}>{t('handyman_profile.services')}</Text>
             <Text style={styles.infoValue}>{booking.service_name}</Text>
           </View>
+          {booking.category_name && (
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>{t('bookings.category', 'Category')}</Text>
+              <Text style={styles.infoValue}>{booking.category_name}</Text>
+            </View>
+          )}
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>{t('handyman_profile.location')}</Text>
             <Text style={styles.infoValue}>{booking.location_name || 'N/A'}</Text>

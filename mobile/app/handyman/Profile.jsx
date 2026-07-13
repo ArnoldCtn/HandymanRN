@@ -324,6 +324,44 @@ export default function HandymanProfileScreen() {
           </TouchableOpacity>
         </View>
 
+        {/* Legal & Policies */}
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Legal & Policies</Text>
+
+          <TouchableOpacity
+            style={styles.menuRow}
+            onPress={() => router.push('/handyman/PrivacyPolicy')}
+          >
+            <View style={[styles.menuIcon, { backgroundColor: '#007A5E22' }]}>
+              <Ionicons name="shield-outline" size={18} color="#007A5E" />
+            </View>
+            <Text style={styles.menuLabel}>Privacy Policy</Text>
+            <Ionicons name="chevron-forward" size={18} color={theme.textSecondary} />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.menuRow}
+            onPress={() => router.push('/handyman/TermsConditions')}
+          >
+            <View style={[styles.menuIcon, { backgroundColor: '#CE112622' }]}>
+              <Ionicons name="document-text-outline" size={18} color="#CE1126" />
+            </View>
+            <Text style={styles.menuLabel}>Terms & Conditions</Text>
+            <Ionicons name="chevron-forward" size={18} color={theme.textSecondary} />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.menuRow}
+            onPress={() => router.push('/chat/support?source=profile&type=report')}
+          >
+            <View style={[styles.menuIcon, { backgroundColor: '#f59e0b22' }]}>
+              <Ionicons name="warning-outline" size={18} color="#f59e0b" />
+            </View>
+            <Text style={styles.menuLabel}>Report Bad Behavior</Text>
+            <Ionicons name="chevron-forward" size={18} color={theme.textSecondary} />
+          </TouchableOpacity>
+        </View>
+
         {/* Logout */}
         <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
           <Ionicons name="log-out-outline" size={20} color="white" />

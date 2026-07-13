@@ -131,6 +131,9 @@ export default function HandymanBookingsScreen() {
 
       <View style={styles.serviceInfo}>
         <Text style={styles.serviceName}>Service: {item.service_name}</Text>
+        {item.category_name && (
+          <Text style={styles.categoryName}>{t('bookings.category', 'Category')}: {item.category_name}</Text>
+        )}
         <Text style={styles.amount}>
           {item.total_amount ? `${item.total_amount} FCFA` : "Price to be negotiated"}
         </Text>
@@ -243,7 +246,8 @@ const styles = StyleSheet.create({
   statusText: { fontSize: 12, fontWeight: '700' },
   jobDesc: { fontSize: 14, color: '#374151', marginBottom: 12, lineHeight: 20 },
   serviceInfo: { marginBottom: 12 },
-  serviceName: { fontSize: 14, color: '#6b7280', marginBottom: 4 },
+  serviceName: { fontSize: 14, color: '#6b7280', marginBottom: 2 },
+  categoryName: { fontSize: 13, color: '#9ca3af', fontStyle: 'italic', marginBottom: 4 },
   amount: { fontSize: 15, fontWeight: '600', color: '#1f2937' },
   actionButtons: { flexDirection: 'row', gap: 12 },
   actionBtn: {

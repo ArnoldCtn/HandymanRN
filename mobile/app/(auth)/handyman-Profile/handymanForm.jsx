@@ -45,6 +45,8 @@ export default function BookingScreen() {
   const [jobDescription, setJobDescription] = useState('');
   const [budget, setBudget] = useState('');
   const [selectedServices, setSelectedServices] = useState([]); // Only handyman's services
+  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [categories, setCategories] = useState([]);
 
   const [submitting, setSubmitting] = useState(false);
 
@@ -72,6 +74,26 @@ export default function BookingScreen() {
 
   // Filter services to only those offered by this handyman
   const handymanServices = handyman?.services || [];
+  
+  // Get all categories for the selected service
+  useEffect(() => {
+    const fetchCategories = async () => {
+      if (selectedServices.length > 0) {
+        try {
+          const serviceId = selectedServices[0];
+          // Use the correct endpoint that returns categories
+          const res = await api.get(`/services/categories/?service_id=${serviceId}`);
+          setCategories(res.data || []);
+        } catch (err) {
+          console.error('Failed to fetch categories:', err);
+        }
+      } else {
+        setCategories([]);
+        setSelectedCategory(null);
+      }
+    };
+    fetchCategories();
+  }, [selectedServices]);
 
   const isShiftAvailable = (shift) => {
     const dayKey = DAYS_OF_WEEK[selectedDate.getDay()];
@@ -99,6 +121,10 @@ export default function BookingScreen() {
       Alert.alert("Required", "Please describe the job");
       return;
     }
+    if (currentStep === 2 && categories.length > 0 && !selectedCategory) {
+      Alert.alert("Required", "Please select a category");
+      return;
+    }
     setCurrentStep(currentStep + 1);
   };
 
@@ -115,6 +141,19 @@ export default function BookingScreen() {
     if (!selectedShift || selectedServices.length === 0 || !jobDescription.trim()) {
       Alert.alert("Incomplete", "Please fill all required fields");
       return;
+    }
+
+    // Enforce category minimum price floor (frontend guard)
+    const selectedCat = categories.find(c => c.id === selectedCategory);
+    if (selectedCat && selectedCat.price) {
+      const amount = parseFloat(budget) || 0;
+      if (amount < parseFloat(selectedCat.price)) {
+        Alert.alert(
+          "Invalid Amount",
+          `The amount cannot be less than the category minimum of ${selectedCat.price} FCFA`
+        );
+        return;
+      }
     }
 
     setSubmitting(true);
@@ -150,6 +189,7 @@ export default function BookingScreen() {
       const payload = {
         handyman: parseInt(id),
         service: selectedServices[0],           // You can allow multiple later
+        category: selectedCategory,              // Add selected category
         scheduled_date: selectedDate.toISOString(),
         job_description: jobDescription,
         total_amount: parseFloat(budget) || 0,
@@ -302,6 +342,40 @@ export default function BookingScreen() {
               })}
             </View>
 
+            {/* Category Selection - Only show when service is selected */}
+            {selectedServices.length > 0 && categories.length > 0 && (
+              <>
+                <Text style={styles.sectionTitle}>Select Category</Text>
+                <View style={styles.chipGrid}>
+                  {categories.map((category) => {
+                    const isSelected = selectedCategory === category.id;
+                    return (
+                  <TouchableOpacity
+                    key={category.id}
+                    style={[styles.chip, isSelected && styles.chipActive]}
+                    onPress={() => {
+                      setSelectedCategory(category.id);
+                      // Auto-fill budget with category price (user can increase)
+                      if (category.price) {
+                        setBudget(String(category.price));
+                      }
+                    }}
+                  >
+                    <Text style={[styles.chipText, isSelected && styles.chipTextActive]}>
+                      {category.name}
+                    </Text>
+                    {category.price && (
+                      <Text style={[styles.chipPrice, isSelected && styles.chipPriceActive]}>
+                        {category.price} FCFA
+                      </Text>
+                    )}
+                  </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </>
+            )}
+
             <Text style={styles.sectionTitle}>Describe the Job</Text>
             <TextInput
               style={styles.textArea}
@@ -349,6 +423,18 @@ export default function BookingScreen() {
                     ).join(', ')
                   : "None selected"}
               </Text>
+
+              {selectedCategory && (
+                <>
+                  <Text style={styles.reviewLabel}>Category</Text>
+                  <Text style={styles.reviewValue}>
+                    {categories.find(c => c.id === selectedCategory)?.name}
+                    {categories.find(c => c.id === selectedCategory)?.price
+                      ? ` (${categories.find(c => c.id === selectedCategory).price} FCFA)`
+                      : ''}
+                  </Text>
+                </>
+              )}
 
               <Text style={styles.reviewLabel}>Job Description</Text>
               <Text style={styles.reviewValue}>{jobDescription || "No description"}</Text>
@@ -475,6 +561,8 @@ const styles = StyleSheet.create({
   chipActive: { backgroundColor: '#6366f1', borderColor: '#6366f1' },
   chipText: { fontSize: 14, color: '#374151' },
   chipTextActive: { color: 'white', fontWeight: '600' },
+  chipPrice: { fontSize: 12, color: '#64748b', marginTop: 2 },
+  chipPriceActive: { color: 'white', opacity: 0.9 },
 
   note: { fontSize: 12, color: '#64748b', marginTop: 4, fontStyle: 'italic' },
 
