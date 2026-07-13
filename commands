@@ -4,7 +4,10 @@
 python manage.py runserver 0.0.0.0:8000
 
 ngrok config add-authtoken 3DXGHp0spA9hKrNC1VNfBq1hDTI_2H7pMN4XhVBFXmZikf2fA
+https://sharpie-carless-rimless.ngrok-free.dev/
 
+ngrok http 8000
+ngrok http --url=sharpie-carless-rimless.ngrok-free.dev 80
 in ngrok folder .\ngrok.exe http 8000
 Note: Remember that every time you restart ngrok on
  the free tier, this URL changes. You will have to
@@ -13,248 +16,69 @@ Note: Remember that every time you restart ngrok on
 cd "c:\Users\ArnoldCtn\Desktop\Handyman RN\HandymanRN\backend"
 ngrok http 8000
 
+Great question! Here's the exact workflow every time you start ngrok:
 
-Test Webhook Endpoint (PowerShell Version)
-1. Test GET Request
-Invoke-WebRequest -Uri "http://localhost:8000/payments/webhooks/test/" -Method GET
+## Every Time You Start ngrok (Free Tier):
 
-2. Test POST Request
-$body = @{
-    status = "SUCCESS"
-    pk = "test123"
-    reference = "1"
-    amount = 1000
-} | ConvertTo-Json
+### Step 1: Start Django (if not running)
 
-$headers = @{
-    "Content-Type" = "application/json"
-}
+```bash
+cd backend
+python manage.py runserver 8000
+```
 
-Invoke-WebRequest -Uri "http://localhost:8000/payments/webhooks/test/" -Method POST -Headers $headers -Body $body
+### Step 2: Start ngrok
 
-
-To go to production:
-
-Change environment in .env:
-MESOMB_ENVIRONMENT=production
-Update webhook URLs in MeSomb dashboard:
-Success: https://your-domain.com/payments/webhooks/success/
-Failed:  https://your-domain.com/payments/webhooks/failed/
-Ensure account balance for payouts
-
-
- STEP 5: SSL Certificate Setup
-For Production (Required)
-bash
-# Install Certbot (if using Ubuntu/Debian)
-sudo apt update
-sudo apt install certbot python3-certbot-apache2
- 
-# Get SSL certificate
-sudo certbot --apache -d yourdomain.com
- 
-# Follow prompts to complete SSL setup
-
-
-webhooks
-Payment Success: https://yourdomain.com/api/payments/webhooks/success/
-Payment Failed:  https://yourdomain.com/api/payments/webhooks/failed/
-Transfer Success: https://yourdomain.com/api/payments/webhooks/transfer/
-Balance Update: https://yourdomain.com/api/payments/webhooks/balance/
-
-
-🖥️ Windows 10 SSL Setup
-For Windows Development (ngrok)
-bash
-# ngrok handles SSL automatically - no setup needed
+```bash
 ngrok http 8000
-For Production Windows Server
-powershell
-# Install Chocolatey (Windows package manager)
-Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
- 
-# Install certbot via Chocolatey
-choco install certbot
- 
-# Get SSL certificate (replace with your domain)
-certbot certonly --standalone -d yourdomain.com
+```
 
+### Step 3: Copy the NEW ngrok URL
 
-1. the users can post JOB if not seen .  and admin must be able to assign bookings in this case
-2. The "Trust & Verification" Tier (Security Focus)
-Since you mentioned security is a priority, use the subscription to fund the verification process.
-The Perk: A "Background Verified" Badge
-Focusing subscriptions exclusively on the Handyman (the service provider) is a smart business move. It keeps the barrier to entry low for clients, ensuring a high volume of jobs, while the professionals pay for the "privilege" of accessing those leads.
+You'll see something like:
 
-Since you want the clients to feel secure and the handymen to find value beyond just a price reduction, here are several subscription ideas tailored for the Handyman in your app:
+```javascript
+Forwarding  https://sharpie-carless-rimless.ngrok-free.dev -> http://localhost:8000
+```
 
-1. The "Trust & Verification" Tier (Security Focus)
-Since you mentioned security is a priority, use the subscription to fund the verification process.
+__Copy the HTTPS URL__ (the one starting with `https://`)
 
-The Perk: A "Background Verified" Badge.
+### Step 4: Update Webhook URL in MeSomb Dashboard
 
-How it works: Handymen who subscribe get their identity documents (ID cards, certifications) manually reviewed by you.
+1. Login to [](https://dashboard.mesomb.com)<https://dashboard.mesomb.com>
 
-Why it works: Clients are much more likely to hire someone with a "Verified" badge. The subscription covers the "cost of trust."
+2. Go to __Settings → Webhooks__
 
-2. The "Lead Priority" (The Head-Start)
-In a busy market, being first is everything.
-The Perk: Early Access to Jobs.
-How it works: When a client posts a job, Subscribed Handymen see it and can bid on it 30 minutes to 1 hour before "Free" handymen.
-Why it works: High-paying or urgent jobs will be snapped up by subscribers before the free users even see the notification.
+3. __Delete the old webhook URL__ (if it exists)
 
-3. Visibility & "The Spotlight"
-The Perk: Search Boost.
+4. __Add new webhook URL__:
 
-How it works: When a client searches for a "Plumber" or "Electrician," subscribed pros appear at the very top of the list.
+   ```javascript
+   https://sharpie-carless-rimless.ngrok-free.dev/api/payments/webhooks/mesomb/
+   ```
 
-Why it works: Most users don't scroll past the first 5 results. Being #1 significantly increases their monthly income.
+   (Replace with your actual ngrok URL from Step 3)
 
-4. Professional Business Tools
-Turn your app into a "Mini-Office" for the handyman.
+5. Save the webhook configuration
 
-The Perk: Advanced Portfolio & Analytics.
+### Step 5: Test the Webhook
 
-How it works:
+Make a test payment and watch Django logs for `[WEBHOOK]` messages
 
-Unlimited Photos: Free users can show 3 photos of their work; Subscribers can upload a full gallery.
+## Important Notes:
 
-Invoice Generator: Allow them to generate professional PDF receipts for clients directly in the app.
+⚠️ __Free ngrok URLs change every time__ you restart ngrok ⚠️ __You MUST update the webhook URL__ in MeSomb dashboard each time ⚠️ __Keep ngrok running__ while testing payments
 
-Monthly Stats: Show them a chart of how many people viewed their profile vs. how many hired them.
+## Quick Checklist:
 
-5. Subscription Comparison Table (Example)
-Tier  Name          Price       (Monthly)     Key  Benefit 
-Free  Casual          0      XAFStandard  Standard booking
-Silver	Homeowner Plus	2,500 XAF    10% Discount + Priority Chat     
-Gold  Peace of Mind 7,000 XAF     1 Free Inspection + Emergency Priority
+✅ Django running on port 8000 ✅ ngrok running with `ngrok http 8000` ✅ Copied the new ngrok HTTPS URL ✅ Updated webhook URL in MeSomb dashboard ✅ Tested with a payment
 
+## For Production (When Deployed):
 
+Once you deploy to production with a real domain (e.g., `https://yourdomain.com`), the webhook URL will be permanent and you won't need to update it:
 
-forgot password ws.py", line 512, in dispatch
-    response = handler(request, *args, **kwargs)
-  File "C:\Users\ArnoldCtn\Desktop\Handyman RN\HandymanRN\backend\handyman\users\views.py", line 287, in post
-    send_mail(
-    ~~~~~~~~~^
-        'Password Reset OTP',
-        ^^^^^^^^^^^^^^^^^^^^^
-    ...<11 lines>...
-        """
-        ^^^
-    )
-    ^
-  File "C:\Users\ArnoldCtn\.virtualenvs\backend-yp9rZfW9\Lib\site-packages\django\utils\deprecation.py", line 268, in wrapper
-    return func(*args, **kwargs)
-  File "C:\Users\ArnoldCtn\.virtualenvs\backend-yp9rZfW9\Lib\site-packages\django\core\mail\__init__.py", line 108, in send_mail
-    return mail.send()
-           ~~~~~~~~~^^
-  File "C:\Users\ArnoldCtn\.virtualenvs\backend-yp9rZfW9\Lib\site-packages\django\core\mail\message.py", line 358, in send
-    return self.get_connection(fail_silently).send_messages([self])
-           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^
-  File "C:\Users\ArnoldCtn\.virtualenvs\backend-yp9rZfW9\Lib\site-packages\django\core\mail\backends\smtp.py", line 148, in send_messages
-    new_conn_created = self.open()
-  File "C:\Users\ArnoldCtn\.virtualenvs\backend-yp9rZfW9\Lib\site-packages\django\core\mail\backends\smtp.py", line 94, in open
-    self._partial_connection = self.connection_class(
-                               ~~~~~~~~~~~~~~~~~~~~~^
-        self.host, self.port, **connection_params
-        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    )
-    ^
-  File "C:\Python314\Lib\smtplib.py", line 261, in __init__
-    (code, msg) = self.connect(host, port)
-                  ~~~~~~~~~~~~^^^^^^^^^^^^
-  File "C:\Python314\Lib\smtplib.py", line 348, in connect
-    self.sock = self._get_socket(host, port, self.timeout)
-                ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python314\Lib\smtplib.py", line 318, in _get_socket
-    return socket.create_connection((host, port), timeout,
-           ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
-                                    self.source_address)
-                                    ^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python314\Lib\socket.py", line 850, in create_connection
-    for res in getaddrinfo(host, port, 0, SOCK_STREAM):
-               ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python314\Lib\socket.py", line 987, in getaddrinfo
-    for res in _socket.getaddrinfo(host, port, family, type, proto, flags):
-               ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-socket.gaierror: [Errno 11001] getaddrinfo failed
-HTTP POST /users/password-reset/request/ 500 [0.12, 192.168.43.121:59006]
-[ERROR] django.channels.server — HTTP POST /users/password-reset/request/ 500 [0.12, 192.168.43.121:59006]
-[HandymanSignIn] Attempting login for username/email: "arnoldctn@gmail.com"
-[HandymanSignIn] Found handyman: id=6, active=True
-[HandymanSignIn] Login successful for: "ngounte clinton"
-HTTP POST /handymen/signin/ 200 [1.68, 192.168.43.121:59006]
-[INFO] django.channels.server — HTTP POST /handymen/signin/ 200 [1.68, 192.168.43.121:59006]
+```javascript
+https://yourdomain.com/api/payments/webhooks/mesomb/
+```
 
-
-for payment: error pymrsombb sdk not installed (forgot password ws.py", line 512, in dispatch
-    response = handler(request, *args, **kwargs)
-  File "C:\Users\ArnoldCtn\Desktop\Handyman RN\HandymanRN\backend\handyman\users\views.py", line 287, in post
-    send_mail(
-    ~~~~~~~~~^
-        'Password Reset OTP',
-        ^^^^^^^^^^^^^^^^^^^^^
-    ...<11 lines>...
-        """
-        ^^^
-    )
-    ^
-  File "C:\Users\ArnoldCtn\.virtualenvs\backend-yp9rZfW9\Lib\site-packages\django\utils\deprecation.py", line 268, in wrapper
-    return func(*args, **kwargs)
-  File "C:\Users\ArnoldCtn\.virtualenvs\backend-yp9rZfW9\Lib\site-packages\django\core\mail\__init__.py", line 108, in send_mail
-    return mail.send()
-           ~~~~~~~~~^^
-  File "C:\Users\ArnoldCtn\.virtualenvs\backend-yp9rZfW9\Lib\site-packages\django\core\mail\message.py", line 358, in send
-    return self.get_connection(fail_silently).send_messages([self])
-           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^
-  File "C:\Users\ArnoldCtn\.virtualenvs\backend-yp9rZfW9\Lib\site-packages\django\core\mail\backends\smtp.py", line 148, in send_messages
-    new_conn_created = self.open()
-  File "C:\Users\ArnoldCtn\.virtualenvs\backend-yp9rZfW9\Lib\site-packages\django\core\mail\backends\smtp.py", line 94, in open
-    self._partial_connection = self.connection_class(
-                               ~~~~~~~~~~~~~~~~~~~~~^
-        self.host, self.port, **connection_params
-        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    )
-    ^
-  File "C:\Python314\Lib\smtplib.py", line 261, in __init__
-    (code, msg) = self.connect(host, port)
-                  ~~~~~~~~~~~~^^^^^^^^^^^^
-  File "C:\Python314\Lib\smtplib.py", line 348, in connect
-    self.sock = self._get_socket(host, port, self.timeout)
-                ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python314\Lib\smtplib.py", line 318, in _get_socket
-    return socket.create_connection((host, port), timeout,
-           ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
-                                    self.source_address)
-                                    ^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python314\Lib\socket.py", line 850, in create_connection
-    for res in getaddrinfo(host, port, 0, SOCK_STREAM):
-               ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Python314\Lib\socket.py", line 987, in getaddrinfo
-    for res in _socket.getaddrinfo(host, port, family, type, proto, flags):
-               ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-socket.gaierror: [Errno 11001] getaddrinfo failed
-HTTP POST /users/password-reset/request/ 500 [0.12, 192.168.43.121:59006]
-[ERROR] django.channels.server — HTTP POST /users/password-reset/request/ 500 [0.12, 192.168.43.121:59006]
-[HandymanSignIn] Attempting login for username/email: "arnoldctn@gmail.com"
-[HandymanSignIn] Found handyman: id=6, active=True
-[HandymanSignIn] Login successful for: "ngounte clinton"
-HTTP POST /handymen/signin/ 200 [1.68, 192.168.43.121:59006]
-[INFO] django.channels.server — HTTP POST /handymen/signin/ 200 [1.68, 192.168.43.121:59006]
-[INFO] payments.services — [process_payment_sync] Payment FAILED | payment=3 | code=SDK_MISSING | error=pymesomb SDK not installed. Please run: pip install pymesomb
-[INFO] bookings.views — [PAYMENT] Result for booking 2: success=False
-Payment Required: /bookings/2/action/
-[WARNING] django.request — Payment Required: /bookings/2/action/
-HTTP PATCH /bookings/2/action/ 402 [0.16, 192.168.43.121:59006]
-[WARNING] django.channels.server — HTTP PATCH /bookings/2/action/ 402 [0.16, 192.168.43.121:59006]
-HTTP GET /notifications/unread-count/ 200 [0.08, 192.168.43.121:36402]
-[INFO] django.channels.server — HTTP GET /notifications/unread-count/ 200 [0.08, 192.168.43.121:36402]
-HTTP GET /chats/my-chats/ 200 [0.11, 192.168.43.121:59006]
-[INFO] django.channels.server — HTTP GET /chats/my-chats/ 200 [0.11, 192.168.43.121:59006]
-HTTP GET /notifications/unread-count/ 200 [0.08, 192.168.43.1:56504]
-[INFO] django.channels.server — HTTP GET /notifications/unread-count/ 200 [0.08, 192.168.43.1:56504]
-HTTP GET /chats/my-chats/ 200 [0.12, 192.168.43.1:56506]
-[INFO] django.channels.server — HTTP GET /chats/my-chats/ 200 [0.12, 192.168.43.1:56506]
-
-
-for payment: error pymrsombb sdk not installed)
+__Summary: Start ngrok → Copy new URL → Update in MeSomb dashboard → Test payment__

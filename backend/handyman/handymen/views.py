@@ -20,6 +20,8 @@ from .serializers import (HandymanSerializer, HandymanSignUpSerializer,
 
 from services.serializers import ServiceSerializer
 from services.models import Service
+from bookings.models import Booking
+from payments.models import Wallet
 
 
 # ── Custom JWT auth — looks up Handyman, not users.User ──
@@ -498,3 +500,42 @@ class JobPictureDeleteView(APIView):
             return Response(status=204)
         except JobPicture.DoesNotExist:
             return Response({'detail': 'Not found'}, status=404)
+
+
+class HandymanDashboardStatsView(APIView):
+    """
+    Get dashboard statistics for the authenticated handyman.
+    Returns: jobs_done, pending_jobs, total_earnings, average_rating, total_ratings
+    """
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [HandymanJWTAuthentication]
+
+    def get(self, request):
+        handyman = request.user
+        
+        # Jobs done (completed bookings)
+        jobs_done = handyman.bookings_as_handyman.filter(status='completed').count()
+        
+        # Pending jobs (pending + accepted)
+        pending_jobs = handyman.bookings_as_handyman.filter(
+            status__in=['pending', 'accepted']
+        ).count()
+        
+        # Total earnings from wallet
+        try:
+            wallet = handyman.wallet
+            total_earnings = float(wallet.total_earned_net or wallet.balance or 0)
+        except AttributeError:
+            total_earnings = 0
+        
+        # Rating stats
+        average_rating = float(handyman.average_rating or 0)
+        total_ratings = handyman.total_ratings or 0
+        
+        return Response({
+            'jobs_done': jobs_done,
+            'pending_jobs': pending_jobs,
+            'total_earnings': round(total_earnings, 2),
+            'average_rating': round(average_rating, 1),
+            'total_ratings': total_ratings,
+        }, status=200)

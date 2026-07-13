@@ -32,6 +32,7 @@ class Booking(models.Model):
     )
 
     service = models.ForeignKey(Service, on_delete=models.PROTECT)
+    category = models.ForeignKey('services.Category', on_delete=models.PROTECT, null=True, blank=True)
     location = models.ForeignKey(Location, on_delete=models.PROTECT, null=True, blank=True)
 
     # Core booking details

@@ -162,9 +162,17 @@ const REVIEWS_PER_PAGE = 5;
             </TouchableOpacity>
             <Text style={styles.headerTitle}>{t('handyman_profile.title', 'Handyman Profile')}</Text>
         </View>
-        <TouchableOpacity onPress={toggleFavorite}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+          <TouchableOpacity onPress={toggleFavorite}>
             <Ionicons name={isFavorite ? "heart" : "heart-outline"} size={28} color={isFavorite ? theme.error : theme.text} />
-        </TouchableOpacity>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => router.push({
+            pathname: '/(auth)/ReportHandyman',
+            params: { id: handyman.id, username: handyman.username }
+          })}>
+            <Ionicons name="ellipsis-vertical" size={28} color={theme.text} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Profile Info */}
@@ -233,9 +241,22 @@ const REVIEWS_PER_PAGE = 5;
         </Text>
         {handyman.services && handyman.services.length > 0 ? (
           handyman.services.map((service) => (
-            <View key={service.id} style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 4 }}>
-              <Ionicons name="checkmark-circle" size={18} color={theme.primary} />
-              <Text style={{ marginLeft: 8, fontSize: 16, color: theme.text }}>{service.name}</Text>
+            <View key={service.id} style={{ marginBottom: 12 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 4 }}>
+                <Ionicons name="checkmark-circle" size={18} color={theme.primary} />
+                <Text style={{ marginLeft: 8, fontSize: 16, color: theme.text, fontWeight: '500' }}>{service.name}</Text>
+              </View>
+              {handyman.categories?.filter(cat => cat.service === service.id || cat.service?.id === service.id)?.map(cat => (
+                <View key={cat.id} style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 28, marginVertical: 3 }}>
+                  <Ionicons name="chevron-forward" size={14} color={theme.textSecondary} />
+                  <Text style={{ marginLeft: 6, fontSize: 14, color: theme.textSecondary }}>{cat.name}</Text>
+                  {cat.price && (
+                    <Text style={{ marginLeft: 'auto', fontSize: 13, color: theme.primary, fontWeight: '600' }}>
+                      {cat.price} FCFA
+                    </Text>
+                  )}
+                </View>
+              ))}
             </View>
           ))
         ) : (
@@ -443,6 +464,9 @@ const createStyles = (theme) => StyleSheet.create({
 
   bookBtn: { backgroundColor: theme.primary, margin: 16, padding: 18, borderRadius: 16, alignItems: 'center', elevation: 4, shadowColor: theme.shadow, shadowOpacity: 0.2, shadowRadius: 4, shadowOffset: { width:0, height:4 } },
   bookBtnText: { color: 'white', fontWeight: 'bold', fontSize: 18 },
+
+  reportBtn: { backgroundColor: '#fef2f2', marginHorizontal: 16, marginBottom: 16, padding: 16, borderRadius: 16, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 8, borderWidth: 1, borderColor: '#fecaca' },
+  reportBtnText: { color: '#ef4444', fontWeight: '600', fontSize: 16 },
 
   reviewCard: { backgroundColor: theme.card, padding: 16, borderRadius: 12, marginBottom: 12, shadowColor: theme.shadow, shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 2, elevation: 2, borderWidth: 1, borderColor: theme.border },
   reviewTextContainer: { backgroundColor: theme.background, padding: 12, borderRadius: 8, borderLeftWidth: 3, borderLeftColor: theme.primary },

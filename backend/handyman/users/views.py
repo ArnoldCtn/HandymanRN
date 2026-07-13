@@ -3,6 +3,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework.authentication import BaseAuthentication
 
 from django.contrib.auth import authenticate, get_user_model
@@ -196,18 +197,28 @@ class UserUpdateView(APIView):
 
 class MarkOnlineView(APIView):
     permission_classes = [IsAuthenticated]
+    authentication_classes = [JWTAuthentication]
 
     def post(self, request):
-        request.user.mark_online()
-        return Response({'status': 'online'})
+        try:
+            request.user.mark_online()
+            return Response({'status': 'online'})
+        except Exception as e:
+            logger.error(f"MarkOnlineView error: {str(e)}")
+            return Response({'detail': 'Failed to update online status'}, status=500)
 
 
 class MarkOfflineView(APIView):
     permission_classes = [IsAuthenticated]
+    authentication_classes = [JWTAuthentication]
 
     def post(self, request):
-        request.user.mark_offline()
-        return Response({'status': 'offline'})
+        try:
+            request.user.mark_offline()
+            return Response({'status': 'offline'})
+        except Exception as e:
+            logger.error(f"MarkOfflineView error: {str(e)}")
+            return Response({'detail': 'Failed to update offline status'}, status=500)
 
 def _get_client_ip(request):
     """Extract client IP address from request."""

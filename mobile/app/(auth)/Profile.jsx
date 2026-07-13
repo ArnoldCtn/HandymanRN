@@ -135,6 +135,44 @@ export default function ProfileScreen() {
         </View>
       </View>
 
+      {/* Legal & Policies */}
+      <View style={styles.settingsCard}>
+        <Text style={styles.settingsTitle}>Legal & Policies</Text>
+        
+        <TouchableOpacity
+          style={styles.menuRow}
+          onPress={() => router.push('/(auth)/PrivacyPolicy')}
+        >
+          <View style={[styles.menuIconContainer, { backgroundColor: '#007A5E11' }]}>
+            <Ionicons name="shield-outline" size={20} color="#007A5E" />
+          </View>
+          <Text style={styles.menuText}>Privacy Policy</Text>
+          <Ionicons name="chevron-forward" size={18} color={theme.textSecondary} />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.menuRow}
+          onPress={() => router.push('/(auth)/TermsConditions')}
+        >
+          <View style={[styles.menuIconContainer, { backgroundColor: '#CE112611' }]}>
+            <Ionicons name="document-text-outline" size={20} color="#CE1126" />
+          </View>
+          <Text style={styles.menuText}>Terms & Conditions</Text>
+          <Ionicons name="chevron-forward" size={18} color={theme.textSecondary} />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.menuRow}
+          onPress={() => router.push('/chat/support?source=profile&type=report')}
+        >
+          <View style={[styles.menuIconContainer, { backgroundColor: '#f59e0b11' }]}>
+            <Ionicons name="warning-outline" size={20} color="#f59e0b" />
+          </View>
+          <Text style={styles.menuText}>Report Bad Behavior</Text>
+          <Ionicons name="chevron-forward" size={18} color={theme.textSecondary} />
+        </TouchableOpacity>
+      </View>
+
       {/* Logout */}
       <TouchableOpacity style={styles.logout} onPress={handleLogout}>
         <Ionicons name="log-out-outline" size={22} color="white" />

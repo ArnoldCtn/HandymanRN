@@ -118,6 +118,12 @@ export default function HandymanBookingDetailScreen() {
             <Text style={styles.infoLabel}>Service</Text>
             <Text style={styles.infoValue}>{booking.service_name}</Text>
           </View>
+          {booking.category_name && (
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Category</Text>
+              <Text style={styles.infoValue}>{booking.category_name}</Text>
+            </View>
+          )}
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>Location</Text>
             <Text style={styles.infoValue}>{booking.location_name || 'N/A'}</Text>

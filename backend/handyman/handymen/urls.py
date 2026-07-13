@@ -5,7 +5,8 @@ from .views import (HandymanSignInView, HandymanSignUpView, HandymanTokenRefresh
                     HandymanUpdateView, HandymanMarkOnlineView,
                     HandymanMarkOfflineView,HandymanAvailableServicesView,HandymanAvailableLocationsView,HandymanTokenRefreshView,
                     HandymanListByServiceView,HandymanDetailView,HandymanListView,
-                    HandymanIdVerificationView, JobPictureUploadView, JobPictureDeleteView)
+                    HandymanIdVerificationView, JobPictureUploadView, JobPictureDeleteView,
+                    HandymanDashboardStatsView)
 
 urlpatterns = [
     path('signin/',        HandymanSignInView.as_view()),
@@ -26,4 +27,5 @@ urlpatterns = [
 
     path('me/job-pictures/', JobPictureUploadView.as_view(), name='job-picture-upload'),
     path('me/job-pictures/<int:pk>/', JobPictureDeleteView.as_view(), name='job-picture-delete'),
+    path('me/dashboard-stats/', HandymanDashboardStatsView.as_view(), name='handyman-dashboard-stats'),
 ]
