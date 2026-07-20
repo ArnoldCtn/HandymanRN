@@ -22,7 +22,11 @@ class BookingMessage(models.Model):
     )
 
     message = models.TextField(blank=True)
-    image = models.ImageField(upload_to='chat_images/', null=True, blank=True)
+    image = models.ImageField(upload_to='', null=True, blank=True)
+    video = models.FileField(upload_to='', null=True, blank=True)
+    video_thumbnail = models.ImageField(upload_to='', null=True, blank=True)
+    audio = models.FileField(upload_to='', null=True, blank=True)
+    duration = models.IntegerField(default=0)  # Duration in seconds for video/audio
     is_read = models.BooleanField(default=False)
 
     created_at = models.DateTimeField(auto_now_add=True)

@@ -38,7 +38,7 @@ class HandymanUserBehavior(SequentialTaskSet):
         password = "TestPass123!"
         
         # Try registration
-        with self.client.post("/api/auth/register/", json={
+        with self.client.post("/users/signup/", json={
             "email": email,
             "password": password,
             "first_name": "Test",
@@ -55,7 +55,7 @@ class HandymanUserBehavior(SequentialTaskSet):
     
     def login_user(self, email, password):
         """Login existing user"""
-        with self.client.post("/api/auth/login/", json={
+        with self.client.post("/users/signin/", json={
             "email": email,
             "password": password
         }, catch_response=True) as response:
@@ -68,36 +68,36 @@ class HandymanUserBehavior(SequentialTaskSet):
     @task(5)
     def view_services(self):
         """Browse available services - high frequency task"""
-        self.client.get("/api/services/", name="View Services List")
+        self.client.get("/services/", name="View Services List")
     
     @task(3)
     def view_handymen(self):
         """Browse handymen list"""
-        self.client.get("/api/handymen/", name="View Handymen List")
+        self.client.get("/handymen/search/", name="View Handymen List")
     
     @task(2)
     def view_handyman_detail(self):
         """View specific handyman profile"""
         # Simulate viewing handyman ID 1-10
         handyman_id = random.randint(1, 10)
-        self.client.get(f"/api/handymen/{handyman_id}/", name="View Handyman Detail")
+        self.client.get(f"/handymen/{handyman_id}/", name="View Handyman Detail")
     
     @task(2)
     def search_services(self):
         """Search for specific services"""
         service_types = ['plumbing', 'electrical', 'cleaning', 'painting', 'carpentry']
         search_term = random.choice(service_types)
-        self.client.get(f"/api/services/?search={search_term}", name="Search Services")
+        self.client.get(f"/services/?search={search_term}", name="Search Services")
     
     @task(1)
     def view_bookings(self):
         """View user's bookings"""
-        self.client.get("/api/bookings/", name="View My Bookings")
+        self.client.get("/bookings/", name="View My Bookings")
     
     @task(1)
     def create_booking(self):
         """Create a new booking request"""
-        with self.client.post("/api/bookings/", json={
+        with self.client.post("/bookings/", json={
             "handyman_id": random.randint(1, 10),
             "service_id": random.randint(1, 10),
             "scheduled_date": "2026-12-20T10:00:00Z",
@@ -112,12 +112,12 @@ class HandymanUserBehavior(SequentialTaskSet):
     @task(1)
     def view_notifications(self):
         """Check notifications"""
-        self.client.get("/api/notifications/", name="View Notifications")
+        self.client.get("/notifications/", name="View Notifications")
     
     @task(1)
     def check_wallet(self):
         """View wallet balance"""
-        self.client.get("/api/wallet/", name="View Wallet")
+        self.client.get("/payments/wallet/", name="View Wallet")
 
 
 class AdminUserBehavior(SequentialTaskSet):
@@ -126,12 +126,12 @@ class AdminUserBehavior(SequentialTaskSet):
     @task(1)
     def view_dashboard(self):
         """Admin dashboard with statistics"""
-        self.client.get("/api/admin/dashboard/", name="Admin Dashboard")
+        self.client.get("/admin/", name="Admin Dashboard")
     
     @task(1)
     def view_pending_verifications(self):
         """Check pending handyman verifications"""
-        self.client.get("/api/admin/verifications/", name="View Pending Verifications")
+        self.client.get("/admin/handymen/handyman/", name="View Pending Verifications")
 
 
 class HandymanUserBehavior(SequentialTaskSet):
@@ -140,7 +140,7 @@ class HandymanUserBehavior(SequentialTaskSet):
     def on_start(self):
         """Login as handyman"""
         email = self.generate_random_email()
-        with self.client.post("/api/auth/register/", json={
+        with self.client.post("/handymen/signup/", json={
             "email": email,
             "password": "TestPass123!",
             "user_type": "handyman"
@@ -151,17 +151,17 @@ class HandymanUserBehavior(SequentialTaskSet):
     @task(3)
     def view_available_jobs(self):
         """Check available job requests"""
-        self.client.get("/api/handyman/available-jobs/", name="View Available Jobs")
+        self.client.get("/bookings/", name="View Available Jobs")
     
     @task(2)
     def update_availability(self):
         """Toggle online status"""
-        self.client.post("/api/handyman/toggle-online/", name="Toggle Online Status")
+        self.client.post("/handymen/me/online/", name="Toggle Online Status")
     
     @task(1)
     def view_earnings(self):
         """Check earnings and wallet"""
-        self.client.get("/api/handyman/wallet/", name="View Handyman Wallet")
+        self.client.get("/payments/wallet/", name="View Handyman Wallet")
 
 
 class ScalabilityTestUser(HttpUser):

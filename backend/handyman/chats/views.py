@@ -11,7 +11,7 @@ from handyman.auth import DualJWTAuthentication
 from .models import BookingMessage, SupportConversation, SupportMessage
 from .serializers import BookingMessageSerializer
 
-class ChatImageUploadView(APIView):
+class ChatMediaUploadView(APIView):
     permission_classes = [permissions.IsAuthenticated]
     authentication_classes = [DualJWTAuthentication, SessionAuthentication]
     parser_classes = [MultiPartParser, FormParser]
@@ -19,67 +19,98 @@ class ChatImageUploadView(APIView):
     def post(self, request):
         if not request.user.is_authenticated:
              return Response({"detail": "Authentication credentials were not provided."}, status=status.HTTP_401_UNAUTHORIZED)
-             
-        if 'image' not in request.FILES:
-            return Response({"detail": "No image provided"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Determine media type
+        media_type = request.data.get('media_type')  # 'image', 'video', 'audio'
+        
+        if media_type == 'image' and 'image' in request.FILES:
+            media_file = request.FILES['image']
+            upload_folder = 'chat_images'
+            file_extension = 'image_url'
+        elif media_type == 'video' and 'video' in request.FILES:
+            media_file = request.FILES['video']
+            upload_folder = 'chat_videos'
+            file_extension = 'video_url'
+        elif media_type == 'audio' and 'audio' in request.FILES:
+            media_file = request.FILES['audio']
+            upload_folder = 'chat_audio'
+            file_extension = 'audio_url'
+        else:
+            return Response({"detail": "No valid media file provided"}, status=status.HTTP_400_BAD_REQUEST)
 
-        image = request.FILES['image']
         booking_id = request.data.get('booking_id')
         is_support = request.data.get('is_support') == 'true'
+        duration = int(request.data.get('duration', 0))
+
+        # Enforce 30-second limit for videos
+        if media_type == 'video' and duration > 30:
+            return Response(
+                {"detail": f"Video too long ({duration}s). Maximum allowed duration is 30 seconds."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
         if is_support:
-            # Handle support image
+            # Handle support media
             user = request.user
             if user.is_staff:
-                return Response({"detail": "Admin image upload not implemented yet"}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({"detail": "Admin media upload not implemented yet"}, status=status.HTTP_400_BAD_REQUEST)
 
             if isinstance(user, Handyman):
                 conv = SupportConversation.objects.filter(handyman=user).first()
                 if not conv: conv = SupportConversation.objects.create(handyman=user)
-                msg = SupportMessage.objects.create(conversation=conv, sender_handyman=user, image=image)
+                msg = SupportMessage.objects.create(conversation=conv, sender_handyman=user, image=media_file)
             else:
                 conv = SupportConversation.objects.filter(user=user).first()
                 if not conv: conv = SupportConversation.objects.create(user=user)
-                msg = SupportMessage.objects.create(conversation=conv, sender_user=user, image=image)
+                msg = SupportMessage.objects.create(conversation=conv, sender_user=user, image=media_file)
 
             # Return the absolute URL
             return Response({'image_url': request.build_absolute_uri(msg.image.url)}, status=status.HTTP_201_CREATED)
 
         else:
-            # Handle booking image
+            # Handle booking media
             if not booking_id:
                 return Response({"detail": "Booking ID required"}, status=status.HTTP_400_BAD_REQUEST)
 
             booking = get_object_or_404(Booking, pk=booking_id)
-            user = request.user
-
-            # Just save the image to the model's image field without creating a full message yet
-            # Actually, the consumer needs a way to link the image to the message.
-            # Let's create a temporary object or simply return the URL.
-
-            # Since the consumer needs the image to exist, let's save the image 
-            # to a temporary 'unassociated' object or just handle it differently.
-            # Easiest: Keep the current logic but ensure consumer doesn't double-save.
-
-            # Actually, the best way:
-            # 1. API: Save image, return URL.
-            # 2. WebSocket: Send URL, consumer saves message + associates image.
-
-            # Current issue: API saves message, WS saves message.
-            # FIX: Change API to only return URL, not save BookingMessage.
-
-            # Generate a unique path for the image
+            
+            # Generate a unique path for the media
             from django.core.files.storage import default_storage
             import uuid
             import os
 
-            ext = os.path.splitext(image.name)[1]
-            filename = f"chat_images/{uuid.uuid4()}{ext}"
-            saved_path = default_storage.save(filename, image)
-            image_url = request.build_absolute_uri(default_storage.url(saved_path))
+            ext = os.path.splitext(media_file.name)[1]
+            filename = f"{upload_folder}/{uuid.uuid4()}{ext}"
+            saved_path = default_storage.save(filename, media_file)
+            media_url = request.build_absolute_uri(default_storage.url(saved_path))
+            
+            # saved_path is the relative path like 'chat_videos/uuid.mp4'
+            relative_path = saved_path
 
-            print(f"[ChatImageUpload] Saved image to: {saved_path}")
-            return Response({'image_url': image_url}, status=status.HTTP_201_CREATED)
+            print(f"[ChatMediaUpload] ==========")
+            print(f"[ChatMediaUpload] {media_type.upper()} UPLOAD:")
+            print(f"[ChatMediaUpload]   original filename: {media_file.name}")
+            print(f"[ChatMediaUpload]   saved_path: {saved_path}")
+            print(f"[ChatMediaUpload]   relative_path: {relative_path}")
+            print(f"[ChatMediaUpload]   media_url: {media_url}")
+            print(f"[ChatMediaUpload] ==========")
+            
+            response_data = {file_extension: media_url}
+            
+            # Return the relative path so WebSocket consumer can save it directly
+            response_data['relative_path'] = relative_path
+            print(f"[ChatMediaUpload] Returning response_data: {list(response_data.keys())}")
+            
+            # For videos, also generate a thumbnail (simplified - just return video URL)
+            # In production, you'd use ffmpeg to generate actual thumbnails
+            if media_type == 'video':
+                response_data['video_thumbnail_url'] = media_url  # Placeholder
+                response_data['duration'] = duration
+            
+            if media_type == 'audio':
+                response_data['duration'] = duration
+
+            return Response(response_data, status=status.HTTP_201_CREATED)
 
 
 class BookingMessageListView(generics.ListAPIView):
@@ -178,6 +209,14 @@ class MyChatsListView(generics.GenericAPIView):
                     sender = last_message.sender_user or last_message.sender_handyman
                     sender_name = sender.username if sender else "Unknown"
                     last_msg_text = f"{sender_name} sent a photo"
+                elif last_message.video:
+                    sender = last_message.sender_user or last_message.sender_handyman
+                    sender_name = sender.username if sender else "Unknown"
+                    last_msg_text = f"{sender_name} sent a video"
+                elif last_message.audio:
+                    sender = last_message.sender_user or last_message.sender_handyman
+                    sender_name = sender.username if sender else "Unknown"
+                    last_msg_text = f"{sender_name} sent a voice message"
             
             chat_data = {
                 'booking_id': booking.id,
