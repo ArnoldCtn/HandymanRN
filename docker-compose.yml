@@ -1,7 +1,7 @@
 services:
   db:
     image: postgres:15-alpine
-    container_name: handyman_db
+    container_name: handyman_db 
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres

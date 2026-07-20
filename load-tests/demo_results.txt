@@ -1,0 +1,15 @@
+HandymanRN Load Limit Demo Results
+Date: 2026-07-13 05:44:35
+============================================================
+
+Optimal Capacity: 10 concurrent users
+Breaking Point: 500 concurrent users
+
+Detailed Results:
+  10 users: 120ms, 50 RPS, 0.0% failures - PASS
+  25 users: 150ms, 80 RPS, 0.0% failures - PASS
+  50 users: 180ms, 120 RPS, 0.0% failures - PASS
+  100 users: 250ms, 180 RPS, 0.5% failures - PASS
+  200 users: 350ms, 200 RPS, 1.0% failures - PASS
+  500 users: 800ms, 150 RPS, 3.0% failures - WARNING
+  1000 users: 2000ms, 100 RPS, 8.0% failures - FAIL

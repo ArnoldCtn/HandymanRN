@@ -48,7 +48,15 @@
         }
       ],
       "expo-secure-store",
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "Allow $(PRODUCT_NAME) to access your camera to take photos and videos",
+          "mediaLibraryPermission": "Allow $(PRODUCT_NAME) to access your photos and videos",
+          "microphonePermission": "Allow $(PRODUCT_NAME) to access your microphone for voice messages"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

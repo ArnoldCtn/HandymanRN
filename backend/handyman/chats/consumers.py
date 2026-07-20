@@ -1,10 +1,31 @@
-                                         # chats/consumers.py
+# chats/consumers.py
 import json
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
 from .models import BookingMessage, SupportConversation, SupportMessage
 from bookings.models import Booking
 from handymen.models import Handyman
+import logging
+from urllib.parse import urlparse
+
+logger = logging.getLogger(__name__)
+
+
+def _extract_file_path(url):
+    """
+    Extract the relative path from an absolute URL.
+    E.g. 'http://host/media/chat_videos/uuid.mp4' -> 'chat_videos/uuid.mp4'
+    The model field now has upload_to='' so we store the full relative path.
+    """
+    if not url:
+        return None
+    from urllib.parse import urlparse
+    path = urlparse(url).path.lstrip('/')
+    # Remove 'media/' prefix if present
+    if path.startswith('media/'):
+        path = path[len('media/'):].lstrip('/')
+    # Return the full path including folder (e.g., 'chat_videos/uuid.mp4')
+    return path if path else None
 
 
 class BookingChatConsumer(AsyncWebsocketConsumer):
@@ -12,7 +33,6 @@ class BookingChatConsumer(AsyncWebsocketConsumer):
         self.booking_id = self.scope['url_route']['kwargs']['booking_id']
         self.room_group_name = f'chat_booking_{self.booking_id}'
 
-        # Check if user is part of this booking
         can_join = await self.can_access_booking()
         if not can_join:
             await self.close()
@@ -26,34 +46,32 @@ class BookingChatConsumer(AsyncWebsocketConsumer):
 
     async def receive(self, text_data):
         data = json.loads(text_data)
-        
-        # Handle typing indicator
+
         if data.get('type') == 'typing':
             await self.channel_layer.group_send(
                 self.room_group_name,
-                {
-                    'type': 'typing_indicator',
-                    'username': self.scope['user'].username,
-                }
+                {'type': 'typing_indicator', 'username': self.scope['user'].username}
             )
             return
 
         message = data.get('message', '')
         image_url = data.get('image_url')
+        video_url = data.get('video_url')
+        audio_url = data.get('audio_url')
+        # Use relative_path directly from upload if provided (avoids URL parsing issues)
+        image_path = data.get('image_path')
+        video_path = data.get('video_path')
+        audio_path = data.get('audio_path')
+        duration = data.get('duration', 0)
 
-        if not message and not image_url:
+        if not message and not image_url and not video_url and not audio_url:
             return
 
-        # Save message to database
-        saved_message = await self.save_message(message, image_url)
+        saved_message = await self.save_message(message, image_url, video_url, audio_url, image_path, video_path, audio_path, duration)
 
-        # Broadcast to group
         await self.channel_layer.group_send(
             self.room_group_name,
-            {
-                'type': 'chat_message',
-                'message': saved_message,
-            }
+            {'type': 'chat_message', 'message': saved_message}
         )
 
     async def typing_indicator(self, event):
@@ -79,7 +97,7 @@ class BookingChatConsumer(AsyncWebsocketConsumer):
             return False
 
     @database_sync_to_async
-    def save_message(self, message_text, image_url):
+    def save_message(self, message_text, image_url, video_url, audio_url, image_path, video_path, audio_path, duration):
         user = self.scope['user']
         booking = Booking.objects.get(id=self.booking_id)
 
@@ -90,26 +108,56 @@ class BookingChatConsumer(AsyncWebsocketConsumer):
             sender_handyman = None
             sender_user = user
 
-        image_path = None
-        if image_url:
-            from urllib.parse import urlparse
-            path = urlparse(image_url).path
-            image_path = path.lstrip('/')
-            if image_path.startswith('media/'):
-                image_path = image_path[len('media/'):].lstrip('/')
+        # Use relative_path from upload if provided, otherwise extract from URL
+        # relative_path is like 'chat_videos/uuid.mp4' - exactly what the model needs
+        if not image_path and image_url:
+            image_path = _extract_file_path(image_url)
+        if not video_path and video_url:
+            video_path = _extract_file_path(video_url)
+        if not audio_path and audio_url:
+            audio_path = _extract_file_path(audio_url)
+        
+        video_thumbnail_path = None
+        
+        print(f"[Consumer] BEFORE SAVE:")
+        print(f"  image_path={image_path}")
+        print(f"  video_path={video_path}")
+        print(f"  audio_path={audio_path}")
+        print(f"[Consumer] Saving to database...")
 
         msg = BookingMessage.objects.create(
             booking=booking,
             sender_user=sender_user,
             sender_handyman=sender_handyman,
             message=message_text,
-            image=image_path if image_path else None
+            image=image_path,
+            video=video_path,
+            video_thumbnail=video_thumbnail_path,
+            audio=audio_path,
+            duration=int(duration) if duration else 0
         )
+        
+        print(f"[Consumer] AFTER SAVE:")
+        print(f"  msg.image={msg.image}")
+        print(f"  msg.video={msg.video}")
+        print(f"  msg.audio={msg.audio}")
+        print(f"[Consumer] Message saved successfully! ID={msg.id}")
+
+        # Build response with absolute URLs for WebSocket
+        from django.conf import settings
+
+        def build_url(path):
+            if not path:
+                return None
+            return f"{settings.MEDIA_URL.rstrip('/')}/{path}"
 
         return {
             'id': msg.id,
             'message': msg.message,
-            'image_url': image_url,
+            'image_url': image_url,  # Use original URL from upload
+            'video_url': video_url,
+            'audio_url': audio_url,
+            'duration': msg.duration,
             'sender_username': user.username,
             'is_handyman': sender_handyman is not None,
             'created_at': msg.created_at.strftime("%Y-%m-%d %H:%M")
@@ -123,30 +171,23 @@ class SupportChatConsumer(AsyncWebsocketConsumer):
 
     async def connect(self):
         self.user = self.scope['user']
-        
-        # If AnonymousUser or not authenticated
+
         if not self.user or not getattr(self.user, 'is_authenticated', False):
-            print(f"[SupportWS] Rejecting unauthenticated user")
             await self.close()
             return
 
-        # Determine default room name for this user
         if isinstance(self.user, Handyman):
             computed_room = f"support_h_{self.user.id}"
         else:
             computed_room = f"support_{self.user.id}"
 
-        # If room_name is in URL (for admin or client to specify)
         url_room_name = self.scope['url_route']['kwargs'].get('room_name', None)
-        
+
         if url_room_name:
             if self.user.is_staff:
-                # Admin can join any room
                 self.room_name = url_room_name
             else:
-                # Non-staff can only join their own room
                 if url_room_name != computed_room:
-                    print(f"[SupportWS] Access denied: {self.user} tried to join {url_room_name}")
                     await self.close()
                     return
                 self.room_name = url_room_name
@@ -166,35 +207,26 @@ class SupportChatConsumer(AsyncWebsocketConsumer):
         message = data.get('message', '')
         image_url = data.get('image_url')
 
-        if not message and not image_url: return
+        if not message and not image_url:
+            return
 
         saved_message = await self.save_support_message(message, image_url)
         if 'error' in saved_message:
             await self.send(text_data=json.dumps(saved_message))
             return
 
-        # Broadcast to specific room
         await self.channel_layer.group_send(
             self.room_group_name,
-            {
-                'type': 'chat_message',
-                'message': saved_message,
-            }
+            {'type': 'chat_message', 'message': saved_message}
         )
 
-        # Broadcast to global support room for admin notifications
         if not self.user.is_staff:
             await self.channel_layer.group_send(
                 'chat_support_global',
-                {
-                    'type': 'global_notification',
-                    'message': saved_message,
-                    'room_name': self.room_name,
-                }
+                {'type': 'global_notification', 'message': saved_message, 'room_name': self.room_name}
             )
 
     async def global_notification(self, event):
-        """Handler for global notifications (only staff should really care)"""
         await self.send(text_data=json.dumps({
             'type': 'global_notification',
             'message': event['message'],
@@ -209,57 +241,41 @@ class SupportChatConsumer(AsyncWebsocketConsumer):
     @database_sync_to_async
     def save_support_message(self, message_text, image_url):
         try:
-            # Admin sending: Need to extract the correct room to find conversation
             if self.user.is_staff:
                 parts = self.room_name.split('_')
                 if len(parts) == 3 and parts[1] == 'h':
                     participant_id = parts[2]
                     conv = SupportConversation.objects.filter(handyman_id=participant_id).first()
-                    if not conv: conv = SupportConversation.objects.create(handyman_id=participant_id)
+                    if not conv:
+                        conv = SupportConversation.objects.create(handyman_id=participant_id)
                 elif len(parts) == 2:
                     participant_id = parts[1]
                     conv = SupportConversation.objects.filter(user_id=participant_id).first()
-                    if not conv: conv = SupportConversation.objects.create(user_id=participant_id)
+                    if not conv:
+                        conv = SupportConversation.objects.create(user_id=participant_id)
                 else:
                     return {'error': 'Invalid room format'}
             else:
-                # Client/Handyman sending
                 if isinstance(self.user, Handyman):
                     conv = SupportConversation.objects.filter(handyman=self.user).first()
-                    if not conv: conv = SupportConversation.objects.create(handyman=self.user)
+                    if not conv:
+                        conv = SupportConversation.objects.create(handyman=self.user)
                 else:
                     conv = SupportConversation.objects.filter(user=self.user).first()
-                    if not conv: conv = SupportConversation.objects.create(user=self.user)
+                    if not conv:
+                        conv = SupportConversation.objects.create(user=self.user)
 
-            # Extract image path
-            image_path = None
-            if image_url:
-                from django.conf import settings
-                image_path = image_url.replace(settings.MEDIA_URL, '').lstrip('/')
+            image_path = _extract_file_path(image_url)
 
-            # Create the message
             msg = SupportMessage.objects.create(
                 conversation=conv,
                 sender_user=self.user if not self.user.is_staff and not isinstance(self.user, Handyman) else None,
                 sender_handyman=self.user if not self.user.is_staff and isinstance(self.user, Handyman) else None,
                 is_from_admin=self.user.is_staff,
                 message=message_text,
-                image=image_path if image_path else None
+                image=image_path
             )
-            conv.save() # Update updated_at
-
-            if self.user.is_staff:
-                try:
-                    from notifications.services import create_and_send_notification
-                    recipient = conv.user or conv.handyman
-                    create_and_send_notification(
-                        recipient=recipient,
-                        title="Support Message",
-                        body=f"New message from support: {message_text[:50]}...",
-                        notification_type='new_message'
-                    )
-                except Exception as e:
-                    print(f"Error sending notification: {e}")
+            conv.save()
 
             return {
                 'id': msg.id,
@@ -270,5 +286,4 @@ class SupportChatConsumer(AsyncWebsocketConsumer):
                 'created_at': msg.created_at.strftime("%Y-%m-%d %H:%M")
             }
         except Exception as e:
-            print(f"[SupportWS] Error saving message: {e}")
             return {'error': str(e)}

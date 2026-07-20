@@ -181,6 +181,8 @@ python-dotenv was used to manage sensitive configuration values including databa
 **Definition:**
 MeSomb is a Cameroonian payment platform by Bee Corp Sarl that provides a unified API for mobile money collection and disbursement across multiple mobile network operators including MTN Mobile Money (MoMo) and Orange Money. The MeSomb SDK enables developers to integrate mobile money payments into their applications, supporting payment collection from users, automated payouts to service providers, transaction status checking via webhooks, and payment verification. MeSomb handles the technical integration with individual mobile money operators, providing a single integration point.
 
+**GitHub Repository:** https://github.com/BeeCorpSarl/mesomb-python
+
 **Purpose in HandymanWest:**
 The MeSomb SDK was the critical component enabling real-money transactions within the HandymanWest platform. Its capabilities were leveraged for:
 - **Payment Collection:** Initiating requests to collect service fees from client mobile money accounts
@@ -234,6 +236,8 @@ During development, the InMemoryChannelLayer provided equivalent functionality w
 
 **Definition:**
 As defined above in the Backend Technologies section, PostgreSQL is the primary relational database for the HandymanWest platform. In its infrastructure role, PostgreSQL is deployed as a persistent service, typically on dedicated server hardware or as a managed cloud database service. The database configuration includes performance tuning parameters (connection pooling, query caching, index management), backup strategies (automated regular backups with point-in-time recovery), and replication configuration for high availability.
+
+**GitHub Repository:** https://github.com/postgres/postgres
 
 **Purpose in HandymanWest:**
 PostgreSQL stored all persistent platform data including user accounts, handyman profiles, service listings, booking records, payment transactions, wallet balances, chat messages, and ratings. The database was configured with appropriate data retention policies, backup schedules, and performance monitoring to ensure reliable operation. PostgreSQL's connection pooling managed the limited number of concurrent database connections from Gunicorn worker processes and Daphne server instances, preventing connection exhaustion under load.
