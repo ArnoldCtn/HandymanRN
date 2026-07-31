@@ -1,6 +1,7 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import 'react-native-reanimated';
 
 import '@/services/i18n'; // Initialize i18n
@@ -21,22 +22,24 @@ export default function RootLayout() {
   const colorScheme = themePreference === 'system' ? systemColorScheme : themePreference;
 
   return (
-    <AuthProvider>
-      <ToastProvider>
-        <SupportListener />
-        <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-          <Stack>
-            <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-            <Stack.Screen name="booking-detail" options={{ headerShown: false }} />
-            <Stack.Screen name="chat" options={{ headerShown: false }} />
-            <Stack.Screen name="(services)" options={{ headerShown: false }} />
-            <Stack.Screen name="handyman" options={{ headerShown: false }} />
-            <Stack.Screen name="wallet" options={{ headerShown: false }} />
-            <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
-          </Stack>
-          <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
-        </ThemeProvider>
-      </ToastProvider>
-    </AuthProvider>
+    <SafeAreaProvider>
+      <AuthProvider>
+        <ToastProvider>
+          <SupportListener />
+          <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+            <Stack>
+              <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+              <Stack.Screen name="booking-detail" options={{ headerShown: false }} />
+              <Stack.Screen name="chat" options={{ headerShown: false }} />
+              <Stack.Screen name="(services)" options={{ headerShown: false }} />
+              <Stack.Screen name="handyman" options={{ headerShown: false }} />
+              <Stack.Screen name="wallet" options={{ headerShown: false }} />
+              <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
+            </Stack>
+            <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
+          </ThemeProvider>
+        </ToastProvider>
+      </AuthProvider>
+    </SafeAreaProvider>
   );
 }

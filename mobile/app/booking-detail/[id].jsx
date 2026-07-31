@@ -47,8 +47,27 @@ export default function UserBookingDetailScreen() {
     fetchBooking();
   }, [id]);
 
-  const handleComplete = () => {
-    setPaymentModal(true);
+  const handleCancel = () => {
+    Alert.alert(
+      t('bookings.cancel_title', 'Cancel Booking'),
+      t('bookings.cancel_confirm', 'Are you sure you want to cancel this booking?'),
+      [
+        { text: t('common.no', 'No'), style: 'cancel' },
+        {
+          text: t('common.yes', 'Yes'),
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await api.patch(`/bookings/${id}/action/`, { action: 'cancel' });
+              Alert.alert(t('common.success'), t('bookings.cancelled_success', 'Booking cancelled successfully'));
+              router.back();
+            } catch (err) {
+              Alert.alert(t('common.error'), err.response?.data?.detail || t('bookings.cancel_failed', 'Failed to cancel booking'));
+            }
+          }
+        }
+      ]
+    );
   };
 
   const validatePhoneNumber = (number, provider) => {
@@ -454,8 +473,15 @@ export default function UserBookingDetailScreen() {
 
         {/* Actions */}
         <View style={styles.actionsContainer}>
+          {(isPending || isAccepted) && (
+            <TouchableOpacity style={styles.cancelButton} onPress={handleCancel}>
+              <Ionicons name="close-circle-outline" size={20} color="white" />
+              <Text style={styles.cancelText}>{t('bookings.cancel_booking', 'Cancel Booking')}</Text>
+            </TouchableOpacity>
+          )}
+
           {isAccepted && !isCompleted && (
-            <TouchableOpacity style={styles.completeButton} onPress={handleComplete}>
+            <TouchableOpacity style={styles.completeButton} onPress={() => setPaymentModal(true)}>
               <Text style={styles.completeText}>{t('payment.complete_pay')}</Text>
             </TouchableOpacity>
           )}
@@ -698,6 +724,17 @@ const styles = StyleSheet.create({
   status: { fontWeight: '700', fontSize: 14 },
   description: { fontSize: 14, color: '#374151', lineHeight: 20 },
   actionsContainer: { marginTop: 8, marginBottom: 12 },
+  cancelButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#ef4444',
+    paddingVertical: 14,
+    borderRadius: 10,
+    gap: 8,
+    marginBottom: 10,
+  },
+  cancelText: { color: 'white', fontWeight: '600', fontSize: 15 },
   completeButton: { backgroundColor: '#3b82f6', paddingVertical: 14, borderRadius: 10, alignItems: 'center' },
   completeText: { color: 'white', fontWeight: '600', fontSize: 15 },
   modifyButton: { backgroundColor: '#f59e0b', paddingVertical: 14, borderRadius: 10, alignItems: 'center', marginTop: 10 },

@@ -4,6 +4,7 @@ import logging
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 from .models import Booking
 from .serializers import BookingSerializer, BookingCreateSerializer
 from handymen.models import Handyman
@@ -83,6 +84,21 @@ class BookingAcceptDeclineView(generics.UpdateAPIView):
                 return Response({"detail": "Only the handyman can decline"}, status=status.HTTP_403_FORBIDDEN)
             booking.status = 'declined'
             booking.cancellation_reason = request.data.get('reason', '')
+            booking.save()
+            return Response(BookingSerializer(booking, context={'request': request}).data)
+
+        elif action == 'cancel':
+            # Only the user (customer) can cancel their own booking
+            if isinstance(request.user, Handyman):
+                return Response({"detail": "Only the customer can cancel"}, status=status.HTTP_403_FORBIDDEN)
+            if booking.user != request.user:
+                return Response({"detail": "Not your booking"}, status=status.HTTP_403_FORBIDDEN)
+            if booking.status not in ['pending', 'accepted']:
+                return Response({"detail": "Cannot cancel booking at this stage"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            booking.status = 'cancelled'
+            booking.cancelled_at = timezone.now()
+            booking.cancellation_reason = request.data.get('reason', 'Cancelled by user')
             booking.save()
             return Response(BookingSerializer(booking, context={'request': request}).data)
 
