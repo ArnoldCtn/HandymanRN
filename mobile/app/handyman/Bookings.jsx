@@ -12,6 +12,7 @@ import {
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { useTranslation } from 'react-i18next';
 import handymanApi from '@/services/handymanApi';
 
 
@@ -26,6 +27,7 @@ const STATUS_TABS = [
 
 export default function HandymanBookingsScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);

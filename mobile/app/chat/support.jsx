@@ -2,7 +2,7 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import {
   View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet,
-  KeyboardAvoidingView, Platform, SafeAreaView, ActivityIndicator, Image, Modal, Alert
+  KeyboardAvoidingView, Platform, SafeAreaView, ActivityIndicator, Image, Modal, Alert, Keyboard
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -39,6 +39,18 @@ export default function SupportChatScreen() {
   const flatListRef = useRef(null);
   const user = useGlobal(state => state.user);
   const theme = useAppTheme();
+
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+  useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const showSub = Keyboard.addListener(showEvent, (e) => setKeyboardHeight(e.endCoordinates.height));
+    const hideSub = Keyboard.addListener(hideEvent, () => setKeyboardHeight(0));
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
 
   useEffect(() => {
     const initChat = async () => {
@@ -210,18 +222,22 @@ export default function SupportChatScreen() {
     if (!item.message && !item.image_url) return null;
     const isMyMessage = !item.is_from_admin;
     return (
-      <View style={[styles.messageBubble, isMyMessage ? styles.myMessage : styles.theirMessage]}>
-        {item.image_url ? (
-          <TouchableOpacity onPress={() => setFullScreenImage(item.image_url)}>
-            <Image source={{ uri: item.image_url }} style={styles.messageImage} />
-          </TouchableOpacity>
-        ) : null}
-        {item.message ? (
-          <Text style={isMyMessage ? styles.myMessageText : styles.theirMessageText}>
-            {item.message}
+      <View style={[styles.bubbleRow, isMyMessage ? styles.bubbleRowMine : styles.bubbleRowTheirs]}>
+        <View style={[styles.messageBubble, isMyMessage ? styles.myMessage : styles.theirMessage]}>
+          {item.image_url ? (
+            <TouchableOpacity onPress={() => setFullScreenImage(item.image_url)} activeOpacity={0.9}>
+              <Image source={{ uri: item.image_url }} style={styles.messageImage} />
+            </TouchableOpacity>
+          ) : null}
+          {item.message ? (
+            <Text style={isMyMessage ? styles.myMessageText : styles.theirMessageText}>
+              {item.message}
+            </Text>
+          ) : null}
+          <Text style={[styles.time, { color: isMyMessage ? 'rgba(255,255,255,0.75)' : '#94A3B8' }]}>
+            {item.created_at}
           </Text>
-        ) : null}
-        <Text style={styles.time}>{item.created_at}</Text>
+        </View>
       </View>
     );
   };
@@ -230,7 +246,7 @@ export default function SupportChatScreen() {
     return (
       <View style={styles.center}>
         <ActivityIndicator size="large" color="#6366F1" />
-        <Text style={{ marginTop: 10, color: '#666' }}>Connecting to Support...</Text>
+        <Text style={styles.loaderText}>Connecting to Support…</Text>
       </View>
     );
   }
@@ -241,7 +257,10 @@ export default function SupportChatScreen() {
       : user.thumbnail
     : null;
 
-  return (
+  const inputBarBaseHeight = 60;
+  const inputHeight = inputBarBaseHeight + Math.max(insets.bottom, 12);
+
+return (
     <View style={{ flex: 1, backgroundColor: theme.background }}>
       <Sidebar
         visible={sidebarVisible}
@@ -250,25 +269,26 @@ export default function SupportChatScreen() {
         isHandyman={roleIsHandyman}
         onLogout={() => {}}
       />
-      <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }}>
-        <KeyboardAvoidingView 
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
-          keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
-          style={{ flex: 1 }}
-        >
+      <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }} edges={['top', 'left', 'right']}>
+        <View style={{ flex: 1, paddingBottom: Platform.OS === 'android' ? keyboardHeight : 0 }}>
           <View style={styles.header}>
-            <TouchableOpacity onPress={() => router.back()} style={styles.headerLeftBtn}>
-              <Ionicons name="arrow-back" size={24} color="#202020" />
+            <TouchableOpacity onPress={() => router.back()} style={styles.headerBackBtn}>
+              <Ionicons name="arrow-back" size={22} color="#1F2937" />
             </TouchableOpacity>
-            <Image 
-              source={ favicon } 
-              style={styles.headerAvatar} 
-            />
-            <View style={styles.headerInfo}>
-              <Text style={styles.headerName}>Support Admin</Text>
-              <Text style={styles.headerSubtitle}>Online</Text>
+            <View style={styles.headerAvatarWrap}>
+              <Image
+                source={favicon}
+                style={styles.headerAvatar}
+              />
+              <View style={styles.onlineDot} />
             </View>
-            <TouchableOpacity onPress={() => setSidebarVisible(true)} style={styles.headerLeftBtn}>
+            <View style={styles.headerInfo}>
+              <Text style={styles.headerName} numberOfLines={1}>Support Admin</Text>
+              <Text style={styles.headerSubtitle}>
+                {typingUser ? 'typing…' : 'Online'}
+              </Text>
+            </View>
+            <TouchableOpacity onPress={() => setSidebarVisible(true)} style={styles.headerRightBtn}>
               {avatarUrl ? (
                 <Image source={{ uri: avatarUrl }} style={styles.avatar} />
               ) : (
@@ -284,36 +304,54 @@ export default function SupportChatScreen() {
             data={messages}
             keyExtractor={(item, index) => item.id?.toString() || index.toString()}
             renderItem={renderMessage}
-            contentContainerStyle={styles.messagesList}
+            contentContainerStyle={[styles.messagesList, { paddingBottom: inputHeight + 16 }]}
             onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
             onLayout={() => flatListRef.current?.scrollToEnd({ animated: true })}
+            style={{ flex: 1 }}
           />
 
-          <View style={[styles.inputContainer, { paddingBottom: Math.max(insets.bottom, 12) }]}>
+          <View style={styles.inputContainer}>
+            {typingUser ? (
+              <View style={styles.typingBar}>
+                <View style={styles.typingDots}>
+                  <View style={styles.typingDot} />
+                  <View style={styles.typingDot} />
+                  <View style={styles.typingDot} />
+                </View>
+                <Text style={styles.typingText}>Support is typing…</Text>
+              </View>
+            ) : null}
             <View style={styles.inputWrapper}>
               <TouchableOpacity onPress={handleImagePicker} style={styles.iconButton}>
-                <Ionicons name="image" size={24} color="#6366F1" />
+                <Ionicons name="image-outline" size={22} color="#6366F1" />
               </TouchableOpacity>
-              <TextInput
-                style={styles.input}
-                placeholder="Describe your issue..."
-                value={newMessage}
-                onChangeText={handleTyping}
-                multiline
-                placeholderTextColor="#9ca3af"
-              />
-              <TouchableOpacity style={styles.sendButton} onPress={() => sendMessage(newMessage)} disabled={!newMessage.trim()}>
-                <Ionicons name="send" size={24} color={newMessage.trim() ? '#6366F1' : '#9ca3af'} />
+              <View style={styles.textInputWrap}>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Describe your issue..."
+                  value={newMessage}
+                  onChangeText={handleTyping}
+                  multiline={false}
+                  placeholderTextColor="#9CA3AF"
+                />
+              </View>
+              <TouchableOpacity
+                style={[styles.sendButton, newMessage.trim() && styles.sendButtonActive]}
+                onPress={() => sendMessage(newMessage)}
+                disabled={!newMessage.trim()}
+              >
+                <Ionicons name="send" size={18} color={newMessage.trim() ? 'white' : '#9CA3AF'} />
               </TouchableOpacity>
             </View>
+            <View style={{ height: Math.max(insets.bottom, 12) }} />
           </View>
-        </KeyboardAvoidingView>
+        </View>
       </SafeAreaView>
 
       <Modal visible={!!fullScreenImage} transparent={true} onRequestClose={() => setFullScreenImage(null)}>
         <View style={styles.modalContainer}>
           <TouchableOpacity style={styles.closeButton} onPress={() => setFullScreenImage(null)}>
-            <Ionicons name="close" size={32} color="white" />
+            <Ionicons name="close" size={30} color="white" />
           </TouchableOpacity>
           <Image source={{ uri: fullScreenImage }} style={styles.fullScreenImage} resizeMode="contain" />
         </View>
@@ -322,40 +360,113 @@ export default function SupportChatScreen() {
   );
 }
 
+const COLORS = {
+  bg: '#F1F5F9',
+  card: '#FFFFFF',
+  border: '#E5E7EB',
+  primary: '#6366F1',
+  primaryLight: '#EEF2FF',
+  textPrimary: '#111827',
+  textSecondary: '#64748B',
+  textTertiary: '#94A3B8',
+  bubbleTheirs: '#EEF1F6',
+};
+
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8fafc' },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  container: { flex: 1, backgroundColor: COLORS.bg },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.bg },
+  loaderText: { marginTop: 12, color: COLORS.textSecondary, fontSize: 14, fontWeight: '500' },
+
   header: {
-    flexDirection: 'row', alignItems: 'center', padding: 12,
-    backgroundColor: 'white', borderBottomWidth: 1, borderBottomColor: '#e5e7eb',
-    ...Platform.select({ android: { paddingTop: 40 } })
+    flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, paddingVertical: 10,
+    backgroundColor: COLORS.card, borderBottomWidth: 1, borderBottomColor: COLORS.border,
+    shadowColor: '#0F172A', shadowOpacity: 0.04, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 2,
+    ...Platform.select({ android: { paddingTop: 34 } })
   },
-  backBtn: { padding: 8, marginRight: 4 },
-  headerLeftBtn: { padding: 4, marginRight: 12 },
+  headerBackBtn: {
+    width: 38, height: 38, borderRadius: 19,
+    alignItems: 'center', justifyContent: 'center', backgroundColor: '#F1F5F9',
+  },
+  headerAvatarWrap: { marginLeft: 10, position: 'relative' },
+  headerAvatar: { width: 40, height: 40, borderRadius: 20, borderWidth: 1.5, borderColor: COLORS.border },
+  onlineDot: {
+    position: 'absolute', bottom: 0, right: 0, width: 12, height: 12, borderRadius: 6,
+    backgroundColor: '#22C55E', borderWidth: 2, borderColor: COLORS.card,
+  },
+  headerInfo: { marginLeft: 10, flex: 1, minWidth: 0 },
+  headerName: { fontSize: 16.5, fontWeight: '700', color: COLORS.textPrimary },
+  headerSubtitle: { fontSize: 12.5, color: '#10B981', fontWeight: '600', marginTop: 1 },
+  headerRightBtn: { padding: 2, marginLeft: 8 },
   avatar: { width: 36, height: 36, borderRadius: 18 },
   avatarPlaceholder: {
     width: 36, height: 36, borderRadius: 18,
-    backgroundColor: '#6366F1', alignItems: 'center', justifyContent: 'center'
+    backgroundColor: COLORS.primary, alignItems: 'center', justifyContent: 'center'
   },
-  avatarInitial: { color: 'white', fontSize: 16, fontWeight: 'bold' },
-  headerAvatar: { width: 36, height: 36, borderRadius: 18 },
-  headerInfo: { marginLeft: 12, flex: 1 },
-  headerName: { fontSize: 16, fontWeight: '700', color: '#1f2937' },
-  headerSubtitle: { fontSize: 12, color: '#10B981' },
-  messagesList: { padding: 16, paddingBottom: 20 },
-  messageBubble: { maxWidth: '85%', padding: 12, borderRadius: 16, marginVertical: 4 },
-  myMessage: { alignSelf: 'flex-end', backgroundColor: '#6366F1', borderBottomRightRadius: 2 },
-  theirMessage: { alignSelf: 'flex-start', backgroundColor: '#e5e7eb', borderBottomLeftRadius: 2 },
-  myMessageText: { color: 'white', fontSize: 15 },
-  theirMessageText: { color: '#1f2937', fontSize: 15 },
-  messageImage: { width: 200, height: 200, borderRadius: 10, marginBottom: 5 },
-  time: { fontSize: 10, marginTop: 4, opacity: 0.7, alignSelf: 'flex-end' },
-  inputContainer: { backgroundColor: 'white', borderTopWidth: 1, borderTopColor: '#e5e7eb', paddingBottom: Platform.OS === 'ios' ? 0 : 5 },
-  inputWrapper: { flexDirection: 'row', alignItems: 'center', padding: 10, gap: 8 },
-  input: { flex: 1, backgroundColor: '#f1f5f9', borderRadius: 20, paddingHorizontal: 16, paddingVertical: 8, maxHeight: 100, color: '#1f2937' },
-  sendButton: { padding: 8 },
-  iconButton: { padding: 8 },
-  modalContainer: { flex: 1, backgroundColor: 'rgba(0,0,0,0.9)', justifyContent: 'center', alignItems: 'center' },
-  closeButton: { position: 'absolute', top: 50, right: 20, zIndex: 1 },
+  avatarInitial: { color: 'white', fontSize: 15, fontWeight: '700' },
+
+  messagesList: { padding: 14, paddingTop: 16 },
+
+  bubbleRow: { width: '100%', flexDirection: 'row', marginVertical: 3 },
+  bubbleRowMine: { justifyContent: 'flex-end' },
+  bubbleRowTheirs: { justifyContent: 'flex-start' },
+
+  messageBubble: {
+    maxWidth: '82%', paddingHorizontal: 13, paddingVertical: 10, borderRadius: 18,
+    shadowColor: '#0F172A', shadowOpacity: 0.05, shadowRadius: 4, shadowOffset: { width: 0, height: 2 }, elevation: 1,
+  },
+  myMessage: { backgroundColor: COLORS.primary, borderBottomRightRadius: 4 },
+  theirMessage: { backgroundColor: COLORS.bubbleTheirs, borderBottomLeftRadius: 4 },
+  myMessageText: { color: 'white', fontSize: 15, lineHeight: 20 },
+  theirMessageText: { color: COLORS.textPrimary, fontSize: 15, lineHeight: 20 },
+  messageImage: { width: 200, height: 200, borderRadius: 12, marginBottom: 5 },
+  time: { fontSize: 10, marginTop: 4, alignSelf: 'flex-end' },
+
+  // ---- Input container: docked at bottom, stable height whether the
+  // typing indicator is showing or not, so the bar never shifts oddly. ----
+  inputContainer: {
+    backgroundColor: COLORS.card,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+    shadowColor: '#0F172A',
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: -3 },
+    elevation: 6,
+  },
+  typingBar: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    paddingHorizontal: 16, paddingTop: 8,
+  },
+  typingDots: { flexDirection: 'row', gap: 3 },
+  typingDot: { width: 5, height: 5, borderRadius: 2.5, backgroundColor: COLORS.primary, opacity: 0.6 },
+  typingText: { fontSize: 12, color: COLORS.primary, fontStyle: 'italic', fontWeight: '500' },
+
+  inputWrapper: {
+    flexDirection: 'row', alignItems: 'center',
+    paddingHorizontal: 10, paddingVertical: 8, gap: 8, minHeight: 60,
+  },
+  iconButton: {
+    width: 38, height: 38, borderRadius: 19,
+    alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.primaryLight,
+  },
+  textInputWrap: {
+    flex: 1, backgroundColor: '#F1F5F9', borderRadius: 22,
+    borderWidth: 1, borderColor: '#E2E8F0', justifyContent: 'center',
+  },
+  input: {
+    paddingHorizontal: 16, paddingVertical: Platform.OS === 'ios' ? 10 : 8,
+    minHeight: 42, maxHeight: 100, color: COLORS.textPrimary, fontSize: 15,
+  },
+  sendButton: {
+    width: 40, height: 40, borderRadius: 20,
+    alignItems: 'center', justifyContent: 'center', backgroundColor: '#EEF1F6',
+  },
+  sendButtonActive: {
+    backgroundColor: COLORS.primary,
+    shadowColor: COLORS.primary, shadowOpacity: 0.35, shadowRadius: 6, shadowOffset: { width: 0, height: 3 }, elevation: 3,
+  },
+
+  modalContainer: { flex: 1, backgroundColor: 'rgba(0,0,0,0.92)', justifyContent: 'center', alignItems: 'center' },
+  closeButton: { position: 'absolute', top: 50, right: 20, zIndex: 1, padding: 8 },
   fullScreenImage: { width: '100%', height: '80%' },
 });
