@@ -65,11 +65,15 @@ SECRET_KEY = 'django-insecure-+1-rgp&271)w)qu%guby%7c9dw!*(($1lnfc5b2r+eq&6favh7
 SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'django-insecure-+1-rgp&271)w)qu%guby%7c9dw!*(($1lnfc5b2r+eq&6favh7')  # Override with env var if available
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+# DEBUG = True
+DEBUG = os.environ.get('DJANGO_DEBUG', 'False').lower() == 'true'
+
 
 # ALLOWED_HOSTS = ['192.168.43.188', 'localhost', '127.0.0.1']
 
-ALLOWED_HOSTS = ['*']          # Allows all hosts during development
+# ALLOWED_HOSTS = ['*']          # Allows all hosts during development
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+
 
 # ID verification sends two base64 images in one JSON body
 DATA_UPLOAD_MAX_MEMORY_SIZE = 25 * 1024 * 1024  # 25 MB
@@ -109,8 +113,11 @@ AXES_RESET_ON_SUCCESS   = True
 AXES_ENABLED            = True
 
 
-CORS_ALLOW_ALL_ORIGINS = True
+# CORS_ALLOW_ALL_ORIGINS = True
 # Application definition
+
+CORS_ALLOW_ALL_ORIGINS = os.environ.get('CORS_ALLOW_ALL_ORIGINS', 'True').lower() == 'true'
+CORS_ALLOWED_ORIGINS = os.environ.get('CORS_ALLOWED_ORIGINS', '').split(',') if os.environ.get('CORS_ALLOWED_ORIGINS') else []
 
 
 INSTALLED_APPS = [
@@ -237,11 +244,33 @@ import os
 # Use DOCKER_ENV flag to switch between Docker and local database
 # Docker: set DOCKER_ENV=true in .env.docker → uses DATABASE_URL from env
 # Local: no DOCKER_ENV → uses hardcoded local PostgreSQL config
-if os.environ.get('DOCKER_ENV') == 'true':
+# if os.environ.get('DOCKER_ENV') == 'true':
+#     DATABASES = {
+#         'default': dj_database_url.config(
+#             default=os.environ.get('DATABASE_URL'),
+#             conn_max_age=600
+#         )
+#     }
+# else:
+#     DATABASES = {
+#         'default': {
+#             'ENGINE': 'django.db.backends.postgresql',
+#             'NAME': 'handyman_db',
+#             'USER': 'postgres',
+#             'PASSWORD': '0000',
+#             'HOST': '127.0.0.1',
+#             'PORT': '5432',
+#         }
+#     }
+
+
+DATABASE_URL = os.environ.get('DATABASE_URL')
+if DATABASE_URL:
     DATABASES = {
         'default': dj_database_url.config(
-            default=os.environ.get('DATABASE_URL'),
-            conn_max_age=600
+            default=DATABASE_URL,
+            conn_max_age=600,
+            ssl_require=os.environ.get('DATABASE_SSL_REQUIRE', 'true').lower() == 'true'
         )
     }
 else:
