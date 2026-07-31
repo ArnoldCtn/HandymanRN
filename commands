@@ -8,6 +8,12 @@ python manage.py runserver 0.0.0.0:8000
 ngrok config add-authtoken 3DXGHp0spA9hKrNC1VNfBq1hDTI_2H7pMN4XhVBFXmZikf2fA
 https://sharpie-carless-rimless.ngrok-free.dev/
 
+
+ $env:DATABASE_URL="postgresql://postgres:lfTjZUyGlWUdFlTfIOxBnLdYPopLKdzb@yamabiko.proxy.rlwy.net:33466/railway"; python manage.py createsuperuser
+
+ $env:DATABASE_URL="postgresql://postgres:lfTjZUyGlWUdFlTfIOxBnLdYPopLKdzb@yamabiko.proxy.rlwy.net:33466/railway"; python manage.py migrate
+
+ 
 ngrok http 8000
 ngrok http --url=sharpie-carless-rimless.ngrok-free.dev 80
 in ngrok folder .\ngrok.exe http 8000
