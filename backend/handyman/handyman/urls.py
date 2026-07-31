@@ -19,6 +19,7 @@ from django.urls import path,include
 
 from django.conf import settings
 from django.conf.urls.static import static
+from django.views.static import serve
 
 
 admin.site_header="Handyman Platform Admin"
@@ -37,4 +38,5 @@ urlpatterns = [
     path('payments/', include('payments.urls')),
     path('favorites/', include('favorites.urls')),
     path('reports/', include('reports.urls')),
+    path('media/<path:path>', serve, {'document_root': settings.MEDIA_ROOT}),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
