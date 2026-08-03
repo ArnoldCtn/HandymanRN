@@ -162,9 +162,13 @@ INSTALLED_APPS = [
     'favorites',
     'django_extensions',
     'reports',
-    'cloudinary',
-    'cloudinary_storage',
 ]
+
+# ── Cloudinary (conditional) ─────────────────────────────────
+# Only add Cloudinary apps if the package is installed and CLOUDINARY_URL is set
+CLOUDINARY_URL = os.environ.get('CLOUDINARY_URL', '')
+if CLOUDINARY_URL:
+    INSTALLED_APPS += ['cloudinary', 'cloudinary_storage']
 
 SITE_ID = 1 
 
@@ -349,20 +353,26 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 
-STORAGES = {
-    "default": {
-        # "BACKEND": "django.core.files.storage.FileSystemStorage", #dev
-        "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
-
-    },
-    "staticfiles": {
-        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
-    },
-}
-
-# CLOUDINARY_URL = os.environ.get('CLOUDINARY_URL', '')
-
-
+# ── Storage Configuration ────────────────────────────────────
+# Use Cloudinary for media if configured, otherwise local filesystem
+if CLOUDINARY_URL:
+    STORAGES = {
+        "default": {
+            "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
+        },
+        "staticfiles": {
+            "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        },
+    }
+else:
+    STORAGES = {
+        "default": {
+            "BACKEND": "django.core.files.storage.FileSystemStorage",
+        },
+        "staticfiles": {
+            "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        },
+    }
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
