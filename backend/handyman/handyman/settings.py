@@ -53,6 +53,13 @@ PLATFORM_FEE_PERCENT  = 0.30   # 30% goes to admin
 HANDYMAN_CUT_PERCENT  = 0.70   # 70% goes to handyman
 
 
+CLOUDINARY_STORAGE = {
+    'CLOUD_NAME': os.environ.get('CLOUDINARY_CLOUD_NAME'),
+    'API_KEY': os.environ.get('CLOUDINARY_API_KEY'),
+    'API_SECRET': os.environ.get('CLOUDINARY_API_SECRET'),
+}
+
+DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 
 # Correct path: firebase-service-account.json should be in the same folder as settings.py
 FIREBASE_SERVICE_ACCOUNT_PATH = BASE_DIR / 'handyman/firebase-service-account.json'
