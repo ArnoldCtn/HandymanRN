@@ -15,6 +15,8 @@ import json
 from pathlib import Path
 
 import os
+
+from twisted import python
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -53,12 +55,6 @@ PLATFORM_FEE_PERCENT  = 0.30   # 30% goes to admin
 HANDYMAN_CUT_PERCENT  = 0.70   # 70% goes to handyman
 
 
-# CLOUDINARY_STORAGE = {
-#     'CLOUD_NAME': os.environ.get('CLOUDINARY_CLOUD_NAME'),
-#     'API_KEY': os.environ.get('CLOUDINARY_API_KEY'),
-#     'API_SECRET': os.environ.get('CLOUDINARY_API_SECRET'),
-# }
-
 DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 
 # Correct path: firebase-service-account.json should be in the same folder as settings.py
@@ -86,6 +82,7 @@ ALLOWED_HOSTS = ['*']          # Allows all hosts during development
 DATA_UPLOAD_MAX_MEMORY_SIZE = 25 * 1024 * 1024  # 25 MB
 
 AUTH_USER_MODEL = 'users.User'
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # ── Email Configuration ──────────────────────────────────────────
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
@@ -306,26 +303,34 @@ import os
 #         }
 #     }
 
-DATABASE_URL = os.environ.get('DATABASE_URL')
-if DATABASE_URL:
-    DATABASES = {
-        'default': dj_database_url.config(
-            default=DATABASE_URL,
-            conn_max_age=600,
-            ssl_require=os.environ.get('DATABASE_SSL_REQUIRE', 'true').lower() == 'true'
-        )
-    }
-else:
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': 'handyman_db',
-            'USER': 'postgres',
-            'PASSWORD': '0000',
-            'HOST': '127.0.0.1',
-            'PORT': '5432',
-        }
-    }
+# DATABASE_URL = os.environ.get('DATABASE_URL')
+# if DATABASE_URL:
+#     DATABASES = {
+#         'default': dj_database_url.config(
+#             default=DATABASE_URL,
+#             conn_max_age=600,
+#             ssl_require=os.environ.get('DATABASE_SSL_REQUIRE', 'true').lower() == 'true'
+#         )
+#     }
+# else:
+#     DATABASES = {
+#         'default': {
+#             'ENGINE': 'django.db.backends.postgresql',
+#             'NAME': 'handyman_db',
+#             'USER': 'postgres',
+#             'PASSWORD': '0000',
+#             'HOST': '127.0.0.1',
+#             'PORT': '5432',
+#         }
+#     }
+
+DATABASES = {
+    'default': dj_database_url.config(
+        default=os.environ.get('DATABASE_URL'),
+        conn_max_age=600,
+        ssl_require=True
+    )
+}
 
 try:
     with open(FIREBASE_SERVICE_ACCOUNT_PATH, 'r', encoding='utf-8') as f:
