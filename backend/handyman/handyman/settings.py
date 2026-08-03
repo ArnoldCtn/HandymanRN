@@ -53,11 +53,11 @@ PLATFORM_FEE_PERCENT  = 0.30   # 30% goes to admin
 HANDYMAN_CUT_PERCENT  = 0.70   # 70% goes to handyman
 
 
-CLOUDINARY_STORAGE = {
-    'CLOUD_NAME': os.environ.get('CLOUDINARY_CLOUD_NAME'),
-    'API_KEY': os.environ.get('CLOUDINARY_API_KEY'),
-    'API_SECRET': os.environ.get('CLOUDINARY_API_SECRET'),
-}
+# CLOUDINARY_STORAGE = {
+#     'CLOUD_NAME': os.environ.get('CLOUDINARY_CLOUD_NAME'),
+#     'API_KEY': os.environ.get('CLOUDINARY_API_KEY'),
+#     'API_SECRET': os.environ.get('CLOUDINARY_API_SECRET'),
+# }
 
 DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 
@@ -123,8 +123,12 @@ AXES_ENABLED            = True
 # CORS_ALLOW_ALL_ORIGINS = True
 # Application definition
 
+# CORS Configuration
+# When CORS_ALLOW_ALL_ORIGINS is True, CORS_ALLOWED_ORIGINS must be empty
 CORS_ALLOW_ALL_ORIGINS = os.environ.get('CORS_ALLOW_ALL_ORIGINS', 'True').lower() == 'true'
-CORS_ALLOWED_ORIGINS = os.environ.get('CORS_ALLOWED_ORIGINS', '').split(',') if os.environ.get('CORS_ALLOWED_ORIGINS') else []
+# Parse CORS_ALLOWED_ORIGINS, filtering out invalid entries like '*'
+_raw_origins = os.environ.get('CORS_ALLOWED_ORIGINS', '')
+CORS_ALLOWED_ORIGINS = [o.strip() for o in _raw_origins.split(',') if o.strip() and o.strip() != '*'] if _raw_origins else []
 
 CSRF_TRUSTED_ORIGINS = [
     'https://handymanrn-production.up.railway.app',
@@ -256,12 +260,7 @@ TEMPLATES = [
 import dj_database_url
 import os
 
-DATABASES = {
-    'default': dj_database_url.config(
-        default=os.environ.get('DATABASE_URL','postgresql://postgres:-Dragoncity10_@db.qqimawaskgvgrxtkdirf.supabase.co:5432/postgres'),
-        conn_max_age=600
-    )
-}
+
 
 # Use DOCKER_ENV flag to switch between Docker and local database
 # Docker: set DOCKER_ENV=true in .env.docker → uses DATABASE_URL from env
@@ -306,6 +305,27 @@ DATABASES = {
 #             'PORT': '5432',
 #         }
 #     }
+
+DATABASE_URL = os.environ.get('DATABASE_URL')
+if DATABASE_URL:
+    DATABASES = {
+        'default': dj_database_url.config(
+            default=DATABASE_URL,
+            conn_max_age=600,
+            ssl_require=os.environ.get('DATABASE_SSL_REQUIRE', 'true').lower() == 'true'
+        )
+    }
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': 'handyman_db',
+            'USER': 'postgres',
+            'PASSWORD': '0000',
+            'HOST': '127.0.0.1',
+            'PORT': '5432',
+        }
+    }
 
 try:
     with open(FIREBASE_SERVICE_ACCOUNT_PATH, 'r', encoding='utf-8') as f:
