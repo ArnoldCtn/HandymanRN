@@ -7,13 +7,21 @@ export const SupportListener = () => {
 
   useEffect(() => {
     const checkRole = async () => {
-      const handymanToken = await AsyncStorage.getItem('handyman_access_token');
-      setIsHandyman(!!handymanToken);
+      try {
+        const handymanToken = await AsyncStorage.getItem('handyman_access_token');
+        setIsHandyman(!!handymanToken);
+      } catch (e) {
+        console.error('[SupportListener] Error:', e);
+      }
     };
     checkRole();
   }, []);
 
-  useSupportNotification(isHandyman);
+  try {
+    useSupportNotification(isHandyman);
+  } catch (e) {
+    console.error('[SupportListener] WS error:', e);
+  }
 
   return null;
 };
