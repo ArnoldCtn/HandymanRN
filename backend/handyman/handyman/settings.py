@@ -71,8 +71,8 @@ DEBUG = os.environ.get('DJANGO_DEBUG', 'False').lower() == 'true'
 
 # ALLOWED_HOSTS = ['192.168.43.188', 'localhost', '127.0.0.1']
 
-# ALLOWED_HOSTS = ['*']          # Allows all hosts during development
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+ALLOWED_HOSTS = ['*']          # Allows all hosts during development
+# ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
 
 
 # ID verification sends two base64 images in one JSON body
@@ -162,6 +162,8 @@ INSTALLED_APPS = [
     'favorites',
     'django_extensions',
     'reports',
+    'cloudinary',
+    'cloudinary_storage',
 ]
 
 SITE_ID = 1 
@@ -253,33 +255,11 @@ import os
 # Use DOCKER_ENV flag to switch between Docker and local database
 # Docker: set DOCKER_ENV=true in .env.docker → uses DATABASE_URL from env
 # Local: no DOCKER_ENV → uses hardcoded local PostgreSQL config
-# if os.environ.get('DOCKER_ENV') == 'true':
-#     DATABASES = {
-#         'default': dj_database_url.config(
-#             default=os.environ.get('DATABASE_URL'),
-#             conn_max_age=600
-#         )
-#     }
-# else:
-#     DATABASES = {
-#         'default': {
-#             'ENGINE': 'django.db.backends.postgresql',
-#             'NAME': 'handyman_db',
-#             'USER': 'postgres',
-#             'PASSWORD': '0000',
-#             'HOST': '127.0.0.1',
-#             'PORT': '5432',
-#         }
-#     }
-
-
-DATABASE_URL = os.environ.get('DATABASE_URL')
-if DATABASE_URL:
+if os.environ.get('DOCKER_ENV') == 'true':
     DATABASES = {
         'default': dj_database_url.config(
-            default=DATABASE_URL,
-            conn_max_age=600,
-            ssl_require=os.environ.get('DATABASE_SSL_REQUIRE', 'true').lower() == 'true'
+            default=os.environ.get('DATABASE_URL'),
+            conn_max_age=600
         )
     }
 else:
@@ -293,6 +273,28 @@ else:
             'PORT': '5432',
         }
     }
+
+
+# DATABASE_URL = os.environ.get('DATABASE_URL')
+# if DATABASE_URL:
+#     DATABASES = {
+#         'default': dj_database_url.config(
+#             default=DATABASE_URL,
+#             conn_max_age=600,
+#             ssl_require=os.environ.get('DATABASE_SSL_REQUIRE', 'true').lower() == 'true'
+#         )
+#     }
+# else:
+#     DATABASES = {
+#         'default': {
+#             'ENGINE': 'django.db.backends.postgresql',
+#             'NAME': 'handyman_db',
+#             'USER': 'postgres',
+#             'PASSWORD': '0000',
+#             'HOST': '127.0.0.1',
+#             'PORT': '5432',
+#         }
+#     }
 
 try:
     with open(FIREBASE_SERVICE_ACCOUNT_PATH, 'r', encoding='utf-8') as f:
@@ -349,12 +351,17 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 STORAGES = {
     "default": {
-        "BACKEND": "django.core.files.storage.FileSystemStorage",
+        # "BACKEND": "django.core.files.storage.FileSystemStorage", #dev
+        "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
+
     },
     "staticfiles": {
         "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
     },
 }
+
+# CLOUDINARY_URL = os.environ.get('CLOUDINARY_URL', '')
+
 
 
 MEDIA_URL = '/media/'

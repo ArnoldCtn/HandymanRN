@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "mobile",
+    "name": "handymanWest",
     "slug": "mobile",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -20,7 +20,10 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
       "output": "static",
@@ -67,6 +70,7 @@
       "eas": {
         "projectId": "e156b099-1ef1-480f-aac8-561f0cccfd6f"
       }
-    }
+    },
+    "owner": "arnoldctn"
   }
 }
