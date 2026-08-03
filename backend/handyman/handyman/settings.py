@@ -249,34 +249,34 @@ TEMPLATES = [
 import dj_database_url
 import os
 
-# DATABASES = {
-#     'default': dj_database_url.config(
-#         default=os.environ.get('DATABASE_URL','postgresql://postgres:-Dragoncity10_@db.qqimawaskgvgrxtkdirf.supabase.co:5432/postgres'),
-#         conn_max_age=600
-#     )
-# }
+DATABASES = {
+    'default': dj_database_url.config(
+        default=os.environ.get('DATABASE_URL','postgresql://postgres:-Dragoncity10_@db.qqimawaskgvgrxtkdirf.supabase.co:5432/postgres'),
+        conn_max_age=600
+    )
+}
 
 # Use DOCKER_ENV flag to switch between Docker and local database
 # Docker: set DOCKER_ENV=true in .env.docker → uses DATABASE_URL from env
 # Local: no DOCKER_ENV → uses hardcoded local PostgreSQL config
-if os.environ.get('DOCKER_ENV') == 'true':
-    DATABASES = {
-        'default': dj_database_url.config(
-            default=os.environ.get('DATABASE_URL'),
-            conn_max_age=600
-        )
-    }
-else:
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': 'handyman_db',
-            'USER': 'postgres',
-            'PASSWORD': '0000',
-            'HOST': '127.0.0.1',
-            'PORT': '5432',
-        }
-    }
+# if os.environ.get('DOCKER_ENV') == 'true':
+#     DATABASES = {
+#         'default': dj_database_url.config(
+#             default=os.environ.get('DATABASE_URL'),
+#             conn_max_age=600
+#         )
+#     }
+# else:
+#     DATABASES = {
+#         'default': {
+#             'ENGINE': 'django.db.backends.postgresql',
+#             'NAME': 'handyman_db',
+#             'USER': 'postgres',
+#             'PASSWORD': '0000',
+#             'HOST': '127.0.0.1',
+#             'PORT': '5432',
+#         }
+#     }
 
 
 # DATABASE_URL = os.environ.get('DATABASE_URL')
@@ -373,6 +373,7 @@ else:
             "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
         },
     }
+        # "BACKEND": "django.core.files.storage.FileSystemStorage", #dev
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
