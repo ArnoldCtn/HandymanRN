@@ -11,39 +11,38 @@ const resources = {
   fr: { translation: fr },
 };
 
-const ZUSTAND_SETTINGS_KEY = 'app-settings';
+// Initialize synchronously with default language
+i18n
+  .use(initReactI18next)
+  .init({
+    resources,
+    lng: 'en',
+    fallbackLng: 'en',
+    interpolation: {
+      escapeValue: false,
+    },
+    react: {
+      useSuspense: false,
+    },
+  });
 
-const initI18n = async () => {
-  let savedLanguage = 'en';
-  
+// Then load saved language asynchronously
+const loadSavedLanguage = async () => {
   try {
-    const settingsStr = await AsyncStorage.getItem(ZUSTAND_SETTINGS_KEY);
+    const settingsStr = await AsyncStorage.getItem('app-settings');
     if (settingsStr) {
       const settings = JSON.parse(settingsStr);
-      savedLanguage = settings.state?.language || 'en';
+      const savedLanguage = settings.state?.language || 'en';
+      i18n.changeLanguage(savedLanguage);
     } else {
       const deviceLanguage = Localization.getLocales()[0].languageCode;
-      savedLanguage = deviceLanguage === 'fr' ? 'fr' : 'en';
+      i18n.changeLanguage(deviceLanguage === 'fr' ? 'fr' : 'en');
     }
   } catch (e) {
     console.error('[i18n] Error loading settings:', e);
   }
-
-  await i18n
-    .use(initReactI18next)
-    .init({
-      resources,
-      lng: savedLanguage,
-      fallbackLng: 'en',
-      interpolation: {
-        escapeValue: false,
-      },
-      react: {
-        useSuspense: false,
-      },
-    });
 };
 
-initI18n();
+loadSavedLanguage();
 
 export default i18n;
