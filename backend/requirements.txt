@@ -85,7 +85,3 @@ django-extensions==3.2.3
 
 # === Ngrok (dev) ===
 pyngrok==8.1.2
-
-# === Cloudinary (Media Storage) ===
-cloudinary==1.42.2
-django-cloudinary-storage==0.3.0

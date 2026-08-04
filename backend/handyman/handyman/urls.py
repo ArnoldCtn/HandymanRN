@@ -38,5 +38,5 @@ urlpatterns = [
     path('payments/', include('payments.urls')),
     path('favorites/', include('favorites.urls')),
     path('reports/', include('reports.urls')),
-    # path('media/<path:path>', serve, {'document_root': settings.MEDIA_ROOT}),
+    path('media/<path:path>', serve, {'document_root': settings.MEDIA_ROOT}),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
