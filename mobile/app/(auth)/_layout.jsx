@@ -16,7 +16,7 @@ export default function AuthLayout() {
         <Stack.Screen name="SignIn" />
         <Stack.Screen name="SignUp" />
         {/* Redirect any other attempt to SignIn */}
-        <Stack.Screen name="*" redirect />
+        {/* <Stack.Screen name="*" redirect /> */}
       </Stack>
     );
   }
@@ -35,7 +35,7 @@ export default function AuthLayout() {
       <Stack.Screen name="PINSettings" />
       <Stack.Screen name="search" />
       <Stack.Screen name="verifyEmail" />
-      <Stack.Screen name="handyman-Profile" />
+      {/* <Stack.Screen name="handyman-Profile" /> */}
     </Stack>
   );
 }

@@ -55,7 +55,7 @@ HANDYMAN_CUT_PERCENT  = 0.70   # 70% goes to handyman
 
 
 # Correct path: firebase-service-account.json should be in the same folder as settings.py
-FIREBASE_SERVICE_ACCOUNT_PATH = BASE_DIR / 'handyman/firebase-service-account.json'
+# FIREBASE_SERVICE_ACCOUNT_PATH = BASE_DIR / 'handyman/firebase-service-account.json'
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
@@ -169,11 +169,7 @@ INSTALLED_APPS = [
     'reports',
 ]
 
-# ── Cloudinary (conditional) ─────────────────────────────────
-# Only add Cloudinary apps if the package is installed and CLOUDINARY_URL is set
-CLOUDINARY_URL = os.environ.get('CLOUDINARY_URL', '')
-if CLOUDINARY_URL:
-    INSTALLED_APPS += ['cloudinary', 'cloudinary_storage']
+
 
 SITE_ID = 1 
 
@@ -220,14 +216,14 @@ AUTHENTICATION_BACKENDS = [
 ]
 
 
-SOCIALACCOUNT_PROVIDERS = {
-    'google': {
-        'APP': {
-            'client_id': os.getenv('GOOGLE_OAUTH_CLIENT_ID'),
-            'secret': os.getenv('GOOGLE_OAUTH_CLIENT_SECRET'),
-        }
-    }
-}
+# SOCIALACCOUNT_PROVIDERS = {
+#     'google': {
+#         'APP': {
+#             'client_id': os.getenv('GOOGLE_OAUTH_CLIENT_ID'),
+#             'secret': os.getenv('GOOGLE_OAUTH_CLIENT_SECRET'),
+#         }
+#     }
+# }
 
 
 ROOT_URLCONF = 'handyman.urls'
@@ -279,19 +275,19 @@ else:
         }
     }
 
-try:
-    with open(FIREBASE_SERVICE_ACCOUNT_PATH, 'r', encoding='utf-8') as f:
-        FIREBASE_SERVICE_ACCOUNT = json.load(f)
-    print("✅ Firebase service account loaded successfully")
-except FileNotFoundError:
-    FIREBASE_SERVICE_ACCOUNT = None
-    print(f"⚠️  Warning: firebase-service-account.json not found at {FIREBASE_SERVICE_ACCOUNT_PATH}")
-except json.JSONDecodeError:
-    FIREBASE_SERVICE_ACCOUNT = None
-    print("❌ Error: firebase-service-account.json is not valid JSON")
-except Exception as e:
-    FIREBASE_SERVICE_ACCOUNT = None
-    print(f"❌ Error loading Firebase service account: {e}")
+# try:
+#     with open(FIREBASE_SERVICE_ACCOUNT_PATH, 'r', encoding='utf-8') as f:
+#         FIREBASE_SERVICE_ACCOUNT = json.load(f)
+#     print("✅ Firebase service account loaded successfully")
+# except FileNotFoundError:
+#     FIREBASE_SERVICE_ACCOUNT = None
+#     print(f"⚠️  Warning: firebase-service-account.json not found at {FIREBASE_SERVICE_ACCOUNT_PATH}")
+# except json.JSONDecodeError:
+#     FIREBASE_SERVICE_ACCOUNT = None
+#     print("❌ Error: firebase-service-account.json is not valid JSON")
+# except Exception as e:
+#     FIREBASE_SERVICE_ACCOUNT = None
+#     print(f"❌ Error loading Firebase service account: {e}")
 
 # Password validation
 # https://docs.djangoproject.com/en/6.0/ref/settings/#auth-password-validators
@@ -332,26 +328,15 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 
-# ── Storage Configuration ────────────────────────────────────
-# Use Cloudinary for media if configured, otherwise local filesystem
-if CLOUDINARY_URL:
-    STORAGES = {
-        "default": {
-            "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
-        },
-        "staticfiles": {
-            "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
-        },
-    }
-else:
-    STORAGES = {
-        "default": {
-            "BACKEND": "django.core.files.storage.FileSystemStorage",
-        },
-        "staticfiles": {
-            "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
-        },
-    }
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
+
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
