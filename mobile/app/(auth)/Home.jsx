@@ -61,9 +61,14 @@ export default function Home() {
     if (!authenticated) return
     const fetchUnread = async () => {
       try {
-        const res = await api.get('/notifications/unread-count/')
+        const res = await Promise.race([
+          api.get('/notifications/unread-count/'),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 8000))
+        ])
         setUnreadCount(res.data?.unread_count || 0)
-      } catch (e) {}
+      } catch (e) {
+        console.log('[Home] fetchUnread error:', e.message)
+      }
     }
     fetchUnread()
     const interval = setInterval(fetchUnread, 15000)
@@ -74,10 +79,15 @@ export default function Home() {
     if (!authenticated) return
     const fetchNewMessages = async () => {
       try {
-        const res = await api.get('/chats/my-chats/')
+        const res = await Promise.race([
+          api.get('/chats/my-chats/'),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 8000))
+        ])
         const newCount = res.data?.filter(chat => chat.has_unread_messages).length || 0
         setNewMessagesCount(newCount)
-      } catch (e) {}
+      } catch (e) {
+        console.log('[Home] fetchNewMessages error:', e.message)
+      }
     }
     fetchNewMessages()
     const interval = setInterval(fetchNewMessages, 15000)

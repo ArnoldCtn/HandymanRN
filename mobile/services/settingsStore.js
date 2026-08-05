@@ -19,6 +19,11 @@ const useSettingsStore = create(
     {
       name: 'app-settings',
       storage: createJSONStorage(() => AsyncStorage),
+      onRehydrateStorage: () => (error) => {
+        if (error) {
+          console.error('[SettingsStore] Hydration error:', error);
+        }
+      },
     }
   )
 );
