@@ -71,7 +71,7 @@ export default function HandymanDashboard() {
   function resolveAvatar(thumbnail) {
     if (!thumbnail) return null
     if (thumbnail.startsWith('http')) return thumbnail
-    return `http://192.168.1.XXX:8000/media/${thumbnail}`
+    return thumbnail
   }
   const avatarUrl = resolveAvatar(handyman?.thumbnail)
 

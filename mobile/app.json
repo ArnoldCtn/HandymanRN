@@ -7,7 +7,7 @@
     "icon": "./assets/images/Nicon.png",
     "scheme": "mobile",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
+    "newArchEnabled": true, 
     "ios": {
       "supportsTablet": true
     },
@@ -62,8 +62,7 @@
       ]
     ],
     "experiments": {
-      "typedRoutes": true,
-      "reactCompiler": true
+      "typedRoutes": true
     },
     "extra": {
       "router": {},

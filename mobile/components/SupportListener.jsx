@@ -17,11 +17,7 @@ export const SupportListener = () => {
     checkRole();
   }, []);
 
-  try {
-    useSupportNotification(isHandyman);
-  } catch (e) {
-    console.error('[SupportListener] WS error:', e);
-  }
+  useSupportNotification(isHandyman);
 
   return null;
 };

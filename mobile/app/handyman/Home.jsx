@@ -109,9 +109,14 @@ export default function HandymanHomeLayout() {
     if (!authenticated) return
     const fetchUnread = async () => {
       try {
-        const res = await handymanApi.get('/notifications/unread-count/')
+        const res = await Promise.race([
+          handymanApi.get('/notifications/unread-count/'),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 8000))
+        ])
         setUnreadCount(res.data?.unread_count || 0)
-      } catch (e) {}
+      } catch (e) {
+        console.log('[HandymanHome] fetchUnread error:', e.message)
+      }
     }
     fetchUnread()
     const interval = setInterval(fetchUnread, 15000)
@@ -122,10 +127,15 @@ export default function HandymanHomeLayout() {
     if (!authenticated) return;
     const fetchChatUnread = async () => {
       try {
-        const res = await handymanApi.get('/chats/my-chats/')
+        const res = await Promise.race([
+          handymanApi.get('/chats/my-chats/'),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 8000))
+        ])
         const newCount = res.data?.filter(chat => chat.has_unread_messages).length || 0
         setChatUnreadCount(newCount)
-      } catch (e) {}
+      } catch (e) {
+        console.log('[HandymanHome] fetchChatUnread error:', e.message)
+      }
     }
     fetchChatUnread()
     const interval = setInterval(fetchChatUnread, 15000)
