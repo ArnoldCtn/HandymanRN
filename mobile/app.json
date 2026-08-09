@@ -7,7 +7,7 @@
     "icon": "./assets/images/Nicon.png",
     "scheme": "mobile",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true, 
+    "newArchEnabled": true,
     "ios": {
       "supportsTablet": true
     },
@@ -15,9 +15,9 @@
       "package": "com.mobile.app",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/images/android-icon-foreground.png",
-        "backgroundImage": "./assets/images/android-icon-background.png",
-        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+        "foregroundImage": "./assets/images/Nicon.png",
+        "backgroundImage": "./assets/images/Nicon.png",
+        "monochromeImage": "./assets/images/Nicon.png"
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
@@ -59,7 +59,15 @@
           "mediaLibraryPermission": "Allow $(PRODUCT_NAME) to access your photos and videos",
           "microphonePermission": "Allow $(PRODUCT_NAME) to access your microphone for voice messages"
         }
-      ]
+      ],
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "Allow Handyman to access your microphone to record voice notes"
+        }
+      ],
+      "expo-video",
+      "expo-asset"
     ],
     "experiments": {
       "typedRoutes": true

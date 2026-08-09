@@ -5,12 +5,12 @@ import i18n from './i18n';
 
 const useSettingsStore = create(
   persist(
-    (set, get) => ({
+    (set) => ({
       theme: 'system', // 'light' | 'dark' | 'system'
       language: 'en', // 'en' | 'fr'
 
       setTheme: (theme) => set({ theme }),
-      
+
       setLanguage: (language) => {
         set({ language });
         i18n.changeLanguage(language);
@@ -19,9 +19,20 @@ const useSettingsStore = create(
     {
       name: 'app-settings',
       storage: createJSONStorage(() => AsyncStorage),
-      onRehydrateStorage: () => (error) => {
+
+      // Keep only raw data in storage
+      partialize: (state) => ({
+        theme: state.theme,
+        language: state.language,
+      }),
+
+      // Corrected callback signature: (state, error)
+      onRehydrateStorage: () => (state, error) => {
         if (error) {
-          console.error('[SettingsStore] Hydration error:', error);
+          console.error('[SettingsStore] Real hydration error:', error);
+        } else if (state?.language) {
+          // Sync i18n with the persisted language on app launch
+          i18n.changeLanguage(state.language);
         }
       },
     }
