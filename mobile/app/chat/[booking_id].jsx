@@ -9,7 +9,9 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Audio, Video } from 'expo-av';
+// FIX 1: Added Audio to imports
+import { useAudioRecorder, useAudioPlayer, RecordingOptions, Audio } from 'expo-audio';
+import { useVideoPlayer, VideoView } from 'expo-video';
 import * as FileSystem from 'expo-file-system';
 import Slider from '@react-native-community/slider';
 
@@ -30,18 +32,39 @@ export default function ChatScreen() {
 
   const [isRecording, setIsRecording] = useState(false);
   const [recordingDuration, setRecordingDuration] = useState(0);
-  const [recording, setRecording] = useState(null);
   const recordingInterval = useRef(null);
 
-  const [sound, setSound] = useState(null);
-  const [playingMessageId, setPlayingMessageId] = useState(null);
+  // Audio recorder hook
+  const audioRecorder = useAudioRecorder(
+    { ...RecordingOptions.PRESET_HIGH_QUALITY, isMeteringEnabled: true },
+    (status) => {
+      if (status.isRecording) {
+        setRecordingDuration(Math.floor(status.durationMillis / 1000));
+      }
+    }
+  );
+
+  // Audio player hook
+  const [currentAudioUrl, setCurrentAudioUrl] = useState(null);
+  const [currentMessageId, setCurrentMessageId] = useState(null);
+  const audioPlayer = useAudioPlayer(currentAudioUrl || '');
+  const [isPlaying, setIsPlaying] = useState(false);
   const [playbackPosition, setPlaybackPosition] = useState(0);
   const [playbackDuration, setPlaybackDuration] = useState(0);
-  const playbackInterval = useRef(null);
 
   const [showMediaMenu, setShowMediaMenu] = useState(false);
   const [playingVideoUrl, setPlayingVideoUrl] = useState(null);
-  const videoRef = useRef(null);
+  
+  // Video player hook
+  const videoPlayer = useVideoPlayer(playingVideoUrl || '');
+  
+  // FIX 4: Used .replace() instead of mutating .source
+  useEffect(() => {
+    if (playingVideoUrl && videoPlayer) {
+      videoPlayer.replace(playingVideoUrl);
+      videoPlayer.play();
+    }
+  }, [playingVideoUrl]);
 
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   useEffect(() => {
@@ -122,10 +145,10 @@ export default function ChatScreen() {
     return () => { if (ws.current) ws.current.close(); if (typingTimeout.current) clearTimeout(typingTimeout.current); };
   }, [booking_id]);
 
+  // FIX 3: Removed undefined playbackInterval.current from cleanup
   useEffect(() => {
     return () => {
-      if (sound) sound.unloadAsync();
-      if (playbackInterval.current) clearInterval(playbackInterval.current);
+      if (recordingInterval.current) clearInterval(recordingInterval.current);
     };
   }, []);
 
@@ -236,14 +259,11 @@ export default function ChatScreen() {
       const uri = r.assets[0].uri;
       const fn = `video_${Date.now()}.mp4`;
       
-      // Get duration - expo-image-picker returns it in MILLISECONDS for videos
       let durMs = r.assets[0].duration;
       console.log('[Video] Raw duration from picker:', durMs, 'Type:', typeof durMs);
       
-      // Convert milliseconds to seconds
       let dur = 0;
       if (durMs && durMs > 0) {
-        // If value is > 1000, it's likely in milliseconds
         if (durMs > 1000) {
           dur = Math.round(durMs / 1000);
         } else {
@@ -253,13 +273,11 @@ export default function ChatScreen() {
       
       console.log('[Video] Final duration (seconds):', dur);
       
-      // Client-side validation - STRICTLY reject > 30 seconds
       if (dur > 30) {
         Alert.alert('Video Too Long', `This video is ${fmtDur(dur)}. Maximum allowed duration is 0:30. Please select a shorter video.`);
         return;
       }
       
-      // Allow videos <= 30 seconds (including 0 duration if detection fails)
       Alert.alert('Send Video', `Send this video? (${fmtDur(dur)})`, [
         { text: 'Cancel', style: 'cancel' },
         { text: 'Send', onPress: () => uploadAndSendMessage(uri, fn, 'video/mp4', 'video', dur) }
@@ -283,14 +301,11 @@ export default function ChatScreen() {
         const originalUri = r.assets[0].uri;
         const fn = `record_${Date.now()}.mp4`;
         
-        // Get duration - expo-image-picker returns it in MILLISECONDS for videos
         let durMs = r.assets[0].duration;
         console.log('[Video] Raw duration from camera:', durMs, 'Type:', typeof durMs);
         
-        // Convert milliseconds to seconds
         let dur = 0;
         if (durMs && durMs > 0) {
-          // If value is > 1000, it's likely in milliseconds
           if (durMs > 1000) {
             dur = Math.round(durMs / 1000);
           } else {
@@ -300,13 +315,11 @@ export default function ChatScreen() {
         
         console.log('[Video] Final duration (seconds):', dur);
         
-        // Client-side validation - STRICTLY reject > 30 seconds
         if (dur > 30) {
           Alert.alert('Video Too Long', `This video is ${fmtDur(dur)}. Maximum allowed duration is 0:30. Please record a shorter video.`);
           return;
         }
         
-        // Allow videos <= 30 seconds (including 0 duration if detection fails)
         Alert.alert('Send Video', `Send this video? (${fmtDur(dur)})`, [
           { text: 'Cancel', style: 'cancel' },
           { text: 'Send', onPress: async () => {
@@ -330,11 +343,8 @@ export default function ChatScreen() {
     try {
       const perm = await Audio.requestPermissionsAsync();
       if (!perm.granted) { Alert.alert('Permission Required', 'Microphone permission needed'); return; }
-      await Audio.setAudioModeAsync({ allowsRecordingIOS: true, playsInSilentModeIOS: true });
-      const { recording } = await Audio.Recording.createAsync(
-        Audio.RECORDING_OPTIONS_PRESET_HIGH_QUALITY
-      );
-      setRecording(recording);
+      
+      await audioRecorder.record();
       setIsRecording(true);
       setRecordingDuration(0);
       recordingInterval.current = setInterval(() => setRecordingDuration(p => p + 1), 1000);
@@ -345,65 +355,58 @@ export default function ChatScreen() {
   };
 
   const stopVoice = async () => {
-    if (!recording) return;
     clearInterval(recordingInterval.current);
     try {
-      await recording.stopAndUnloadAsync();
-      const uri = recording.getURI();
+      await audioRecorder.stop();
+      const uri = audioRecorder.uri;
       const dur = recordingDuration;
-      setRecording(null); setIsRecording(false); setRecordingDuration(0);
+      setIsRecording(false);
+      setRecordingDuration(0);
       if (uri) await uploadAndSendMessage(uri, `voice_${Date.now()}.m4a`, 'audio/m4a', 'audio', dur);
     } catch (err) { Alert.alert('Error', 'Failed to stop recording'); }
   };
 
   const cancelVoice = async () => {
-    if (!recording) return;
     clearInterval(recordingInterval.current);
-    try { await recording.stopAndUnloadAsync(); setRecording(null); setIsRecording(false); setRecordingDuration(0); } catch (err) {}
+    try { 
+      await audioRecorder.stop();
+      setIsRecording(false); 
+      setRecordingDuration(0); 
+    } catch (err) {}
   };
 
   const playVoice = async (audioUrl, msgId) => {
     try {
-      if (playingMessageId === msgId && sound) {
-        const status = await sound.getStatusAsync();
-        if (status.isPlaying) {
-          await sound.pauseAsync();
-          clearInterval(playbackInterval.current);
-          return;
+      if (currentMessageId === msgId && currentAudioUrl === audioUrl) {
+        if (isPlaying) {
+          audioPlayer.pause();
+          setIsPlaying(false);
+        } else {
+          audioPlayer.play();
+          setIsPlaying(true);
         }
-        await sound.playAsync();
-        playbackInterval.current = setInterval(async () => {
-          try {
-            const st = await sound.getStatusAsync();
-            if (st.isLoaded) { setPlaybackPosition(st.positionMillis / 1000); setPlaybackDuration(st.durationMillis / 1000); }
-          } catch (e) {}
-        }, 250);
         return;
       }
-      if (sound) { await sound.unloadAsync(); setSound(null); setPlayingMessageId(null); setPlaybackPosition(0); }
-      if (playbackInterval.current) clearInterval(playbackInterval.current);
-      const { sound: s } = await Audio.Sound.createAsync({ uri: audioUrl }, { shouldPlay: true });
-      setSound(s);
-      setPlayingMessageId(msgId);
+      
+      audioPlayer.pause();
+      setCurrentAudioUrl(audioUrl);
+      setCurrentMessageId(msgId);
       setPlaybackPosition(0);
-      const status = await s.getStatusAsync();
-      if (status.isLoaded) setPlaybackDuration(status.durationMillis / 1000);
-      playbackInterval.current = setInterval(async () => {
-        try {
-          const st = await s.getStatusAsync();
-          if (st.isLoaded) {
-            setPlaybackPosition(st.positionMillis / 1000);
-            setPlaybackDuration(st.durationMillis / 1000);
-            if (st.didJustFinish) { clearInterval(playbackInterval.current); setSound(null); setPlayingMessageId(null); setPlaybackPosition(0); }
-          }
-        } catch (e) {}
-      }, 250);
-    } catch (err) {}
+      setIsPlaying(true);
+      
+      setTimeout(() => {
+        audioPlayer.play();
+      }, 100);
+    } catch (err) {
+      console.error('[Voice] Playback error:', err);
+    }
   };
 
   const seekVoice = async (value) => {
-    if (!sound) return;
-    try { setPlaybackPosition(value); await sound.setPositionAsync(value * 1000); } catch (err) {}
+    try { 
+      setPlaybackPosition(value); 
+      audioPlayer.setPositionAsync(value * 1000); 
+    } catch (err) {}
   };
 
   const scrollToBottom = () => {
@@ -415,7 +418,10 @@ export default function ChatScreen() {
     if (!item.message && !item.image_url && !item.video_url && !item.audio_url) return null;
     const fmtTime = (ts) => { const d = new Date(ts); return isNaN(d.getTime()) ? ts : d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); };
     const mine = item.sender_username === myUsername;
-    const isThisPlaying = playingMessageId === item.id;
+    
+    // FIX 2: Switched playingMessageId to currentMessageId
+    const isThisPlaying = currentMessageId === item.id;
+    
     return (
       <View style={[styles.bubbleRow, mine ? styles.bubbleRowMine : styles.bubbleRowTheirs]}>
         <View style={[styles.bubble, mine ? styles.myMsg : styles.theirMsg]}>
@@ -443,7 +449,7 @@ export default function ChatScreen() {
           {item.audio_url ? (
             <View style={styles.voiceBlock}>
               <TouchableOpacity onPress={() => playVoice(item.audio_url, item.id)} style={styles.voiceRow} activeOpacity={0.8}>
-                <Ionicons name={isThisPlaying && sound ? 'pause-circle' : 'play-circle'} size={34} color={mine ? 'white' : '#6366F1'} />
+                <Ionicons name={isThisPlaying && isPlaying ? 'pause-circle' : 'play-circle'} size={34} color={mine ? 'white' : '#6366F1'} />
                 <View style={styles.voiceContent}>
                   <View style={styles.seekRow}>
                     <Slider
@@ -606,26 +612,17 @@ return (
       </Modal>
       <Modal visible={!!playingVideoUrl} transparent={false} onRequestClose={() => setPlayingVideoUrl(null)}>
         <View style={styles.fullscreenVideoContainer}>
-          <TouchableOpacity style={styles.fullscreenClose} onPress={() => { setPlayingVideoUrl(null); if (videoRef.current) { videoRef.current.stopAsync(); videoRef.current.unloadAsync(); } }}>
+          <TouchableOpacity style={styles.fullscreenClose} onPress={() => setPlayingVideoUrl(null)}>
             <Ionicons name="close" size={30} color="white" />
           </TouchableOpacity>
-          <Video
-            ref={videoRef}
-            source={{ uri: playingVideoUrl }}
-            style={styles.fullscreenVideo}
-            useNativeControls
-            resizeMode="contain"
-            shouldPlay
-            onPlaybackStatusUpdate={(status) => {
-              if (status.didJustFinish) {
-                setPlayingVideoUrl(null);
-                if (videoRef.current) {
-                  videoRef.current.stopAsync();
-                  videoRef.current.unloadAsync();
-                }
-              }
-            }}
-          />
+          {playingVideoUrl && (
+            <VideoView
+              style={styles.fullscreenVideo}
+              player={videoPlayer}
+              allowsFullscreen
+              allowsPictureInPicture
+            />
+          )}
         </View>
       </Modal>
     </SafeAreaView>
@@ -715,8 +712,6 @@ const styles = StyleSheet.create({
   timeRow: { flexDirection: 'row', justifyContent: 'space-between' },
   seekTime: { fontSize: 10.5, fontWeight: '500' },
 
-  // ---- Input area: always docked to the bottom, consistent height/spacing
-  // across typing, media-menu, and recording states so it never jumps. ----
   inputArea: {
     backgroundColor: COLORS.card,
     borderTopWidth: 1,

@@ -3,10 +3,11 @@ import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { View, Text } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
 
-import '@/services/i18n'; // Initialize i18n
+import '@/services/i18n';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { ToastProvider } from '@/hooks/useToast';
 import { SupportListener } from '@/components/SupportListener';
@@ -14,10 +15,9 @@ import { AuthProvider } from '@/hooks/useAuth';
 import useSettingsStore from '@/services/settingsStore';
 
 export const unstable_settings = {
-  anchor: '(auth)',
+  initialRouteName: '(auth)',
 };
 
-// Error boundary to catch crashes and prevent black screen
 class ErrorBoundary extends Component {
   state = { hasError: false, error: null };
 
@@ -32,9 +32,9 @@ class ErrorBoundary extends Component {
   render() {
     if (this.state.hasError) {
       return (
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff' }}>
-          <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 10 }}>Something went wrong</Text>
-          <Text style={{ color: 'red', paddingHorizontal: 20 }}>{String(this.state.error)}</Text>
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorTitle}>Something went wrong</Text>
+          <Text style={styles.errorText}>{String(this.state.error)}</Text>
         </View>
       );
     }
@@ -49,26 +49,51 @@ export default function RootLayout() {
   const colorScheme = themePreference === 'system' ? systemColorScheme : themePreference;
 
   return (
-    <ErrorBoundary>
-      <SafeAreaProvider>
-        <AuthProvider>
-          <ToastProvider>
-            <SupportListener />
-            <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-              <Stack>
-                <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-                <Stack.Screen name="booking-detail" options={{ headerShown: false }} />
-                <Stack.Screen name="chat" options={{ headerShown: false }} />
-                <Stack.Screen name="(services)" options={{ headerShown: false }} />
-                <Stack.Screen name="handyman" options={{ headerShown: false }} />
-                <Stack.Screen name="wallet" options={{ headerShown: false }} />
-                <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
-              </Stack>
-              <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
-            </ThemeProvider>
-          </ToastProvider>
-        </AuthProvider>
-      </SafeAreaProvider>
-    </ErrorBoundary>
+    <GestureHandlerRootView style={styles.flexOne}>
+      <ErrorBoundary>
+        <SafeAreaProvider style={styles.flexOne}>
+          <AuthProvider>
+            <ToastProvider>
+              <SupportListener />
+              <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+                <View style={styles.flexOne}>
+                  <Stack screenOptions={{ headerShown: false }}>
+                    <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+                    <Stack.Screen name="booking-detail" options={{ headerShown: false }} />
+                    <Stack.Screen name="chat" options={{ headerShown: false }} />
+                    <Stack.Screen name="(services)" options={{ headerShown: false }} />
+                    <Stack.Screen name="handyman" options={{ headerShown: false }} />
+                    <Stack.Screen name="wallet" options={{ headerShown: false }} />
+                    <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
+                  </Stack>
+                  <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
+                </View>
+              </ThemeProvider>
+            </ToastProvider>
+          </AuthProvider>
+        </SafeAreaProvider>
+      </ErrorBoundary>
+    </GestureHandlerRootView>
   );
 }
+
+const styles = StyleSheet.create({
+  flexOne: {
+    flex: 1,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+  },
+  errorTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 10,
+  },
+  errorText: {
+    color: 'red',
+    paddingHorizontal: 20,
+  },
+});
