@@ -156,10 +156,10 @@ export default function SignUpScreen() {
 
       login(user);
       showToast(t('auth.account_created'), 'success');
-      setTimeout(() => router.replace('/(auth)/Home'), 1200);
+      setTimeout(() => router.replace('/'), 1200);
     } catch (storageError) {
       console.log('[SignUp] Post-signup error:', storageError.message);
-      router.replace('/(auth)/Home');
+      router.replace('/');
     }
   }
 
