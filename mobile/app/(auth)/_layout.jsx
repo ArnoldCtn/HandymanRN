@@ -8,7 +8,7 @@ export const unstable_settings = {
   initialRouteName: 'index',
 };
 
-const PUBLIC_SCREENS = ['SignIn', 'SignUp', 'verifyEmail', 'index'];
+const PUBLIC_SCREENS = ['SignIn', 'SignUp', 'verifyEmail'];
 
 export default function AuthLayout() {
   const initialized   = useGlobal(state => state.initialized);
@@ -55,7 +55,7 @@ export default function AuthLayout() {
   }
 
   if (currentScreen && authenticated && isPublicScreen && currentScreen !== 'index') {
-    return <Redirect href="/(auth)/Home" />;
+    return <Redirect href="/" />;
   }
 
   return (

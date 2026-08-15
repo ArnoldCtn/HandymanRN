@@ -59,10 +59,10 @@ export default function SignInScreen() {
       await AsyncStorage.setItem('refresh_token', tokens.refresh)
       await AsyncStorage.setItem('user', JSON.stringify(user))
       login(user)
-      router.replace('/(auth)/Home')
+      router.replace('/')
     } catch (e) {
       console.log('[SignIn] PIN unlock storage error:', e.message)
-      router.replace('/(auth)/Home')
+      router.replace('/')
     }
   }
 
@@ -135,11 +135,11 @@ export default function SignInScreen() {
 
       login(user)
       showToast(t('auth.login_success'), 'success')
-      setTimeout(() => router.replace('/(auth)/Home'), 1200)
+      setTimeout(() => router.replace('/'), 1200)
 
     } catch (storageError) {
       console.log('[SignIn] Post-login error:', storageError.message)
-      router.replace('/(auth)/Home')
+      router.replace('/')
     }
   }
 

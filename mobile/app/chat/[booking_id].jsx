@@ -9,10 +9,9 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { getValidAccessToken, isWsAuthFailure } from '@/services/wsAuth';
 import * as ImagePicker from 'expo-image-picker';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-// FIX 1: Added Audio to imports
-import { useAudioRecorder, useAudioPlayer, RecordingOptions, Audio } from 'expo-audio';
+import { useAudioRecorder, useAudioPlayer, RecordingPresets, requestRecordingPermissionsAsync } from 'expo-audio';
 import { useVideoPlayer, VideoView } from 'expo-video';
-import * as FileSystem from 'expo-file-system';
+import { File, Paths } from 'expo-file-system';
 import Slider from '@react-native-community/slider';
 
 export default function ChatScreen() {
@@ -36,7 +35,7 @@ export default function ChatScreen() {
 
   // Audio recorder hook
   const audioRecorder = useAudioRecorder(
-    { ...RecordingOptions.PRESET_HIGH_QUALITY, isMeteringEnabled: true },
+    { ...RecordingPresets.HIGH_QUALITY, isMeteringEnabled: true },
     (status) => {
       if (status.isRecording) {
         setRecordingDuration(Math.floor(status.durationMillis / 1000));
@@ -47,7 +46,7 @@ export default function ChatScreen() {
   // Audio player hook
   const [currentAudioUrl, setCurrentAudioUrl] = useState(null);
   const [currentMessageId, setCurrentMessageId] = useState(null);
-  const audioPlayer = useAudioPlayer(currentAudioUrl || '');
+  const audioPlayer = useAudioPlayer('');
   const [isPlaying, setIsPlaying] = useState(false);
   const [playbackPosition, setPlaybackPosition] = useState(0);
   const [playbackDuration, setPlaybackDuration] = useState(0);
@@ -173,6 +172,17 @@ export default function ChatScreen() {
     };
   }, []);
 
+  // FIX: The player source stays constant (''), so the shared object is never
+  // released/recreated. Track playback position/duration from status updates.
+  useEffect(() => {
+    const sub = audioPlayer.addListener('playbackStatusUpdate', (status) => {
+      if (typeof status.currentTime === 'number') setPlaybackPosition(status.currentTime);
+      if (status.duration > 0) setPlaybackDuration(status.duration);
+      if (status.didJustFinish) setIsPlaying(false);
+    });
+    return () => sub.remove();
+  }, [audioPlayer]);
+
   const sendMessage = (text, image_url, video_url, audio_url, duration, image_path, video_path, audio_path) => {
     if ((!text || !text.trim()) && !image_url && !video_url && !audio_url) return;
     if (!ws.current || ws.current.readyState !== WebSocket.OPEN) return;
@@ -259,9 +269,10 @@ export default function ChatScreen() {
         { text: 'Cancel', style: 'cancel' },
         { text: 'Send', onPress: async () => {
           try {
-            const dest = `${FileSystem.cacheDirectory}${fn}`;
-            await FileSystem.copyAsync({ from: originalUri, to: dest });
-            await uploadAndSendMessage(dest, fn, 'image/jpeg', 'image', 0);
+            const src = new File(originalUri);
+            const dest = new File(Paths.cache, fn);
+            src.copy(dest);
+            await uploadAndSendMessage(dest.uri, fn, 'image/jpeg', 'image', 0);
           } catch (e) {
             console.log('[Camera] Cache copy failed, trying original URI:', e.message);
             await uploadAndSendMessage(originalUri, fn, 'image/jpeg', 'image', 0);
@@ -345,9 +356,10 @@ export default function ChatScreen() {
           { text: 'Cancel', style: 'cancel' },
           { text: 'Send', onPress: async () => {
             try {
-              const dest = `${FileSystem.cacheDirectory}${fn}`;
-              await FileSystem.copyAsync({ from: originalUri, to: dest });
-              await uploadAndSendMessage(dest, fn, 'video/mp4', 'video', dur);
+              const src = new File(originalUri);
+              const dest = new File(Paths.cache, fn);
+              src.copy(dest);
+              await uploadAndSendMessage(dest.uri, fn, 'video/mp4', 'video', dur);
             } catch (e) {
               await uploadAndSendMessage(originalUri, fn, 'video/mp4', 'video', dur);
             }
@@ -362,9 +374,10 @@ export default function ChatScreen() {
   const startVoice = async () => {
     setShowMediaMenu(false);
     try {
-      const perm = await Audio.requestPermissionsAsync();
+      const perm = await requestRecordingPermissionsAsync();
       if (!perm.granted) { Alert.alert('Permission Required', 'Microphone permission needed'); return; }
       
+      await audioRecorder.prepareToRecordAsync();
       await audioRecorder.record();
       setIsRecording(true);
       setRecordingDuration(0);
@@ -383,7 +396,12 @@ export default function ChatScreen() {
       const dur = recordingDuration;
       setIsRecording(false);
       setRecordingDuration(0);
-      if (uri) await uploadAndSendMessage(uri, `voice_${Date.now()}.m4a`, 'audio/m4a', 'audio', dur);
+      if (uri) {
+        await uploadAndSendMessage(uri, `voice_${Date.now()}.m4a`, 'audio/m4a', 'audio', dur);
+      } else {
+        console.error('[Voice] Recording produced no file, uri is null');
+        Alert.alert('Recording Failed', 'The voice recording produced no file. Please try again.');
+      }
     } catch (err) { Alert.alert('Error', 'Failed to stop recording'); }
   };
 
@@ -410,6 +428,7 @@ export default function ChatScreen() {
       }
       
       audioPlayer.pause();
+      audioPlayer.replace(audioUrl);
       setCurrentAudioUrl(audioUrl);
       setCurrentMessageId(msgId);
       setPlaybackPosition(0);
@@ -426,7 +445,7 @@ export default function ChatScreen() {
   const seekVoice = async (value) => {
     try { 
       setPlaybackPosition(value); 
-      audioPlayer.setPositionAsync(value * 1000); 
+      audioPlayer.seekTo(value); 
     } catch (err) {}
   };
 

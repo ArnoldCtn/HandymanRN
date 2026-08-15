@@ -243,6 +243,7 @@ const RatingPage = () => {
                 <Rating 
                   size={20} 
                   rating={rating} 
+                  maxRating={10}
                   onChange={handleRatingChange}
                   style={styles.ratingStars}
                 />

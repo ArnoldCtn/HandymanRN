@@ -70,58 +70,72 @@ api.interceptors.response.use(
     const isSignIn = original.url.includes('/signin/') || original.url.includes('/signup/')
     
     if (error.response?.status === 401 && !original._retry && !isSignIn) {
-      console.log('[User API] 401 detected, attempting token refresh...')
-      
-      if (isRefreshing) {
-        console.log('[User API] Token refresh already in progress, queuing request')
-        return new Promise((resolve, reject) => {
-          failedQueue.push({ resolve, reject })
-        }).then(token => {
-          original.headers.Authorization = `Bearer ${token}`
+      // Only attempt a refresh when the failed request actually carried a
+      // token. A 401 on an unauthenticated (guest) request just means "not
+      // authorized" — refreshing can't help and would spam logout errors.
+      const hadToken = !!original.headers?.Authorization
+      if (!hadToken) {
+        console.warn('[User API] 401 on unauthenticated request, skipping token refresh')
+      } else {
+        console.log('[User API] 401 detected, attempting token refresh...')
+
+        if (isRefreshing) {
+          console.log('[User API] Token refresh already in progress, queuing request')
+          return new Promise((resolve, reject) => {
+            failedQueue.push({ resolve, reject })
+          }).then(token => {
+            original.headers.Authorization = `Bearer ${token}`
+            return api(original)
+          })
+        }
+        original._retry = true
+        isRefreshing    = true
+        try {
+          const refresh = await AsyncStorage.getItem('refresh_token')
+          console.log('[User API] Refresh token:', refresh ? 'present' : 'MISSING')
+
+          if (!refresh) {
+            throw new Error('No refresh token available')
+          }
+
+          console.log('[User API] Attempting to refresh token...')
+          const res = await axios.post(`${getBaseURL()}/users/token/refresh/`, { refresh })
+          const newAccess = res.data.access
+          console.log('[User API] Token refresh successful')
+
+          await AsyncStorage.setItem('access_token', newAccess)
+          if (res.data.refresh) {
+            await AsyncStorage.setItem('refresh_token', res.data.refresh)
+          }
+          processQueue(null, newAccess)
+          original.headers.Authorization = `Bearer ${newAccess}`
           return api(original)
-        })
-      }
-      original._retry = true
-      isRefreshing    = true
-      try {
-        const refresh = await AsyncStorage.getItem('refresh_token')
-        console.log('[User API] Refresh token:', refresh ? 'present' : 'MISSING')
-        
-        if (!refresh) {
-          throw new Error('No refresh token available')
+        } catch (e) {
+          console.error('[User API] Token refresh failed:', e.message)
+          processQueue(e, null)
+          await AsyncStorage.multiRemove([
+            'access_token', 'refresh_token', 'user'
+          ])
+          if (typeof global.__forceUserLogout === 'function') {
+            console.log('[User API] Forcing logout due to auth failure')
+            global.__forceUserLogout()
+          }
+          return Promise.reject(e)
+        } finally {
+          isRefreshing = false
         }
-        
-        console.log('[User API] Attempting to refresh token...')
-        const res = await axios.post(`${getBaseURL()}/users/token/refresh/`, { refresh })
-        const newAccess = res.data.access
-        console.log('[User API] Token refresh successful')
-        
-        await AsyncStorage.setItem('access_token', newAccess)
-        if (res.data.refresh) {
-          await AsyncStorage.setItem('refresh_token', res.data.refresh)
-        }
-        processQueue(null, newAccess)
-        original.headers.Authorization = `Bearer ${newAccess}`
-        return api(original)
-      } catch (e) {
-        console.error('[User API] Token refresh failed:', e.message)
-        processQueue(e, null)
-        await AsyncStorage.multiRemove([
-          'access_token', 'refresh_token', 'user'
-        ])
-        if (typeof global.__forceUserLogout === 'function') {
-          console.log('[User API] Forcing logout due to auth failure')
-          global.__forceUserLogout()
-        }
-        return Promise.reject(e)
-      } finally {
-        isRefreshing = false
       }
     }
     
-    // Log other errors with more detail
+    // Log other errors with more detail.
+    // 4xx are often expected (e.g. 404 "No rating found"); only warn so the
+    // console stays readable. 5xx and network errors keep full error level.
     if (error.response) {
-      console.error(`[User API] Error ${error.response.status}:`, error.response.data)
+      if (error.response.status >= 500) {
+        console.error(`[User API] Error ${error.response.status}:`, error.response.data)
+      } else {
+        console.warn(`[User API] Error ${error.response.status}:`, error.response.data)
+      }
     } else if (error.request) {
       console.error('[User API] No response received:', error.request)
     } else {
