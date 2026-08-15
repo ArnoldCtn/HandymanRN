@@ -45,7 +45,7 @@ export default function HandymanAuthLayout() {
       <Stack.Screen name="VerifyId" />
       <Stack.Screen name="EditProfile" />
       <Stack.Screen name="Bookings" />
-      <Stack.Screen name="booking-detail" />
+      <Stack.Screen name="booking-detail/[id]" />
       <Stack.Screen name="Myservices" />
       <Stack.Screen name="Dashboard" />
     </Stack>

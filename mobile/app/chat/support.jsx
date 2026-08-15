@@ -10,6 +10,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
 import api from '@/services/api';
 import handymanApi from '@/services/handymanApi';
+import { getValidAccessToken, isWsAuthFailure } from '@/services/wsAuth';
 import { useToast } from '@/hooks/useToast';
 import favicon from '@/assets/images/FullLogo.jpg'
 import Sidebar from '@/components/Sidebar';
@@ -39,6 +40,8 @@ export default function SupportChatScreen() {
   const flatListRef = useRef(null);
   const user = useGlobal(state => state.user);
   const theme = useAppTheme();
+  const mountedRef = useRef(true);
+  const wsRetries = useRef(0);
 
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   useEffect(() => {
@@ -53,6 +56,7 @@ export default function SupportChatScreen() {
   }, []);
 
   useEffect(() => {
+    mountedRef.current = true;
     const initChat = async () => {
       try {
         // Double check role if source is ambiguous
@@ -89,15 +93,16 @@ export default function SupportChatScreen() {
     initChat();
 
     return () => {
+      mountedRef.current = false;
       if (ws.current) ws.current.close();
     };
   }, [source]);
 
   const connectWebSocket = async (room, isH) => {
     try {
-      const token = await AsyncStorage.getItem(isH ? 'handyman_access_token' : 'access_token');
+      const token = await getValidAccessToken(isH);
       if (!token) {
-        console.log('[SupportChat WS] No token found');
+        console.log('[SupportChat WS] No valid token found');
         return;
       }
 
@@ -117,7 +122,10 @@ export default function SupportChatScreen() {
       console.log('[SupportChat WS] Connecting to:', wsUrl);
       ws.current = new WebSocket(wsUrl);
 
-      ws.current.onopen = () => console.log('[SupportChat WS] Connected');
+      ws.current.onopen = () => {
+        console.log('[SupportChat WS] Connected');
+        wsRetries.current = 0;
+      };
       
       ws.current.onmessage = (event) => {
         const data = JSON.parse(event.data);
@@ -134,7 +142,16 @@ export default function SupportChatScreen() {
       };
 
       ws.current.onerror = (e) => console.log('[SupportChat WS] Error:', e.message);
-      ws.current.onclose = (e) => console.log('[SupportChat WS] Closed:', e.reason);
+      ws.current.onclose = (e) => {
+        console.log('[SupportChat WS] Closed:', e.reason);
+        if (!mountedRef.current) return;
+        if (isWsAuthFailure(e) && wsRetries.current < 2) {
+          wsRetries.current += 1;
+          setTimeout(() => {
+            if (mountedRef.current) connectWebSocket(room, isH);
+          }, wsRetries.current * 2000);
+        }
+      };
 
     } catch (err) {
       console.error('[SupportChat WS] setup error:', err);
@@ -164,7 +181,7 @@ export default function SupportChatScreen() {
     formData.append('is_support', 'true');
 
     try {
-      const token = await AsyncStorage.getItem(roleIsHandyman ? 'handyman_access_token' : 'access_token');
+      const token = await getValidAccessToken(roleIsHandyman);
       const client = roleIsHandyman ? handymanApi : api;
       const baseUrl = client.defaults.baseURL;
       const uploadUrl = `${baseUrl}/chats/upload-image/`;

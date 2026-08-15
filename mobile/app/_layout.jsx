@@ -14,6 +14,14 @@ import { SupportListener } from '@/components/SupportListener';
 import { AuthProvider } from '@/hooks/useAuth';
 import useSettingsStore from '@/services/settingsStore';
 
+const prevErrorHandler = global.ErrorUtils?.getGlobalHandler?.();
+if (global.ErrorUtils?.setGlobalHandler) {
+  global.ErrorUtils.setGlobalHandler((error, isFatal) => {
+    console.error('[UNCAUGHT]', error?.message || error, error?.stack || '');
+    if (prevErrorHandler) prevErrorHandler(error, isFatal);
+  });
+}
+
 export const unstable_settings = {
   initialRouteName: '(auth)',
 };
@@ -54,9 +62,12 @@ export default function RootLayout() {
         <SafeAreaProvider style={styles.flexOne}>
           <AuthProvider>
             <ToastProvider>
-              <SupportListener />
               <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
                 <View style={styles.flexOne}>
+                  
+                  {/* ✅ MOVE SupportListener HERE (inside View, above Stack) */}
+                  <SupportListener />
+
                   <Stack screenOptions={{ headerShown: false }}>
                     <Stack.Screen name="(auth)" options={{ headerShown: false }} />
                     <Stack.Screen name="booking-detail" options={{ headerShown: false }} />

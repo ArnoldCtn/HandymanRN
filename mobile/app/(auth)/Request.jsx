@@ -42,8 +42,7 @@ export default function RequestScreen() {
     }
   }
 
-  useEffect(() => { fetchServices() }, [])
-
+  useEffect(() => { console.log('[Request] mounted'); fetchServices() }, [])
   const getGreeting = () => {
     const hours = new Date().getHours();
     if (hours < 12) return t('request.good_morning');
