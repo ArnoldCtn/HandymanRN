@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const AuthContext = createContext({
@@ -11,11 +11,7 @@ export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    checkAuth();
-  }, []);
-
-  const checkAuth = async () => {
+  const checkAuth = useCallback(async () => {
     try {
       const token = await AsyncStorage.getItem('access_token');
       setIsAuthenticated(!!token);
@@ -24,10 +20,20 @@ export const AuthProvider = ({ children }) => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    checkAuth();
+  }, [checkAuth]);
+
+  // ✅ FIX: Memoize the object so subscribers only re-render when state actually changes
+  const value = useMemo(
+    () => ({ isAuthenticated, isLoading, setIsAuthenticated }),
+    [isAuthenticated, isLoading]
+  );
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, isLoading, setIsAuthenticated }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );

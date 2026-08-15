@@ -1,31 +1,20 @@
-import { ActivityIndicator, Image, StyleSheet, Text, View, TouchableOpacity, PanResponder } from 'react-native'
+import { Image, StyleSheet, Text, View, TouchableOpacity, PanResponder } from 'react-native'
 import React, { useEffect, useState, useRef } from 'react'
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 import { useNavigation } from '@react-navigation/native'
-import Feather from '@expo/vector-icons/Feather';
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { ThemedView } from '@/components/themed-view';
-import { useTranslation } from 'react-i18next'
 import { useAppTheme } from '@/hooks/use-theme-color'
-import { ThemedText } from '@/components/themed-text'
 
 import RequestScreen from '@/app/(auth)/Request';
-import ProfileScreen from '@/app/(auth)/Profile';
-import Mybookings from '@/app/(auth)/Mybookings';
-import NotificationsScreen from '@/app/(auth)/Notifications';
-import SupportChatScreen from '@/app/chat/support';
 
-import { IconSymbol } from '@/components/ui/icon-symbol';
 import useGlobal from '@/services/global'
 import api from '@/services/api'
 import { useRouter } from 'expo-router'
 import Sidebar from '@/components/Sidebar'
 
-const Tab = createBottomTabNavigator()
-
 export default function Home() {
-  const { t } = useTranslation()
   const theme = useAppTheme()
+  const insets = useSafeAreaInsets()
   const navigation = useNavigation()
   const router = useRouter()
   
@@ -41,6 +30,10 @@ export default function Home() {
     await logout();
     router.replace('/(auth)/SignIn');
   };
+
+  useEffect(() => {
+    console.log('[Home] mounted', { authenticated });
+  }, []);
 
   // Swipe to open sidebar
   const panResponder = useRef(
@@ -112,98 +105,54 @@ export default function Home() {
         isHandyman={false} 
         onLogout={handleLogout} 
       />
-      <Tab.Navigator screenOptions={{
-        tabBarActiveTintColor: theme.primary,
-        tabBarInactiveTintColor: theme.textSecondary,
-        tabBarStyle: {
-          backgroundColor: theme.surface,
-          borderTopColor: theme.border,
-          borderTopWidth: 1,
-          paddingBottom: 8,
-          paddingTop: 8,
-          height: 70
-        },
-        headerStyle: {
-          backgroundColor: theme.surface,
-          borderBottomWidth: 1,
-          borderBottomColor: theme.border,
-        },
-        headerTintColor: theme.text,
-        headerLeft: () => (
-          <TouchableOpacity style={styles.headerLeftBtn} onPress={() => setSidebarVisible(true)}>
-            {user?.thumbnail ? (
-              <Image source={{ uri: avatarUrl }} style={styles.avatar} />
-            ) : (
-              <View style={styles.avatarPlaceholder}>
-                <Text style={styles.avatarInitial}>
-                  {user?.username?.[0]?.toUpperCase() ?? '?'}
-                </Text>
+      <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
+        <TouchableOpacity style={styles.headerLeftBtn} onPress={() => setSidebarVisible(true)}>
+          {user?.thumbnail ? (
+            <Image source={{ uri: avatarUrl }} style={styles.avatar} />
+          ) : (
+            <View style={styles.avatarPlaceholder}>
+              <Text style={styles.avatarInitial}>
+                {user?.username?.[0]?.toUpperCase() ?? '?'}
+              </Text>
+            </View>
+          )}
+        </TouchableOpacity>
+        <View style={styles.headerRightContainer}>
+          <TouchableOpacity onPress={() => router.push('(auth)/search')}>
+            <Ionicons name='search-outline' size={28} color={theme.text} style={{ marginRight: 15 }} />
+          </TouchableOpacity>
+          
+          <TouchableOpacity onPress={() => router.push('/chat/support')} style={{ marginRight: 15 }}>
+            <Ionicons name="help-circle-outline" size={28} color={theme.text} />
+          </TouchableOpacity>
+
+          <TouchableOpacity onPress={() => navigation.navigate('ChatsList')} style={styles.chatButton}>
+            <Ionicons name='send-outline' size={28} color={theme.text} />
+            {newMessagesCount > 0 && (
+              <View style={styles.chatBadge}>
+                <Text style={styles.chatBadgeText}>{newMessagesCount > 9 ? '9+' : newMessagesCount}</Text>
               </View>
             )}
           </TouchableOpacity>
-        ), 
-        headerRight: () => (
-          <View style={styles.headerRightContainer}>
-            <TouchableOpacity onPress={() => router.push('(auth)/search') }>
-              <Ionicons name='search-outline' size={28} color={theme.text} style={{ marginRight: 15 }} />
-            </TouchableOpacity>
-            
-            <TouchableOpacity onPress={() => router.push('/chat/support')} style={{ marginRight: 15 }}>
-              <Ionicons name="help-circle-outline" size={28} color={theme.text} />
-            </TouchableOpacity>
-
-            <TouchableOpacity onPress={() => navigation.navigate('ChatsList')} style={styles.chatButton}>
-              <Ionicons name='send-outline' size={28} color={theme.text} />
-              {newMessagesCount > 0 && (
-                <View style={styles.chatBadge}>
-                  <Text style={styles.chatBadgeText}>{newMessagesCount > 9 ? '9+' : newMessagesCount}</Text>
-                </View>
-              )}
-            </TouchableOpacity>
-          </View>
-        ),
-      }}>
-        <Tab.Screen 
-          name='Request' 
-          component={RequestScreen}
-          options={{
-            title: t('tabs.home', 'Home'),
-            tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
-          }} 
-        />
-        <Tab.Screen 
-          name='Mybookings' 
-          component={Mybookings} 
-          options={{
-            title: t('tabs.bookings', 'My bookings'),
-            tabBarIcon: ({ color }) => <Feather name="book-open" size={24} color={color} />,
-          }} 
-        />
-        <Tab.Screen 
-          name='Notifications' 
-          component={NotificationsScreen}
-          options={{
-            title: t('tabs.notifications', 'Notifications'),
-            tabBarBadge: unreadCount > 0 ? '' : undefined,
-            tabBarBadgeStyle: { backgroundColor: theme.error, minWidth: 8, height: 8, borderRadius: 4 },
-            tabBarIcon: ({ color }) => <Ionicons name='notifications' size={25} color={color} />,
-          }} 
-        />
-        <Tab.Screen 
-          name='Profile' 
-          component={ProfileScreen} 
-          options={{
-            title: t('tabs.profile', 'Profile'),
-            tabBarIcon: ({ color }) => <Ionicons name='person' size={25} color={color} />
-          }} 
-        />
-      </Tab.Navigator>
+        </View>
+      </View>
+      <RequestScreen />
     </View>
   )
 }
 
 const createStyles = (theme) => StyleSheet.create({
-  headerLeftBtn: { marginLeft: 15 },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 12,
+    paddingBottom: 8,
+    backgroundColor: theme.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.border,
+  },
+  headerLeftBtn: { marginLeft: 6 },
   headerRightContainer: { flexDirection: 'row', alignItems: 'center' },
   avatar: { width: 36, height: 36, borderRadius: 18 },
   avatarPlaceholder: {

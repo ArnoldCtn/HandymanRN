@@ -19,8 +19,10 @@ const useGlobal = create((set) => ({
 
             if (token) {
                 set({ initialized: true, authenticated: true, user })
+                console.log('[Global] init done: session')
             } else {
                 set({ initialized: true, authenticated: false, user: {} })
+                console.log('[Global] init done: guest')
             }
         } catch (e) {
             console.log('[Global] Init error:', e.message)

@@ -66,8 +66,8 @@ SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'django-insecure-+1-rgp&271)w)qu%gub
 
 # SECURITY WARNING: don't run with debug turned on in production!
 # DEBUG = True
-DEBUG = os.environ.get('DJANGO_DEBUG', 'False').lower() == 'true'
-
+# DEBUG = os.environ.get('DJANGO_DEBUG', 'False').lower() == 'true'
+DEBUG = os.environ.get('DJANGO_DEBUG', 'True').lower() == 'true'
 
 # ALLOWED_HOSTS = ['192.168.43.188', 'localhost', '127.0.0.1']
 
@@ -97,7 +97,7 @@ REST_FRAMEWORK = {
 
     )
 }
-from datetime import timedelta
+# from datetime import timedelta
 
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
@@ -128,6 +128,7 @@ CSRF_TRUSTED_ORIGINS = [
     'https://handymanrn-production.up.railway.app',
     'http://localhost:8000',
     'http://127.0.0.1:8000',
+    'https://sharpie-carless-rimless.ngrok-free.dev'
 ]
 
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
@@ -248,7 +249,7 @@ TEMPLATES = [
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
 import dj_database_url
-import os
+# import os
 
 
 
@@ -328,14 +329,26 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 
-STORAGES = {
-    "default": {
-        "BACKEND": "django.core.files.storage.FileSystemStorage",
-    },
-    "staticfiles": {
-        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
-    },
-}
+# STORAGES = {
+#     "default": {
+#         "BACKEND": "django.core.files.storage.FileSystemStorage",
+#     },
+#     "staticfiles": {
+#         "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+#     },
+# }
+
+
+if DEBUG:
+    STORAGES = {
+        "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+        "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
+    }
+else:
+    STORAGES = {
+        "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+        "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"},
+    }
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')

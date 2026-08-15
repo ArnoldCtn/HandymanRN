@@ -63,7 +63,7 @@ function DashboardWrapper({ theme, t, router }) {
             </View>
             <HandymanServiceCarousel services={services} />
             <PulseView style={styles.securityNotice}>
-                <Ionicons name="shield-alert-outline" size={20} color={theme.accent} />
+                <Ionicons name="shield-outline" size={20} color={theme.accent} />
                 <Text style={styles.securityNoticeText}>{t('dashboard.handyman_security_notice')}</Text>
             </PulseView>
           </ScrollView>

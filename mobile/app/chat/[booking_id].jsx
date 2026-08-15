@@ -6,7 +6,7 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getValidAccessToken, isWsAuthFailure } from '@/services/wsAuth';
 import * as ImagePicker from 'expo-image-picker';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 // FIX 1: Added Audio to imports
@@ -93,12 +93,19 @@ export default function ChatScreen() {
 
   const ws = useRef(null);
   const flatListRef = useRef(null);
+  const mountedRef = useRef(true);
+  const wsRetries = useRef(0);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => { mountedRef.current = false; };
+  }, []);
 
   useEffect(() => {
     if (!booking_id) return;
     const fetchData = async () => {
       try {
-        const token = await AsyncStorage.getItem(isHandyman ? 'handyman_access_token' : 'access_token');
+        const token = await getValidAccessToken(isHandyman);
         const headers = { 'Authorization': `Bearer ${token}` };
         const [bookingRes, messagesRes] = await Promise.all([
           fetch(`${API_BASE_URL}/bookings/${booking_id}/`, { headers }),
@@ -122,7 +129,7 @@ export default function ChatScreen() {
     if (!booking_id) return;
     const connectWebSocket = async () => {
       try {
-        const token = await AsyncStorage.getItem(isHandyman ? 'handyman_access_token' : 'access_token');
+        const token = await getValidAccessToken(isHandyman);
         if (!token) { Alert.alert('Error', 'Authentication token missing'); return; }
         const wsUrl = `${API_BASE_URL.replace('http', 'ws')}/ws/chat/booking/${booking_id}/?token=${token}`;
         ws.current = new WebSocket(wsUrl);
@@ -138,6 +145,20 @@ export default function ChatScreen() {
             if (prev.some(m => m.id === data.message.id)) return prev;
             return [...prev, data.message];
           });
+        };
+        ws.current.onopen = () => {
+          wsRetries.current = 0;
+        };
+        ws.current.onerror = (e) => console.log('[Chat WS] Error:', e.message);
+        ws.current.onclose = (e) => {
+          console.log('[Chat WS] Closed:', e.reason);
+          if (!mountedRef.current) return;
+          if (isWsAuthFailure(e) && wsRetries.current < 2) {
+            wsRetries.current += 1;
+            setTimeout(() => {
+              if (mountedRef.current) connectWebSocket();
+            }, wsRetries.current * 2000);
+          }
         };
       } catch (err) { console.error('[Chat WS] Failed:', err); }
     };
@@ -189,7 +210,7 @@ export default function ChatScreen() {
     fd.append('is_support', 'false');
     if (duration > 0) fd.append('duration', String(duration));
     try {
-      const token = await AsyncStorage.getItem(isHandyman ? 'handyman_access_token' : 'access_token');
+      const token = await getValidAccessToken(isHandyman);
       console.log(`[Upload] Sending ${mediaType}: ${filename} type=${fileType} dur=${duration}`);
       const res = await fetch(`${API_BASE_URL}/chats/upload-media/`, { method: 'POST', body: fd, headers: { 'Authorization': `Bearer ${token}` } });
       const data = await res.json();

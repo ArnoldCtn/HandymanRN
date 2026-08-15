@@ -1,13 +1,39 @@
 import { Redirect, Stack, useSegments } from 'expo-router';
-import { useAuth } from '@/hooks/useAuth';
+import { useEffect, useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import useGlobal from '@/services/global';
 import { ActivityIndicator, View, StyleSheet } from 'react-native';
 
-export default function AuthLayout() {
-  const { isAuthenticated, isLoading } = useAuth();
-  const segments = useSegments();
+export const unstable_settings = {
+  initialRouteName: 'index',
+};
 
-  // Wait until auth state and segments are fully hydrated
-  if (isLoading || !segments || segments.length === 0) {
+const PUBLIC_SCREENS = ['SignIn', 'SignUp', 'verifyEmail', 'index'];
+
+export default function AuthLayout() {
+  const initialized   = useGlobal(state => state.initialized);
+  const authenticated = useGlobal(state => state.authenticated);
+  const init          = useGlobal(state => state.init);
+  const segments      = useSegments();
+  const [isHandymanSession, setIsHandymanSession] = useState(false);
+
+  useEffect(() => {
+    init();
+    global.__forceUserLogout = async () => {
+      const logout = useGlobal.getState().logout;
+      await logout();
+    };
+    AsyncStorage.getItem('handyman_access_token')
+      .then(tok => setIsHandymanSession(!!tok))
+      .catch(() => setIsHandymanSession(false));
+  }, []);
+
+  console.log('[AuthLayout] render', { initialized, authenticated, segments });
+
+  // Only wait for persisted auth state. Do NOT gate on segments: rendering the
+  // navigator as early as possible is what lets navigation state hydrate.
+  // Gating on segments previously caused an infinite loader on reload.
+  if (!initialized) {
     return (
       <View style={styles.loaderContainer}>
         <ActivityIndicator size="large" color="#0000ff" />
@@ -15,21 +41,26 @@ export default function AuthLayout() {
     );
   }
 
-  const currentScreen = segments[segments.length - 1];
-  const publicScreens = ['SignIn', 'SignUp', 'verifyEmail', 'index'];
-  const isPublicScreen = publicScreens.includes(currentScreen);
+  // A stored handyman session belongs to the handyman side; route it there so a
+  // reload lands back on the handyman dashboard instead of a client SignIn.
+  if (!authenticated && isHandymanSession) {
+    return <Redirect href="/handyman" />;
+  }
 
-  if (!isAuthenticated && !isPublicScreen) {
+  const currentScreen = segments && segments.length ? segments[segments.length - 1] : null;
+  const isPublicScreen = PUBLIC_SCREENS.includes(currentScreen);
+
+  if (currentScreen && !authenticated && !isPublicScreen) {
     return <Redirect href="/(auth)/SignIn" />;
   }
 
-  if (isAuthenticated && isPublicScreen && currentScreen !== 'index') {
+  if (currentScreen && authenticated && isPublicScreen && currentScreen !== 'index') {
     return <Redirect href="/(auth)/Home" />;
   }
 
   return (
     <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="index" /> 
+      <Stack.Screen name="index" />
       <Stack.Screen name="SignIn" />
       <Stack.Screen name="SignUp" />
       <Stack.Screen name="Home" />

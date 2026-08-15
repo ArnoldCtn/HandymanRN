@@ -41,12 +41,77 @@ handymanApi.interceptors.request.use(async config => {
 })
 
 // ── Debug Response ────────────────────────────
+let isRefreshing = false
+let failedQueue = []
+
+const processQueue = (error, token = null) => {
+  failedQueue.forEach(prom => {
+    if (error) prom.reject(error)
+    else prom.resolve(token)
+  })
+  failedQueue = []
+}
+
 handymanApi.interceptors.response.use(
   res => {
-    console.log('[API] Response Success:', res.status, res.config.url);
+    console.log('[HandymanAPI] Response Success:', res.status, res.config.url);
     return res;
   },
   async error => {
+    const original = error.config
+
+    const isAuthEndpoint = original?.url?.includes('/signin/') || original?.url?.includes('/signup/') || original?.url?.includes('/token/refresh/')
+
+    if (error.response?.status === 401 && original && !original._retry && !isAuthEndpoint) {
+      console.log('[HandymanAPI] 401 detected, attempting token refresh...')
+
+      if (isRefreshing) {
+        console.log('[HandymanAPI] Token refresh already in progress, queuing request')
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject })
+        }).then(token => {
+          original.headers.Authorization = `Bearer ${token}`
+          return handymanApi(original)
+        })
+      }
+      original._retry = true
+      isRefreshing    = true
+      try {
+        const refresh = await AsyncStorage.getItem('handyman_refresh_token')
+        console.log('[HandymanAPI] Refresh token:', refresh ? 'present' : 'MISSING')
+
+        if (!refresh) {
+          throw new Error('No refresh token available')
+        }
+
+        console.log('[HandymanAPI] Attempting to refresh token...')
+        const res = await axios.post(`${getBaseURL()}/users/token/refresh/`, { refresh })
+        const newAccess = res.data.access
+        console.log('[HandymanAPI] Token refresh successful')
+
+        await AsyncStorage.setItem('handyman_access_token', newAccess)
+        if (res.data.refresh) {
+          await AsyncStorage.setItem('handyman_refresh_token', res.data.refresh)
+        }
+        processQueue(null, newAccess)
+        original.headers.Authorization = `Bearer ${newAccess}`
+        return handymanApi(original)
+      } catch (e) {
+        console.error('[HandymanAPI] Token refresh failed:', e.message)
+        processQueue(e, null)
+        await AsyncStorage.multiRemove([
+          'handyman_access_token', 'handyman_refresh_token', 'handyman'
+        ])
+        if (typeof global.__forceHandymanLogout === 'function') {
+          console.log('[HandymanAPI] Forcing handyman logout due to auth failure')
+          global.__forceHandymanLogout()
+        }
+        return Promise.reject(e)
+      } finally {
+        isRefreshing = false
+      }
+    }
+
     console.error('[API] Response Error:', error.message);
     if (error.response) {
       console.error('[API] Response Data:', error.response.data);
