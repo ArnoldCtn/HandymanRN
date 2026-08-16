@@ -3,6 +3,7 @@ from django.db import transaction
 from django.utils import timezone
 from .models import Payment, Wallet, Transaction
 from bookings.models import Booking
+from decimal import Decimal
 import logging
 
 logger = logging.getLogger(__name__)
@@ -262,7 +263,7 @@ class MeSombService:
     def _calculate_handyman_share(self, payment):
         """Calculate handyman's share using fixed platform split"""
         total_amount = payment.gross_amount
-        return total_amount * 0.70
+        return (total_amount * Decimal('0.70')).quantize(Decimal('0.01'))
     
     def _initiate_transfer(self, amount, recipient, payment_id):
         """Initiate MeSomb transfer (deposit) to handyman"""
@@ -337,8 +338,6 @@ def process_payment_async(booking, payment_provider, payment_number):
     The webhook will update the status when payment completes.
     Returns a dict with payment_id and status.
     """
-    from decimal import Decimal
-    
     handyman = booking.handyman
     
     total = float(booking.total_amount)
@@ -442,6 +441,10 @@ def _collect_payment_background(payment_id, booking_id, amount, service, payer_n
                 booking.completed_at = timezone.now()
                 booking.save()
                 
+                amount = Decimal(str(amount))
+                handyman_amount = Decimal(str(payment.handyman_amount))
+                platform_fee = Decimal(str(payment.platform_fee))
+                
                 # Create wallet transaction for user (debit)
                 wallet, _ = Wallet.objects.get_or_create(user=booking.user)
                 service_name = booking.service.name if booking.service else 'Service'
@@ -457,8 +460,6 @@ def _collect_payment_background(payment_id, booking_id, amount, service, payer_n
                 )
                 
                 # Create wallet transaction for handyman (credit)
-                handyman_amount = payment.handyman_amount
-                platform_fee = payment.platform_fee
                 handyman_wallet, _ = Wallet.objects.get_or_create(handyman=booking.handyman)
                 handyman_wallet.balance += handyman_amount
                 handyman_wallet.total_earned_gross += amount
@@ -510,8 +511,6 @@ def process_payment_sync(booking, payment_provider, payment_number):
     Process payment synchronously - wait for MeSomb response.
     Returns a dict with success/error info including proper error codes.
     """
-    from decimal import Decimal
-    
     handyman = booking.handyman
     
     total = float(booking.total_amount)
@@ -567,6 +566,10 @@ def process_payment_sync(booking, payment_provider, payment_number):
             booking.status = 'completed'
             booking.completed_at = timezone.now()
             booking.save()
+            
+            total = Decimal(str(total))
+            handyman_amount = Decimal(str(handyman_amount))
+            platform_fee = Decimal(str(platform_fee))
             
             # Create wallet transaction for user (debit)
             wallet, _ = Wallet.objects.get_or_create(user=booking.user)
