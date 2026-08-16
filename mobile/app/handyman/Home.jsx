@@ -1,10 +1,12 @@
 import Ionicons from '@expo/vector-icons/Ionicons'
 import useHandymanGlobal from '@/services/handymanGlobal'
 import { useEffect, useRef, useState, useMemo, useCallback } from 'react'
-import { AppState, Image, StyleSheet, Text, View, TouchableOpacity, PanResponder, ScrollView } from 'react-native'
+import { AppState, Image, Pressable, StyleSheet, Text, View, TouchableOpacity, PanResponder, ScrollView } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import handymanApi from '@/services/handymanApi'
 import api from '@/services/api' // Assuming this is the global api for all services
+import { resolveMediaUrl } from '@/services/mediaUrl'
 import HandymanDashboard from '@/app/handyman/Dashboard'
 import ProfileScreen from '@/app/handyman/Profile'
 import Myservices from '@/app/handyman/Myservices'
@@ -19,7 +21,6 @@ import { useAppTheme } from '@/hooks/use-theme-color'
 import { ThemedText } from '@/components/themed-text'
 import { ThemedView } from '@/components/themed-view'
 
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 import { useNavigation, useFocusEffect } from '@react-navigation/native'
 import { useRouter } from 'expo-router'
 
@@ -33,7 +34,12 @@ async function callStatus(endpoint) {
   } catch (e) {}
 }
 
-const Tab = createBottomTabNavigator()
+const TABS = [
+  { key: 'Dashboard', icon: 'grid-outline', titleKey: 'sidebar.dashboard' },
+  { key: 'Bookings', icon: 'calendar-outline', titleKey: 'sidebar.bookings' },
+  { key: 'Myservices', icon: 'briefcase-outline', titleKey: 'sidebar.my_services' },
+  { key: 'Profile', icon: 'person-outline', titleKey: 'tabs.profile' },
+]
 
 // ... imports
 import HandymanServiceCarousel from '@/components/HandymanServiceCarousel'
@@ -80,6 +86,14 @@ export default function HandymanHomeLayout() {
   const [unreadCount, setUnreadCount] = useState(0)
   const [chatUnreadCount, setChatUnreadCount] = useState(0)
   const [sidebarVisible, setSidebarVisible] = useState(false)
+  const [activeTab, setActiveTab] = useState('Dashboard')
+  const [visitedTabs, setVisitedTabs] = useState(['Dashboard'])
+  const insets = useSafeAreaInsets()
+
+  const activateTab = useCallback((key) => {
+    setActiveTab(key)
+    setVisitedTabs(prev => (prev.includes(key) ? prev : [...prev, key]))
+  }, [])
 
   const authenticated = useHandymanGlobal(s => s.authenticated)
   const logout = useHandymanGlobal(s => s.logout)
@@ -157,9 +171,7 @@ export default function HandymanHomeLayout() {
   }, [authenticated])
 
   function resolveAvatar(thumbnail) {
-    if (!thumbnail) return null
-    if (thumbnail.startsWith('http')) return thumbnail
-    return thumbnail
+    return resolveMediaUrl(thumbnail)
   }
   const avatarUrl = resolveAvatar(handyman?.thumbnail)
 
@@ -176,88 +188,131 @@ export default function HandymanHomeLayout() {
         isHandyman={true} 
         onLogout={handleLogout} 
       />
-      <Tab.Navigator screenOptions={{
-        tabBarActiveTintColor: theme.accent,
-        tabBarInactiveTintColor: theme.textSecondary,
-        tabBarStyle: {
-          backgroundColor: theme.surface,
-          borderTopColor: theme.border,
-          borderTopWidth: 1,
-          paddingBottom: 8,
-          paddingTop: 8,
-          height: 70
-        },
-        headerStyle: {
-          backgroundColor: theme.surface,
-          borderBottomWidth: 1,
-          borderBottomColor: theme.border,
-        },
-        headerTintColor: theme.text,
-        headerLeft: () => (
-          <TouchableOpacity style={styles.headerLeftBtn} onPress={() => setSidebarVisible(true)}>
-            {handyman?.thumbnail ? (
-              <Image source={{ uri: avatarUrl }} style={styles.avatar} />
-            ) : (
-              <View style={styles.avatarPlaceholder}>
-                <Text style={styles.avatarInitial}>
-                  {handyman?.username?.[0]?.toUpperCase() ?? '?'}
-                </Text>
+      <View style={[styles.header, { backgroundColor: theme.surface, borderBottomColor: theme.border, paddingTop: insets.top + 8 }]}>
+        <TouchableOpacity style={styles.headerLeftBtn} onPress={() => setSidebarVisible(true)}>
+          {handyman?.thumbnail ? (
+            <Image source={{ uri: avatarUrl }} style={styles.avatar} />
+          ) : (
+            <View style={styles.avatarPlaceholder}>
+              <Text style={styles.avatarInitial}>
+                {handyman?.username?.[0]?.toUpperCase() ?? '?'}
+              </Text>
+            </View>
+          )}
+        </TouchableOpacity>
+
+        <View style={styles.headerRightContainer}>
+          <TouchableOpacity onPress={() => router.push('/chat/support?source=handyman')} style={{ marginRight: 15 }}>
+            <Ionicons name="help-circle-outline" size={28} color={theme.text} />
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            onPress={() => navigation.navigate('ChatsList')}
+            style={styles.notificationButton}
+          >
+            <Ionicons name="send-outline" size={24} color={theme.text} />
+            {chatUnreadCount > 0 && (
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>{chatUnreadCount > 9 ? '9+' : chatUnreadCount}</Text>
               </View>
             )}
           </TouchableOpacity>
-        ), 
-        headerRight: () => (
-          <View style={styles.headerRightContainer}>
-            <TouchableOpacity onPress={() => router.push('/chat/support?source=handyman')} style={{ marginRight: 15 }}>
-              <Ionicons name="help-circle-outline" size={28} color={theme.text} />
-            </TouchableOpacity>
+          
+          <TouchableOpacity 
+            onPress={() => navigation.navigate('Notifications')}
+            style={styles.notificationButton}
+          >
+            <Ionicons name="notifications-outline" size={24} color={theme.text} />
+            {unreadCount > 0 && (
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+        </View>
+      </View>
 
-            <TouchableOpacity 
-              onPress={() => navigation.navigate('ChatsList')}
-              style={styles.notificationButton}
-            >
-              <Ionicons name="send-outline" size={24} color={theme.text} />
-              {chatUnreadCount > 0 && (
-                <View style={styles.badge}>
-                  <Text style={styles.badgeText}>{chatUnreadCount > 9 ? '9+' : chatUnreadCount}</Text>
-                </View>
-              )}
-            </TouchableOpacity>
-            
-            <TouchableOpacity 
-              onPress={() => navigation.navigate('Notifications')}
-              style={styles.notificationButton}
-            >
-              <Ionicons name="notifications-outline" size={24} color={theme.text} />
-              {unreadCount > 0 && (
-                <View style={styles.badge}>
-                  <Text style={styles.badgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
-                </View>
-              )}
-            </TouchableOpacity>
+      <View style={styles.content}>
+        {visitedTabs.includes('Dashboard') && (
+          <View style={[styles.screen, activeTab !== 'Dashboard' && styles.hidden]}>
+            <DashboardScreen />
           </View>
-        ), 
-      }}>
-        <Tab.Screen name="Dashboard" component={DashboardScreen}
-          options={{ title: t('sidebar.dashboard'), tabBarIcon: ({color,size}) =>
-            <Ionicons name="grid-outline" size={size} color={color} /> }} />
-        <Tab.Screen name="Bookings" component={BookingsScreen}
-          options={{ title: t('sidebar.bookings'), tabBarIcon: ({color,size}) =>
-            <Ionicons name="calendar-outline" size={size} color={color} /> }} />
-        <Tab.Screen name="Myservices" component={Myservices}
-          options={{ title: t('sidebar.my_services'),  tabBarIcon: ({color,size}) =>
-            <Ionicons name="briefcase-outline" size={size} color={color} /> }} />
-        <Tab.Screen name="Profile" component={ProfileScreen}
-          options={{ title: t('tabs.profile'),  tabBarIcon: ({color,size}) =>
-            <Ionicons name="person-outline" size={size} color={color} /> }} />
-      </Tab.Navigator>
+        )}
+        {visitedTabs.includes('Bookings') && (
+          <View style={[styles.screen, activeTab !== 'Bookings' && styles.hidden]}>
+            <BookingsScreen />
+          </View>
+        )}
+        {visitedTabs.includes('Myservices') && (
+          <View style={[styles.screen, activeTab !== 'Myservices' && styles.hidden]}>
+            <Myservices />
+          </View>
+        )}
+        {visitedTabs.includes('Profile') && (
+          <View style={[styles.screen, activeTab !== 'Profile' && styles.hidden]}>
+            <ProfileScreen />
+          </View>
+        )}
+      </View>
+
+      <View
+        style={[
+          styles.tabBar,
+          {
+            backgroundColor: theme.surface,
+            borderTopColor: theme.border,
+            height: 60 + insets.bottom,
+            paddingBottom: 8 + insets.bottom,
+          },
+        ]}>
+        {TABS.map((tab) => {
+          const isActive = activeTab === tab.key;
+          const color = isActive ? theme.accent : theme.textSecondary;
+          return (
+            <Pressable
+              key={tab.key}
+              style={styles.tabItem}
+              onPress={() => activateTab(tab.key)}>
+              <Ionicons name={tab.icon} size={24} color={color} />
+              <Text style={[styles.tabLabel, { color }]}>
+                {t(tab.titleKey)}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
     </View>
   )
 }
 
 const createStyles = (theme) => StyleSheet.create({
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+  },
   headerLeftBtn: { marginLeft: 15 },
   headerRightContainer: { flexDirection: 'row', alignItems: 'center' },
+  content: { flex: 1 },
+  screen: { flex: 1 },
+  hidden: { display: 'none' },
+  tabBar: {
+    flexDirection: 'row',
+    borderTopWidth: 1,
+    paddingTop: 8,
+  },
+  tabItem: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tabLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    marginTop: 2,
+  },
   avatar: { width: 36, height: 36, borderRadius: 18 },
   avatarPlaceholder: {
     width: 36, height: 36, borderRadius: 18,

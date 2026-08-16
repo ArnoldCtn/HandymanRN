@@ -54,10 +54,6 @@ export default function AuthLayout() {
     return <Redirect href="/(auth)/SignIn" />;
   }
 
-  if (currentScreen && authenticated && isPublicScreen && currentScreen !== 'index') {
-    return <Redirect href="/" />;
-  }
-
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="index" />

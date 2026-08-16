@@ -17,6 +17,7 @@ import {
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import handymanApi from '@/services/handymanApi';
+import { resolveMediaUrl } from '@/services/mediaUrl';
 
 export default function ServiceHandymenScreen() {
   const router = useRouter();
@@ -90,9 +91,7 @@ export default function ServiceHandymenScreen() {
   };
 
   function resolveAvatar(thumbnail) {
-    if (!thumbnail) return null;
-    if (thumbnail.startsWith('http')) return thumbnail;
-    return `http://192.168.1.XXX:8000/media/${thumbnail}`; // ← Update your IP
+    return resolveMediaUrl(thumbnail);
   }
 
   function renderHandyman({ item }) {

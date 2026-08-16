@@ -6,6 +6,7 @@ import {
 import { useRouter } from 'expo-router'
 import * as ImagePicker from 'expo-image-picker'
 import Ionicons from '@expo/vector-icons/Ionicons'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 
 import Input from '@/components/Input'
@@ -55,6 +56,7 @@ async function captureIdPhoto() {
 
 export default function VerifyIdScreen() {
   const router = useRouter()
+  const insets = useSafeAreaInsets()
   const handyman = useHandymanGlobal(s => s.handyman)
   const updateHandyman = useHandymanGlobal(s => s.updateHandyman)
 
@@ -154,7 +156,7 @@ export default function VerifyIdScreen() {
 
   if (handyman?.is_verified) {
     return (
-      <SafeAreaView style={styles.root}>
+      <SafeAreaView style={[styles.root, { paddingTop: insets.top }]}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()}>
             <Ionicons name="arrow-back" size={24} color="#202020" />
@@ -174,7 +176,7 @@ export default function VerifyIdScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.root}>
+    <SafeAreaView style={[styles.root, { paddingTop: insets.top }]}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()}>
           <Ionicons name="arrow-back" size={24} color="#202020" />

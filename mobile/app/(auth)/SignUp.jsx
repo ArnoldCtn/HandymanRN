@@ -7,13 +7,13 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router'
 import * as ImagePicker from 'expo-image-picker'
 import api from '@/services/api'
-import Toast from '@/components/Toast';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 import useGlobal from '@/services/global'
 import favicon from '@/assets/images/FullLogo.jpg'
 import { useTranslation } from 'react-i18next'
 import { useAppTheme } from '@/hooks/use-theme-color'
+import { useToast } from '@/hooks/useToast'
 import { ThemedText } from '@/components/themed-text'
 import { ThemedView } from '@/components/themed-view'
 
@@ -39,6 +39,8 @@ export default function SignUpScreen() {
 
   const login = useGlobal(state => state.login)
 
+  const showToast = useToast()
+
   const [usernameError, setUsernameError] = useState('')
   const [passwordError, setPasswordError] = useState('')
   const [emailError, setEmailError] = useState('')
@@ -63,12 +65,6 @@ export default function SignUpScreen() {
     }
 
   };
-
-  const [toast, setToast] = useState({ visible: false, message: '', type: 'success' });
-
-  function showToast(message, type = 'success') {
-    setToast({ visible: true, message, type });
-  }
 
   async function onSignUp() {
     setUsernameError('');
@@ -154,8 +150,8 @@ export default function SignUpScreen() {
       await AsyncStorage.setItem('refresh_token', tokens.refresh);
       await AsyncStorage.setItem('user', JSON.stringify(user));
 
-      login(user);
       showToast(t('auth.account_created'), 'success');
+      login(user);
       setTimeout(() => router.replace('/'), 1200);
     } catch (storageError) {
       console.log('[SignUp] Post-signup error:', storageError.message);
@@ -187,13 +183,6 @@ export default function SignUpScreen() {
                 showsVerticalScrollIndicator={true}
                 keyboardShouldPersistTaps="handled">
                 <View style={{ flex: 1, justifyContent: 'center', paddingHorizontal: 20 }}>
-
-                  <Toast
-                    visible={toast.visible}
-                    message={toast.message}
-                    type={toast.type}
-                    onHide={() => setToast(t => ({ ...t, visible: false }))}
-                  />
 
                   <ThemedText type="title" style={{ textAlign: 'center', marginBottom: 20 }}>
                     {t('auth.sign_up_title')}

@@ -10,6 +10,7 @@ import Ionicons from '@expo/vector-icons/Ionicons'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import handymanApi from '@/services/handymanApi'
 import useHandymanGlobal from '@/services/handymanGlobal'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import Input from '@/components/Input'
 import Button from '@/components/Button'
 import Toast from '@/components/Toast'
@@ -36,6 +37,8 @@ export default function HandymanEditProfileScreen() {
   const router         = useRouter()
   const handyman       = useHandymanGlobal(s => s.handyman)
   const updateHandyman = useHandymanGlobal(s => s.updateHandyman)
+
+  const insets = useSafeAreaInsets()
 
   const [username,       setUsername]       = useState(handyman?.username ?? '')
   const [email,          setEmail]          = useState(handyman?.email ?? '')
@@ -200,7 +203,7 @@ export default function HandymanEditProfileScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.root}>
+    <SafeAreaView style={[styles.root, { paddingTop: insets.top }]}>
       <Toast visible={toast.visible} message={toast.message}
         type={toast.type} onHide={() => setToast(t => ({...t, visible:false}))} />
 
@@ -417,7 +420,7 @@ export default function HandymanEditProfileScreen() {
 const createStyles = (theme) => StyleSheet.create({
   root:              { flex:1, backgroundColor: theme.background },
   header:            { flexDirection:'row', alignItems:'center', justifyContent:'space-between', paddingHorizontal:20, paddingVertical: 15,
-    marginTop: 40, borderBottomWidth:1, borderColor: theme.border, backgroundColor: theme.surface },
+    marginTop: 10, borderBottomWidth:1, borderColor: theme.border, backgroundColor: theme.surface },
   headerTitle:       { fontSize:18, fontWeight:'700', color: theme.text },
   scroll:            { paddingHorizontal:16, paddingTop:20, paddingBottom:60 },
   avatarWrapper:     { alignSelf:'center', position:'relative', marginBottom:24 },

@@ -10,15 +10,16 @@ import * as ImagePicker from 'expo-image-picker'
 import DateTimePicker from '@react-native-community/datetimepicker'
 import Ionicons from '@expo/vector-icons/Ionicons'
 import AsyncStorage from '@react-native-async-storage/async-storage'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import Title from '@/components/Title'
 import Input from '@/components/Input'
 import Button from '@/components/Button'
-import Toast from '@/components/Toast'
 import handymanApi from '@/services/handymanApi'
 import useHandymanGlobal from '@/services/handymanGlobal'
 import favicon from '@/assets/images/FullLogo.jpg'
 import { useTranslation } from 'react-i18next'
 import { useAppTheme } from '@/hooks/use-theme-color'
+import { useToast } from '@/hooks/useToast'
 import { ThemedText } from '@/components/themed-text'
 import { ThemedView } from '@/components/themed-view'
 
@@ -112,12 +113,9 @@ export default function HandymanSignUpScreen() {
 
   const [loading,  setLoading]  = useState(false)
   const [fetching, setFetching] = useState(false)
-  const [toast,    setToast]    = useState({ visible:false, message:'', type:'success' })
 
-
-  function showToast(msg, type = 'success') {
-    setToast({ visible:true, message:msg, type })
-  }
+  const insets = useSafeAreaInsets()
+  const showToast = useToast()
 
   useEffect(() => {
     if (step === 2) loadOptions()
@@ -266,10 +264,9 @@ export default function HandymanSignUpScreen() {
       await AsyncStorage.setItem('handyman_access_token',  tokens.access)
       await AsyncStorage.setItem('handyman_refresh_token', tokens.refresh)
       await AsyncStorage.setItem('handyman', JSON.stringify(handyman))
-      
-      login(handyman)
 
       showToast(t('auth.account_created'), 'success')
+      login(handyman)
       setTimeout(() => router.replace('/handyman/Home'), 1200)
 
     } catch (error) {
@@ -306,11 +303,7 @@ export default function HandymanSignUpScreen() {
       <ThemedView style={{ flex: 1 }}>
       <ScrollView>
       <DismissKeyboard>
-        <SafeAreaView style={{ flex: 1 }}>
-          <Toast visible={toast.visible} message={toast.message}
-            type={toast.type}
-            onHide={() => setToast(t => ({ ...t, visible: false }))} />
-
+        <SafeAreaView style={{ flex: 1, paddingTop: insets.top }}>
             <View>
                  <Image source={favicon} alt="" style={{alignSelf:'center',padding:10, height:250,width:'100%'}} />
             </View>
@@ -451,11 +444,7 @@ export default function HandymanSignUpScreen() {
 
   return (
     <ThemedView style={{ flex: 1 }}>
-    <SafeAreaView style={{ flex: 1, paddingTop:20 }}>
-      <Toast visible={toast.visible} message={toast.message}
-        type={toast.type}
-        onHide={() => setToast(t => ({ ...t, visible: false }))} />
-
+    <SafeAreaView style={{ flex: 1, paddingTop: insets.top + 20 }}>
       <View style={[styles.header, { backgroundColor: theme.surface, borderColor: theme.border }]}>
         <TouchableOpacity onPress={() => setStep(1)} style={{ padding: 4 }}>
           <Ionicons name="arrow-back" size={24} color={theme.text} />

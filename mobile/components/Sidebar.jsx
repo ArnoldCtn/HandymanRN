@@ -225,6 +225,7 @@ const createStyles = (theme) => StyleSheet.create({
     padding: 20,
     borderTopWidth: 1,
     borderTopColor: theme.border,
+    marginBottom: 20,
   },
   logoutBtn: {
     flexDirection: 'row',

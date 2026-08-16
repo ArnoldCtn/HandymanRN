@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, StyleSheet, ActivityIndicator, RefreshControl, Image } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import handymanApi from '@/services/handymanApi'; 
 import Ionicons from '@expo/vector-icons/Ionicons';
 
 export default function FavoritedByScreen() {
+  const insets = useSafeAreaInsets();
   const [data, setData] = useState({ total: 0, favorites: [] });
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -42,7 +44,7 @@ export default function FavoritedByScreen() {
   if (loading) return <ActivityIndicator style={{ flex: 1 }} />;
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top + 16 }]}>
       <Text style={styles.headerTitle}>Favorited By ({data.total})</Text>
       <FlatList
         data={data.favorites}

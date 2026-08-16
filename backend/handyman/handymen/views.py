@@ -53,8 +53,8 @@ class NoAuthentication(BaseAuthentication):
 
 
 def get_tokens_for_handyman(handyman, request=None):
-    tokens = RefreshToken.for_user(handyman)
-    tokens['user_id'] = str(handyman.pk)
+    tokens = RefreshToken()
+    tokens[settings.SIMPLE_JWT.get('USER_ID_CLAIM', 'user_id')] = handyman.pk
     tokens['user_type'] = 'handyman'
     return {
         'handyman': HandymanSerializer(handyman, context={'request': request}).data,

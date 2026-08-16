@@ -5,11 +5,13 @@ import {
 } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import useHandymanGlobal from '@/services/handymanGlobal';
 import handymanApi from '@/services/handymanApi';
 
 export default function HandymanReviewsScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const handyman = useHandymanGlobal(s => s.handyman);
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -80,7 +82,7 @@ export default function HandymanReviewsScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={24} color="#202020" />
