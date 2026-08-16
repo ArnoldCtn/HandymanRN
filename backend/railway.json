@@ -3,7 +3,7 @@
     "builder": "NIXPACKS"
   },
   "deploy": {
-    "startCommand": "sh -c \"python manage.py collectstatic --noinput && gunicorn handyman.wsgi:application --bind 0.0.0.0:$PORT --workers 4 --timeout 120\"",
+    "startCommand": "sh -c \"python manage.py migrate --noinput && python manage.py collectstatic --noinput && daphne -b 0.0.0.0 -p $PORT handyman.asgi:application\"",
     "restartPolicyType": "ON_FAILURE"
   }
 }
