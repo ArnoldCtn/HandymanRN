@@ -324,6 +324,8 @@ export default function UserBookingDetailScreen() {
               t('payment.success_message', {
                 status: 'Completed',
                 amount: paymentStatus.amount,
+                handyman_amount: paymentStatus.handyman_amount,
+                fee: paymentStatus.platform_fee,
                 transaction_id: paymentStatus.collect_ref || 'N/A',
                 detail: 'Your payment has been processed successfully.'
               }),

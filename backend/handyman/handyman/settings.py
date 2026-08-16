@@ -45,6 +45,9 @@ MESOMB_WEBHOOK_SECRET = os.getenv('MESOMB_WEBHOOK_SECRET', 'your_webhook_secret_
 # Environment settings
 MESOMB_ENVIRONMENT = os.getenv('MESOMB_ENVIRONMENT', 'sandbox')  # Change to 'production' when ready
 
+# Minimum MeSomb deposit (XAF) for automatic handyman payouts
+MESOMB_MIN_PAYOUT = os.getenv('MESOMB_MIN_PAYOUT', '10')
+
 # Webhook URLs (for ngrok testing - update with your ngrok URL)
 NGROK_URL = os.getenv('NGROK_URL', 'https://sharpie-carless-rimless.ngrok-free.dev')
 WEBHOOK_BASE_URL = f"{NGROK_URL}/api/payments/webhooks"
