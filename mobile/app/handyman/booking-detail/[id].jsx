@@ -13,11 +13,13 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import handymanApi from '@/services/handymanApi';
 
 export default function HandymanBookingDetailScreen() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
 
   const [booking, setBooking] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -84,7 +86,7 @@ export default function HandymanBookingDetailScreen() {
   const isAccepted = booking.status === 'accepted';
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()}>
           <Ionicons name="arrow-back" size={28} color="#1F2937" />

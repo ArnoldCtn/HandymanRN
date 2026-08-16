@@ -25,14 +25,14 @@ const TABS = [
     title: 'Bookings',
     icon: (color) => <Feather name="book-open" size={24} color={color} />,
   },
-  {
-    key: 'Favorites',
-    title: 'Favorites',
-    icon: (color) => <Ionicons name="heart" size={24} color={color} />,
-  },
+  // {
+  //   key: 'Favorites',
+  //   title: 'Favorites',
+  //   icon: (color) => <Ionicons name="heart" size={24} color={color} />,
+  // },
   {
     key: 'Notifications',
-    title: 'Alerts',
+    title: 'Notifications',
     icon: (color) => <Ionicons name="notifications" size={25} color={color} />,
   },
   {
@@ -60,9 +60,9 @@ export default function TabLayout() {
         <View style={[styles.screen, activeTab !== 'Mybookings' && styles.hidden]}>
           <MybookingsScreen />
         </View>
-        <View style={[styles.screen, activeTab !== 'Favorites' && styles.hidden]}>
+        {/* <View style={[styles.screen, activeTab !== 'Favorites' && styles.hidden]}>
           <FavoritesScreen />
-        </View>
+        </View> */}
         <View style={[styles.screen, activeTab !== 'Notifications' && styles.hidden]}>
           <NotificationsScreen />
         </View>

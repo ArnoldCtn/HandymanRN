@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { View, Text, StyleSheet, TouchableOpacity, Switch, Alert } from 'react-native'
 import { useRouter } from 'expo-router'
 import Ionicons from '@expo/vector-icons/Ionicons'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { PIN } from '@/services/pin'
 import PINPad from '@/components/PINPad'
 
@@ -17,6 +18,7 @@ const STEP = {
 
 export default function PINSettingsScreen() {
   const router = useRouter()
+  const insets = useSafeAreaInsets()
   const [step,       setStep]      = useState(STEP.MENU)
   const [pinEnabled, setPinEnabled] = useState(false)
   const [newPIN,     setNewPIN]    = useState('')
@@ -133,7 +135,7 @@ export default function PINSettingsScreen() {
 
   // ── Main menu ────────────────────────────────────────
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()}>
           <Ionicons name="arrow-back" size={24} color="#202020" />

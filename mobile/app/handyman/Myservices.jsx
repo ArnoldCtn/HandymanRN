@@ -13,12 +13,14 @@ import {
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import handymanApi from '@/services/handymanApi';
 import useHandymanGlobal from '@/services/handymanGlobal'
 
 
 export default function HandymanBookingsScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -146,7 +148,7 @@ export default function HandymanBookingsScreen() {
   );
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
       <Text style={styles.title}>Bookings & Chats</Text>
       <FlatList
         data={bookings}

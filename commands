@@ -5,10 +5,13 @@ https://sharpie-carless-rimless.ngrok-free.dev/payments/webhooks/success/
 
 python manage.py runserver 0.0.0.0:8000
 
-ngrok config add-authtoken 3DXGHp0spA9hKrNC1VNfBq1hDTI_2H7pMN4XhVBFXmZikf2fA
-https://sharpie-carless-rimless.ngrok-free.dev/
+adb reverse tcp:8081 tcp:8081
+adb reverse tcp:8000 tcp:8000
 
 adb shell am start -a android.intent.action.VIEW -d "exp+mobile://expo-development-client/?url=http%3A%2F%2Flocalhost%3A8081"
+
+ngrok config add-authtoken 3DXGHp0spA9hKrNC1VNfBq1hDTI_2H7pMN4XhVBFXmZikf2fA
+https://sharpie-carless-rimless.ngrok-free.dev/
 
  $env:DATABASE_URL="postgresql://postgres:lfTjZUyGlWUdFlTfIOxBnLdYPopLKdzb@yamabiko.proxy.rlwy.net:33466/railway"; python manage.py createsuperuser
 

@@ -7,11 +7,11 @@ import {
 import { useState } from 'react'
 import { useRouter } from 'expo-router'
 import Ionicons from '@expo/vector-icons/Ionicons'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import Title from '@/components/Title'
 import Input from '@/components/Input'
 import Button from '@/components/Button'
-import Toast from '@/components/Toast'
 import PINLockScreen from '@/components/PINLock'
 import { PIN } from '@/services/pin'
 import handymanApi from '@/services/handymanApi'
@@ -19,6 +19,7 @@ import useHandymanGlobal from '@/services/handymanGlobal'
 import favicon from '@/assets/images/FullLogo.jpg'
 import { useTranslation } from 'react-i18next'
 import { useAppTheme } from '@/hooks/use-theme-color'
+import { useToast } from '@/hooks/useToast'
 import { ThemedText } from '@/components/themed-text'
 import { ThemedView } from '@/components/themed-view'
 
@@ -43,13 +44,10 @@ export default function HandymanSignInScreen() {
   const [usernameError, setUsernameError] = useState('')
   const [passwordError, setPasswordError] = useState('')
   const [showPassword,  setShowPassword]  = useState(false)
-  const [toast,         setToast]         = useState({ visible:false, message:'', type:'success' })
+  const insets = useSafeAreaInsets()
+  const showToast = useToast()
   const [showPIN,       setShowPIN]       = useState(false)
   const [pendingData,   setPendingData]   = useState(null)
-
-  function showToast(msg, type = 'success') {
-    setToast({ visible:true, message:msg, type })
-  }
 
   async function onPINUnlocked() {
     try {
@@ -57,7 +55,8 @@ export default function HandymanSignInScreen() {
       await AsyncStorage.setItem('handyman_access_token',  tokens.access)
       await AsyncStorage.setItem('handyman_refresh_token', tokens.refresh)
       await AsyncStorage.setItem('handyman', JSON.stringify(handyman))
-      
+
+      showToast(t('auth.login_success'), 'success')
       login(handyman)
       router.replace('/handyman/Home')
     } catch (e) {
@@ -111,8 +110,8 @@ export default function HandymanSignInScreen() {
       await AsyncStorage.setItem('handyman_refresh_token', tokens.refresh)
       await AsyncStorage.setItem('handyman', JSON.stringify(handyman))
       
-      login(handyman)
       showToast(t('auth.login_success'), 'success')
+      login(handyman)
       setTimeout(() => router.replace('/handyman/Home'), 1200)
     } catch (e) {
       router.replace('/handyman/Home')
@@ -143,16 +142,12 @@ export default function HandymanSignInScreen() {
              <View>
                     <Image source={favicon} alt="" style={{alignSelf:'center',padding:10, height:250,width:'100%'}} />
                   </View>
-            <ScrollView contentContainerStyle={styles.scroll}
+            <ScrollView contentContainerStyle={[styles.scroll, { paddingTop: insets.top + 8 }]}
               showsVerticalScrollIndicator={false}
               keyboardShouldPersistTaps="handled">
               <View style={{ flex:1, justifyContent:'center', paddingHorizontal: 20 }}>
 
             <ThemedText type="title" style={{textAlign:'center',marginBottom:20}}>{t('auth.sign_in_pro', 'Sign In as a Pro')}</ThemedText>
-
-                <Toast visible={toast.visible} message={toast.message}
-                  type={toast.type}
-                  onHide={() => setToast(t => ({ ...t, visible:false }))} />
 
                 <Input 
                   title={t('auth.username_email')} 

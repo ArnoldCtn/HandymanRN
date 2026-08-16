@@ -12,7 +12,6 @@ import Button from '@/components/Button'
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router'
 import api from '@/services/api'
-import Toast from '@/components/Toast';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import useGlobal from '@/services/global'
 import { HANDYMAN_PIN } from '@/services/pin'
@@ -21,6 +20,7 @@ import favicon from '@/assets/images/FullLogo.jpg'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useTranslation } from 'react-i18next'
 import { useAppTheme } from '@/hooks/use-theme-color'
+import { useToast } from '@/hooks/useToast'
 import { ThemedText } from '@/components/themed-text'
 import { ThemedView } from '@/components/themed-view'
 
@@ -46,7 +46,7 @@ export default function SignInScreen() {
 
   const login = useGlobal(state => state.login)
 
-  const [toast, setToast] = useState({ visible: false, message: '', type: 'success' });
+  const showToast = useToast()
 
   const [showPIN, setShowPIN] = useState(false)
   const [pendingData, setPendingData] = useState(null)  // holds responseData until PIN passed
@@ -58,17 +58,13 @@ export default function SignInScreen() {
       await AsyncStorage.setItem('access_token', tokens.access)
       await AsyncStorage.setItem('refresh_token', tokens.refresh)
       await AsyncStorage.setItem('user', JSON.stringify(user))
+      showToast(t('auth.login_success'), 'success')
       login(user)
       router.replace('/')
     } catch (e) {
       console.log('[SignIn] PIN unlock storage error:', e.message)
       router.replace('/')
     }
-  }
-
-
-  function showToast(message, type = 'success') {
-    setToast({ visible: true, message, type });
   }
 
 
@@ -91,7 +87,6 @@ export default function SignInScreen() {
         data: { username: username.trim().toLowerCase(), password }
       })
       responseData = response.data
-      login(responseData.user)
 
     } catch (error) {
       console.log('[SignIn] status:', error.response?.status)
@@ -121,7 +116,6 @@ export default function SignInScreen() {
 
     if (PinEnabled) {
       setPendingData(responseData)
-      login(responseData.user)
       setShowPIN(true)
       return
     }
@@ -133,8 +127,8 @@ export default function SignInScreen() {
       await AsyncStorage.setItem('refresh_token', tokens.refresh)
       await AsyncStorage.setItem('user', JSON.stringify(user))
 
-      login(user)
       showToast(t('auth.login_success'), 'success')
+      login(user)
       setTimeout(() => router.replace('/'), 1200)
 
     } catch (storageError) {
@@ -169,12 +163,6 @@ export default function SignInScreen() {
                 <View style={styles.scrollContent}>
                   <View style={{ flex: 1, justifyContent: 'center', paddingHorizontal: 20 }}>
 
-                    <Toast
-                      visible={toast.visible}
-                      message={toast.message}
-                      type={toast.type}
-                      onHide={() => setToast(t => ({ ...t, visible: false }))}
-                    />
                     <ThemedText type="title" style={{ textAlign: 'center', marginBottom: 20 }}>
                       {t('auth.sign_in_title')}
                     </ThemedText>

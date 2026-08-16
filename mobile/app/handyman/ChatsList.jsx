@@ -12,10 +12,13 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import handymanApi from '@/services/handymanApi';
+import { resolveMediaUrl } from '@/services/mediaUrl';
 
 export default function HandymanChatsListScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const [chats, setChats] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -49,11 +52,8 @@ export default function HandymanChatsListScreen() {
   };
 
   const renderChatItem = ({ item }) => {
-    const avatarUrl = item.other_thumbnail 
-      ? (item.other_thumbnail.startsWith('http') 
-         ? item.other_thumbnail 
-         : `http://192.168.43.188:8000/media/${item.other_thumbnail}`)
-      : `https://ui-avatars.com/api/?name=${item.other_username}&background=random`;
+    const avatarUrl = resolveMediaUrl(item.other_thumbnail)
+      ?? `https://ui-avatars.com/api/?name=${item.other_username}&background=random`;
 
     return (
       <TouchableOpacity 
@@ -98,7 +98,7 @@ export default function HandymanChatsListScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={[styles.container, { paddingTop: insets.top + 10 }]}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()}>
             <Ionicons name="arrow-back" size={24} color="#202020" />
@@ -114,7 +114,7 @@ export default function HandymanChatsListScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { paddingTop: insets.top + 10 }]}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()}>
           <Ionicons name="arrow-back" size={24} color="#202020" />

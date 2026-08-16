@@ -17,6 +17,7 @@ import { Rating } from '@kolking/react-native-rating';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import api from '@/services/api';
+import { resolveMediaUrl } from '@/services/mediaUrl';
 
 const { width, height } = Dimensions.get('window');
 
@@ -133,9 +134,7 @@ const RatingPage = () => {
   };
 
   const resolveAvatar = (thumbnail) => {
-    if (!thumbnail) return null;
-    if (thumbnail.startsWith('http')) return thumbnail;
-    return `http://192.168.43.188:8000/media/${thumbnail}`;
+    return resolveMediaUrl(thumbnail);
   };
 
   if (loading) {

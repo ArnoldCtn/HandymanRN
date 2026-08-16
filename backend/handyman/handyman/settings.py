@@ -67,7 +67,7 @@ SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'django-insecure-+1-rgp&271)w)qu%gub
 # SECURITY WARNING: don't run with debug turned on in production!
 # DEBUG = True
 # DEBUG = os.environ.get('DJANGO_DEBUG', 'False').lower() == 'true'
-DEBUG = os.environ.get('DJANGO_DEBUG', 'True').lower() == 'true'
+DEBUG = os.environ.get('DJANGO_DEBUG', 'False').lower() == 'true'
 
 # ALLOWED_HOSTS = ['192.168.43.188', 'localhost', '127.0.0.1']
 
@@ -145,6 +145,7 @@ INSTALLED_APPS = [
     'dj_rest_auth',
     'allauth',
     'rest_framework_simplejwt',
+    'rest_framework_simplejwt.token_blacklist',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
