@@ -233,6 +233,11 @@ class MeSombService:
                 logger.warning(f"No payout needed for payment {payment.id}")
                 return False
             
+            min_payout = Decimal(str(getattr(settings, 'MESOMB_MIN_PAYOUT', '10')))
+            if handyman_share < min_payout:
+                logger.warning(f"[payout] Payment {payment.id}: handyman share {handyman_share} below MeSomb minimum {min_payout} - payout left pending")
+                return False
+            
             # Use handyman's phone number for payout
             payout_phone = payment.handyman.phone
             
