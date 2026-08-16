@@ -22,7 +22,7 @@ def mesomb_webhook(request):
         data = json.loads(request.body)
         ref = data.get('reference')
         status = data.get('status')
-        transaction_id = data.get('transaction_id')
+        transaction_id = data.get('fin_trx_id') or data.get('transaction_id')
         amount = data.get('amount')
         
         logger.info(f"[WEBHOOK] Processing: ref={ref}, status={status}, tx_id={transaction_id}")
@@ -36,9 +36,11 @@ def mesomb_webhook(request):
         if not payment:
             # Maybe it's a payout
             payment = Payment.objects.filter(payout_ref=ref).first()
-            if not payment:
-                logger.warning(f"[WEBHOOK] Payment not found for ref={ref}")
-                return HttpResponse("Payment not found", status=404)
+        if not payment and str(ref).isdigit():
+            payment = Payment.objects.filter(booking_id=int(ref)).order_by('-id').first()
+        if not payment:
+            logger.warning(f"[WEBHOOK] Payment not found for ref={ref}")
+            return HttpResponse("Payment not found", status=404)
         
         logger.info(f"[WEBHOOK] Found payment: id={payment.id}, current_status={payment.status}, booking={payment.booking.id if payment.booking else 'None'}")
         
