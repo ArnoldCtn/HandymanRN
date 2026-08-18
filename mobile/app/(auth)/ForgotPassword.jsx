@@ -25,7 +25,7 @@ export default function ForgotPasswordScreen() {
     try {
       await api.post('/users/password-reset/request/', { email });
       router.push({
-        pathname: '/(auth)/verifyEmail',
+        pathname: '/(auth)/VerifyAndReset',
         params: { email }
       });
     } catch (e) {

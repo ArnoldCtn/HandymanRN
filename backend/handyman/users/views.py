@@ -7,25 +7,25 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework.authentication import BaseAuthentication
 
 from django.contrib.auth import authenticate, get_user_model
-from .serializers import UserSerializer, SignUpSerializer, UserUpdateSerializer
-from axes.handlers.proxy import AxesProxyHandler
-from django.conf import settings
-from django.core.mail import send_mail, get_connection
-from django.core.mail.backends.console import EmailBackend as ConsoleEmailBackend
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError
+from django.core.mail import send_mail
 from django.utils import timezone
+from django.utils.decorators import method_decorator
+from django.views.decorators.cache import never_cache
+from django.views.decorators.csrf import csrf_exempt
+from axes.handlers.proxy import AxesProxyHandler
+from axes.models import AccessAttempt
+from django.conf import settings
+
 from .models import PasswordResetOTP
+from .serializers import UserSerializer, SignUpSerializer, UserUpdateSerializer
 from handymen.models import Handyman
 import logging
 
 logger = logging.getLogger(__name__)
 
-
 from datetime import timedelta
-from django.utils import timezone
-from django.utils.decorators import method_decorator
-from django.views.decorators.cache import never_cache
-from django.views.decorators.csrf import csrf_exempt
-from axes.models import AccessAttempt
 
 
 FAILURE_LIMIT = 5
@@ -245,185 +245,179 @@ def _check_rate_limit(email):
         email=email,
         created_at__gte=one_hour_ago
     )
-    
+
     if recent_otps.count() >= 3:
         return False, 'Too many OTP requests. Please try again in 1 hour.'
     return True, None
 
 
+def _invalidate_user_sessions(user):
+    """Blacklist all outstanding refresh tokens for a user after password reset."""
+    try:
+        from rest_framework_simplejwt.token_blacklist.models import OutstandingToken
+        tokens = OutstandingToken.objects.filter(user=user)
+        for token in tokens:
+            from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken
+            BlacklistedToken.objects.get_or_create(token=token)
+    except Exception as e:
+        logger.warning(f"Failed to blacklist tokens for {user}: {e}")
+
+
+def _find_user_by_email(email):
+    """Look up a User or Handyman by email. Returns (user, user_type) or (None, None)."""
+    user = User.objects.filter(email__iexact=email).first()
+    if user:
+        return user, 'user'
+    handyman = Handyman.objects.filter(email__iexact=email).first()
+    if handyman:
+        return handyman, 'handyman'
+    return None, None
+
+
+def _send_password_changed_email(email):
+    """Send notification that password was changed."""
+    try:
+        send_mail(
+            'Your password was changed',
+            'Your password has been successfully changed. '
+            'If you did not request this change, please contact support immediately.',
+            settings.DEFAULT_FROM_EMAIL,
+            [email],
+            fail_silently=True,
+            html_message="""
+                <div style="font-family: Arial, sans-serif; text-align: center;">
+                    <h2 style="color: #6366F1;">Password Changed</h2>
+                    <p>Your password has been successfully changed.</p>
+                    <p style="color: #9ca3af;">If you did not request this change, please contact support immediately.</p>
+                </div>
+            """
+        )
+    except Exception as e:
+        logger.warning(f"Failed to send password changed email to {email}: {e}")
+
+
+GENERIC_SUCCESS_MSG = 'If that email is registered, you will receive an OTP.'
+GENERIC_OTP_ERROR = 'Invalid or expired OTP. Please request a new one.'
+
+
 class PasswordResetRequestView(APIView):
+    """Request an OTP for password reset. Always returns the same response
+    regardless of whether the email exists — prevents user enumeration."""
+
     permission_classes = [AllowAny]
 
     def post(self, request):
         email = request.data.get('email')
-        if not email: 
-            return Response({'detail': 'Email required'}, status=400)
-        
+        if not email:
+            return Response({'detail': GENERIC_SUCCESS_MSG}, status=200)
+
         email = email.strip().lower()
-        print(f"[DEBUG] PasswordReset for email: '{email}'")
 
-        # Check users
-        user_matches = User.objects.filter(email__iexact=email)
-        # Check handymen
-        handyman_matches = Handyman.objects.filter(email__iexact=email)
-
-        print(f"[DEBUG] Found {user_matches.count()} users matching email.")
-        print(f"[DEBUG] Found {handyman_matches.count()} handymen matching email.")
-        
-        if user_matches.exists():
-            print(f"[DEBUG] Email '{email}' found in Users.")
-            user_type = 'user'
-        elif handyman_matches.exists():
-            print(f"[DEBUG] Email '{email}' found in Handymen.")
-            user_type = 'handyman'
-        else:
-            print(f"[DEBUG] Email '{email}' NOT found in DB.")
-            return Response({'detail': 'This email does not exist.'}, status=404)
-        
         # Check rate limit
         can_request, error_msg = _check_rate_limit(email)
         if not can_request:
             return Response({'detail': error_msg}, status=429)
-        
-        # Get request metadata
-        ip_address = _get_client_ip(request)
-        user_agent = _get_user_agent(request)
-        
-        # Create OTP with tracking data
-        otp = PasswordResetOTP.objects.create(
-            email=email,
-            user_type=user_type,
-            ip_address=ip_address,
-            user_agent=user_agent
-        )
-        
-        print(f"[DEBUG] OTP created: {otp.otp_code} for {email} from {ip_address}")
-        
-        # Try to send email, fall back to console logging if SMTP fails
-        email_sent = False
-        try:
-            send_mail(
-                'Password Reset OTP',
-                f'Your OTP code is {otp.otp_code}. It expires in 5 minutes.',
-                settings.DEFAULT_FROM_EMAIL,
-                [email],
-                fail_silently=False,
-                html_message=f"""
-                    <div style="font-family: Arial, sans-serif; text-align: center;">
-                        <h2 style="color: #6366F1;">Password Reset</h2>
-                        <p>Your OTP code is:</p>
-                        <h1 style="color: #6366F1; font-size: 32px;">{otp.otp_code}</h1>
-                        <p>It expires in 5 minutes.</p>
-                    </div>
-                """
+
+        # Check if user exists (user or handyman)
+        user, user_type = _find_user_by_email(email)
+
+        if user:
+            ip_address = _get_client_ip(request)
+            user_agent = _get_user_agent(request)
+
+            otp = PasswordResetOTP.objects.create(
+                email=email,
+                user_type=user_type,
+                ip_address=ip_address,
+                user_agent=user_agent
             )
-            email_sent = True
-            print(f"[DEBUG] Email sent successfully to {email}")
-        except Exception as e:
-            # SMTP failed (e.g. DNS resolution error on mobile hotspot)
-            # Fall back to console logging so development doesn't break
-            print(f"[DEBUG] Email sending failed (SMTP): {e}")
-            print(f"[DEBUG] FALLBACK: OTP for {email} is: {otp.otp_code}")
-            print(f"[DEBUG] FALLBACK: OTP expires in 5 minutes")
-            logger.warning(f"Email sending failed for {email}: {e}. OTP {otp.otp_code} logged to console.")
-            email_sent = False
-        
-        return Response({
-            'detail': 'OTP sent successfully' if email_sent else 'OTP generated (email unavailable - check server console)',
-            'otp_code': otp.otp_code if not email_sent else None
-        })
 
-class PasswordResetVerifyView(APIView):
-    permission_classes = [AllowAny]
+            # Try to send email
+            try:
+                send_mail(
+                    'Password Reset OTP',
+                    f'Your OTP code is {otp.otp_code}. It expires in 5 minutes.',
+                    settings.DEFAULT_FROM_EMAIL,
+                    [email],
+                    fail_silently=False,
+                    html_message=f"""
+                        <div style="font-family: Arial, sans-serif; text-align: center;">
+                            <h2 style="color: #6366F1;">Password Reset</h2>
+                            <p>Your OTP code is:</p>
+                            <h1 style="color: #6366F1; font-size: 32px;">{otp.otp_code}</h1>
+                            <p>It expires in 5 minutes.</p>
+                        </div>
+                    """
+                )
+            except Exception as e:
+                logger.warning(f"Email sending failed for {email}: {e}")
 
-    def post(self, request):
-        email = request.data.get('email')
-        code = request.data.get('otp_code')
-        
-        if not email or not code:
-            return Response({'detail': 'Email and OTP code are required'}, status=400)
-        
-        # Get the most recent valid OTP for this email
-        otp = PasswordResetOTP.objects.filter(
-            email=email, 
-            otp_code=code,
-            is_used=False
-        ).order_by('-created_at').first()
-        
-        # Validate OTP
-        if not otp:
-            return Response({'detail': 'Invalid or expired OTP'}, status=400)
-        
-        if otp.is_expired():
-            return Response({'detail': 'OTP has expired. Please request a new one.'}, status=400)
-        
-        if otp.is_locked():
-            return Response({
-                'detail': 'OTP locked due to too many failed attempts. Please request a new one.'
-            }, status=400)
-        
-        # Increment attempt counter
-        otp.increment_attempts()
-        
-        # Check if locked after increment
-        if otp.is_locked():
-            return Response({
-                'detail': 'Too many failed attempts. OTP locked. Please request a new one.'
-            }, status=400)
-        
-        # Success - mark as verified
-        otp.mark_as_used()
-        
-        print(f"[DEBUG] OTP verified successfully for {email} from {otp.ip_address}")
-        
-        return Response({'detail': 'OTP verified successfully'})
+        # Always return the same response — never reveal whether email exists
+        return Response({'detail': GENERIC_SUCCESS_MSG}, status=200)
 
-class PasswordResetConfirmView(APIView):
+
+class PasswordResetVerifyAndConfirmView(APIView):
+    """Verify OTP and reset password in a single atomic step.
+    Accepts: {email, otp_code, password}
+    This replaces the separate verify and confirm endpoints to avoid
+    the race condition where verify marks OTP as used before confirm
+    can find it."""
+
     permission_classes = [AllowAny]
 
     def post(self, request):
         email = request.data.get('email')
         code = request.data.get('otp_code')
         password = request.data.get('password')
-        
+
         if not email or not code or not password:
-            return Response({'detail': 'Email, OTP code, and password are required'}, status=400)
-        
-        # Get the most recent valid OTP
+            return Response({'detail': GENERIC_OTP_ERROR}, status=400)
+
+        email = email.strip().lower()
+
+        # Find the most recent valid OTP
         otp = PasswordResetOTP.objects.filter(
-            email=email, 
+            email=email,
             otp_code=code,
             is_used=False
         ).order_by('-created_at').first()
-        
-        # Validate OTP
-        if not otp:
-            return Response({'detail': 'Invalid or expired OTP'}, status=400)
-        
-        if otp.is_expired():
-            return Response({'detail': 'OTP has expired. Please request a new one.'}, status=400)
-        
+
+        # Validate OTP — all failures return the same generic error
+        if not otp or otp.is_expired() or otp.is_locked():
+            return Response({'detail': GENERIC_OTP_ERROR}, status=400)
+
+        # Increment attempt counter
+        otp.increment_attempts()
+
+        # Check if locked after increment
         if otp.is_locked():
-            return Response({
-                'detail': 'OTP locked due to too many failed attempts. Please request a new one.'
-            }, status=400)
-        
-        # Find and update the user
-        user = User.objects.filter(email=email).first()
-        if user:
-            user.set_password(password)
-            user.save()
-        else:
-            handyman = Handyman.objects.filter(email=email).first()
-            if handyman:
-                handyman.set_password(password)
-                handyman.save()
-            else:
-                return Response({'detail': 'User not found'}, status=404)
-        
-        # Mark OTP as used and record verification time
+            return Response({'detail': GENERIC_OTP_ERROR}, status=400)
+
+        # Validate password strength
+        user_obj, _ = _find_user_by_email(email)
+        if not user_obj:
+            return Response({'detail': GENERIC_OTP_ERROR}, status=400)
+
+        try:
+            validate_password(password, user=user_obj)
+        except ValidationError as e:
+            # Return password-specific errors (not OTP-related)
+            return Response(
+                {'detail': 'Password does not meet requirements.', 'errors': e.messages},
+                status=400
+            )
+
+        # Set new password
+        user_obj.set_password(password)
+        user_obj.save()
+
+        # Mark OTP as used
         otp.mark_as_used()
-        
-        print(f"[DEBUG] Password reset completed for {email} (user_type: {otp.user_type})")
-        
-        return Response({'detail': 'Password updated successfully'})
+
+        # Invalidate all existing sessions for this user
+        _invalidate_user_sessions(user_obj)
+
+        # Send notification email
+        _send_password_changed_email(email)
+
+        return Response({'detail': 'Password updated successfully'}, status=200)

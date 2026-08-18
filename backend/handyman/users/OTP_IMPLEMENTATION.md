@@ -40,7 +40,7 @@ The model now includes comprehensive tracking fields:
 ### 4. API Endpoints
 
 #### POST `/api/users/password-reset/request/`
-Request a password reset OTP.
+Request a password reset OTP. **Always returns the same 200 response** regardless of whether the email exists (prevents user enumeration).
 
 **Request:**
 ```json
@@ -49,10 +49,10 @@ Request a password reset OTP.
 }
 ```
 
-**Response (Success):**
+**Response (Always 200):**
 ```json
 {
-    "detail": "OTP sent successfully"
+    "detail": "If that email is registered, you will receive an OTP."
 }
 ```
 
@@ -63,47 +63,8 @@ Request a password reset OTP.
 }
 ```
 
-**Response (Email Not Found):**
-```json
-{
-    "detail": "This email does not exist."
-}
-```
-
-#### POST `/api/users/password-reset/verify/`
-Verify an OTP code.
-
-**Request:**
-```json
-{
-    "email": "user@example.com",
-    "otp_code": "123456"
-}
-```
-
-**Response (Success):**
-```json
-{
-    "detail": "OTP verified successfully"
-}
-```
-
-**Response (Invalid/Expired):**
-```json
-{
-    "detail": "Invalid or expired OTP"
-}
-```
-
-**Response (Locked):**
-```json
-{
-    "detail": "Too many failed attempts. OTP locked. Please request a new one."
-}
-```
-
-#### POST `/api/users/password-reset/confirm/`
-Reset password with verified OTP.
+#### POST `/api/users/password-reset/verify-and-confirm/`
+Verify OTP and reset password in a **single atomic step**. This replaces the separate verify and confirm endpoints to avoid the race condition where verify marks OTP as used before confirm can find it.
 
 **Request:**
 ```json
@@ -118,6 +79,21 @@ Reset password with verified OTP.
 ```json
 {
     "detail": "Password updated successfully"
+}
+```
+
+**Response (Invalid/Expired OTP):**
+```json
+{
+    "detail": "Invalid or expired OTP. Please request a new one."
+}
+```
+
+**Response (Weak Password):**
+```json
+{
+    "detail": "Password does not meet requirements.",
+    "errors": ["This password is too short."]
 }
 ```
 
@@ -167,40 +143,35 @@ Access the Django admin to view and monitor OTPs:
 ### Flow Diagram
 
 ```
-1. User requests password reset
+1. User requests password reset (enters email)
    ↓
-2. System checks rate limit (3/hour)
+2. System checks rate limit (3/hour per email)
    ↓
-3. System validates email exists (User or Handyman)
+3. System checks if email exists (User or Handyman)
+   - If exists: creates OTP, sends email
+   - If not: does nothing
    ↓
-4. System creates OTP with tracking data
-   - Generates 6-digit code
-   - Records IP address
-   - Records user agent
-   - Sets 5-minute expiration
+4. System ALWAYS returns the same response (anti-enumeration)
    ↓
 5. OTP sent via email (Gmail SMTP)
    ↓
-6. User enters OTP on phone
+6. User enters OTP + new password on single screen
    ↓
-7. System verifies OTP
-   - Checks if OTP exists and not expired
-   - Checks if OTP is not locked
+7. System verifies OTP and resets password ATOMICALLY:
+   - Validates OTP exists, not expired, not locked
    - Increments attempt counter
-   - Locks if max attempts reached
-   ↓
-8. If valid, OTP marked as used
-   ↓
-9. User sets new password
-   ↓
-10. Password updated and OTP marked as verified
+   - Validates password strength (Django validators)
+   - Sets new password
+   - Marks OTP as used
+   - Blacklists all existing sessions for the user
+   - Sends "password changed" notification email
 ```
 
 ### OTP Lifecycle
 
-1. **Created:** OTP generated and stored with 5-minute expiry
-2. **Active:** OTP can be verified (max 3 attempts)
-3. **Used:** OTP successfully verified and password reset
+1. **Created:** OTP generated with `secrets` module (cryptographically secure) and stored with 5-minute expiry
+2. **Active:** OTP can be verified+reset (max 3 attempts)
+3. **Used:** OTP successfully verified and password reset (atomic operation)
 4. **Expired:** OTP passed 5-minute validity
 5. **Locked:** OTP locked after 3 failed verification attempts
 6. **Cleaned:** OTP deleted after 24 hours (used/expired/locked)
@@ -208,21 +179,20 @@ Access the Django admin to view and monitor OTPs:
 ## Security Considerations
 
 ### Implemented Protections:
-1. **Rate Limiting:** Prevents OTP bombing attacks
-2. **Attempt Tracking:** Detects and prevents brute force
-3. **IP Logging:** Enables forensic analysis
-4. **User Agent Logging:** Tracks devices/browsers
-5. **OTP Locking:** Locks OTP after failed attempts
-6. **Short Expiry:** 5-minute OTP validity
-7. **One-Time Use:** OTP marked as used after verification
-
-### Best Practices:
-1. Monitor admin panel for suspicious patterns
-2. Review locked OTPs regularly
-3. Check rate limit logs for abuse
-4. Run cleanup command regularly
-5. Use HTTPS in production
-6. Monitor email delivery rates
+1. **Anti-Enumeration:** Request endpoint always returns same 200 response
+2. **Rate Limiting:** Prevents OTP bombing attacks (3/hour per email)
+3. **Attempt Tracking:** Detects and prevents brute force (3 max per OTP)
+4. **IP Logging:** Enables forensic analysis
+5. **User Agent Logging:** Tracks devices/browsers
+6. **OTP Locking:** Locks OTP after failed attempts
+7. **Short Expiry:** 5-minute OTP validity
+8. **One-Time Use:** OTP marked as used after verification
+9. **Cryptographic OTP:** Generated with `secrets` module, not `random`
+10. **Password Validation:** Django validators enforce strength requirements
+11. **Session Invalidation:** All existing JWT refresh tokens blacklisted on reset
+12. **Notification Email:** User informed when password is changed
+13. **Generic Errors:** All OTP failures return the same error message
+14. **Atomic Reset:** Verify+confirm merged to prevent race conditions
 
 ## Testing
 
@@ -235,25 +205,18 @@ Access the Django admin to view and monitor OTPs:
      -d '{"email": "test@example.com"}'
    ```
 
-2. **Test OTP Verification:**
+2. **Test Verify and Reset (single step):**
    ```bash
-   curl -X POST http://localhost:8000/api/users/password-reset/verify/ \
+   curl -X POST http://localhost:8000/api/users/password-reset/verify-and-confirm/ \
      -H "Content-Type: application/json" \
-     -d '{"email": "test@example.com", "otp_code": "123456"}'
+     -d '{"email": "test@example.com", "otp_code": "123456", "password": "NewStrongPass1!"}'
    ```
 
-3. **Test Password Reset:**
-   ```bash
-   curl -X POST http://localhost:8000/api/users/password-reset/confirm/ \
-     -H "Content-Type: application/json" \
-     -d '{"email": "test@example.com", "otp_code": "123456", "password": "newPass123"}'
-   ```
-
-4. **Test Rate Limiting:**
+3. **Test Rate Limiting:**
    - Request OTP 4 times within an hour
    - 4th request should be rate limited
 
-5. **Test Attempt Locking:**
+4. **Test Attempt Locking:**
    - Request OTP
    - Try wrong OTP 3 times
    - 4th attempt should be locked
@@ -292,6 +255,7 @@ CREATE TABLE users_passwordresetotp (
 2. Verify OTP hasn't been locked (3 failed attempts)
 3. Ensure email matches exactly
 4. Check OTP hasn't been used already
+5. Verify password meets Django's AUTH_PASSWORD_VALIDATORS requirements
 
 ### Rate limit issues:
 1. Wait 1 hour for rate limit to reset

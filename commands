@@ -17,6 +17,10 @@ https://sharpie-carless-rimless.ngrok-free.dev/
 
  $env:DATABASE_URL="postgresql://postgres:lfTjZUyGlWUdFlTfIOxBnLdYPopLKdzb@yamabiko.proxy.rlwy.net:33466/railway"; python manage.py migrate
 
+
+python manage.py retry_payouts --dry-run    # preview what it would send
+python manage.py retry_payouts              # actually retry pending/failed payouts
+Note: payout for booking 4 (7.0 XAF) will remain skipped by design — below MeSomb's 10 XAF minimum. Retry only matters for real amounts (share ≥ 10 XAF).
  
 ngrok http 8000
 ngrok http --url=sharpie-carless-rimless.ngrok-free.dev 80

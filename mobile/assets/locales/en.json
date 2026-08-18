@@ -58,6 +58,7 @@
     "verify_otp": "Verify OTP",
     "otp_desc": "Enter the 6-digit code sent to your email",
     "otp_code": "OTP Code",
+    "otp_fallback": "OTP code: {{code}}",
     "reset_password": "Reset Password",
     "new_password": "New Password",
     "password_updated": "Password updated!",

@@ -1,7 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.utils import timezone
-import random
+import secrets
 
 # Create your models here.
 
@@ -97,7 +97,7 @@ class PasswordResetOTP(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.otp_code:
-            self.otp_code = str(random.randint(100000, 999999))
+            self.otp_code = str(secrets.randbelow(900000) + 100000)
         if not self.expires_at:
             self.expires_at = timezone.now() + timezone.timedelta(minutes=5)
         super().save(*args, **kwargs)
