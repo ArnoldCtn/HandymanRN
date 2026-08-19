@@ -161,9 +161,9 @@
                 console.log("New conversation started, refresh recommended");
             }
 
-            // 3. If this is the currently open chat, append it
+            // 3. If this is the currently open chat, scroll only
+            //    (room-specific socket already appends the message)
             if (currentRoom === roomName) {
-                appendMessage(msg);
                 scrollToBottom();
             }
         }
