@@ -11,13 +11,12 @@ import { useAppTheme } from '@/hooks/use-theme-color';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 
-export default function VerifyAndResetScreen() {
+export default function ResetPasswordScreen() {
   const { t } = useTranslation();
   const theme = useAppTheme();
   const router = useRouter();
-  const { email } = useLocalSearchParams();
+  const { email, otp_code } = useLocalSearchParams();
 
-  const [otp_code, setOtpCode] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -26,10 +25,6 @@ export default function VerifyAndResetScreen() {
   const [showConfirm, setShowConfirm] = useState(false);
 
   async function onReset() {
-    if (!otp_code.trim()) {
-      setToast({ visible: true, message: t('auth.otp_required', 'Please enter the OTP code'), type: 'error' });
-      return;
-    }
     if (!password.trim()) {
       setToast({ visible: true, message: t('auth.password_required'), type: 'error' });
       return;
@@ -47,8 +42,8 @@ export default function VerifyAndResetScreen() {
     try {
       await api.post('/users/password-reset/verify-and-confirm/', {
         email,
-        otp_code: otp_code.trim(),
-        password
+        otp_code,
+        password,
       });
       setToast({ visible: true, message: t('auth.password_updated', 'Password updated!'), type: 'success' });
       setTimeout(() => router.replace('/(auth)/SignIn'), 1500);
@@ -62,7 +57,7 @@ export default function VerifyAndResetScreen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={{ flex: 1 }}>
-        <Toast visible={toast.visible} message={toast.message} type={toast.type} onHide={() => setToast(t => ({...t, visible:false}))} />
+        <Toast visible={toast.visible} message={toast.message} type={toast.type} onHide={() => setToast(t => ({ ...t, visible: false }))} />
 
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -73,20 +68,12 @@ export default function VerifyAndResetScreen() {
               <Ionicons name="arrow-back" size={24} color={theme.text} />
             </TouchableOpacity>
 
-            <ThemedText type="title" style={styles.title}>{t('auth.verify_and_reset', 'Verify & Reset Password')}</ThemedText>
-            <ThemedText type="secondary" style={styles.subtitle}>
-              {t('auth.verify_and_reset_desc', 'Enter the OTP sent to your email and set a new password')}
+            <ThemedText type="title" style={styles.title}>
+              {t('auth.new_password', 'New Password')}
             </ThemedText>
-
-            <Input
-              title={t('auth.otp_code', 'OTP Code')}
-              value={otp_code}
-              setValue={setOtpCode}
-              placeholder="123456"
-              keyboardType="numeric"
-              maxLength={6}
-              autoFocus={true}
-            />
+            <ThemedText type="secondary" style={styles.subtitle}>
+              {t('auth.new_password_desc', 'Create a strong password for your account')}
+            </ThemedText>
 
             <Input
               title={t('auth.new_password', 'New Password')}
@@ -96,14 +83,18 @@ export default function VerifyAndResetScreen() {
               secureTextEntry={!showPassword}
             />
             <TouchableOpacity
-              style={styles.eyeButton}
+              style={styles.seePasswordRow}
               onPress={() => setShowPassword(s => !s)}
+              activeOpacity={0.6}
             >
               <Ionicons
-                name={showPassword ? 'eye-outline' : 'eye-off-outline'}
+                name={showPassword ? 'checkmark-square-outline' : 'square-outline'}
                 size={20}
-                color={theme.icon}
+                color={theme.primary}
               />
+              <ThemedText type="secondary" style={styles.seePasswordText}>
+                {t('auth.see_password', 'See password')}
+              </ThemedText>
             </TouchableOpacity>
 
             <Input
@@ -114,14 +105,18 @@ export default function VerifyAndResetScreen() {
               secureTextEntry={!showConfirm}
             />
             <TouchableOpacity
-              style={styles.eyeButtonConfirm}
+              style={styles.seePasswordRow}
               onPress={() => setShowConfirm(s => !s)}
+              activeOpacity={0.6}
             >
               <Ionicons
-                name={showConfirm ? 'eye-outline' : 'eye-off-outline'}
+                name={showConfirm ? 'checkmark-square-outline' : 'square-outline'}
                 size={20}
-                color={theme.icon}
+                color={theme.primary}
               />
+              <ThemedText type="secondary" style={styles.seePasswordText}>
+                {t('auth.see_password', 'See password')}
+              </ThemedText>
             </TouchableOpacity>
 
             {loading ? (
@@ -142,16 +137,13 @@ const styles = StyleSheet.create({
   backBtn: { marginBottom: 20 },
   title: { textAlign: 'center', marginBottom: 10 },
   subtitle: { textAlign: 'center', marginBottom: 30 },
-  eyeButton: {
-    position: 'absolute',
-    right: 36,
-    top: 258,
-    padding: 4,
+  seePasswordRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: -2,
+    marginBottom: 12,
+    paddingLeft: 4,
   },
-  eyeButtonConfirm: {
-    position: 'absolute',
-    right: 36,
-    top: 340,
-    padding: 4,
-  },
+  seePasswordText: { fontSize: 14 },
 });

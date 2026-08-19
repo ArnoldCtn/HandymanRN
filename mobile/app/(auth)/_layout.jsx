@@ -8,7 +8,7 @@ export const unstable_settings = {
   initialRouteName: 'index',
 };
 
-const PUBLIC_SCREENS = ['SignIn', 'SignUp', 'ForgotPassword', 'VerifyAndReset'];
+const PUBLIC_SCREENS = ['SignIn', 'SignUp', 'ForgotPassword', 'EnterOTP', 'ResetPassword'];
 
 export default function AuthLayout() {
   const initialized   = useGlobal(state => state.initialized);
@@ -70,7 +70,8 @@ export default function AuthLayout() {
       <Stack.Screen name="PINSettings" />
       <Stack.Screen name="search" />
       <Stack.Screen name="ForgotPassword" />
-      <Stack.Screen name="VerifyAndReset" />
+      <Stack.Screen name="EnterOTP" />
+      <Stack.Screen name="ResetPassword" />
     </Stack>
   );
 }

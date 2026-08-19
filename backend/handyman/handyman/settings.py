@@ -85,13 +85,17 @@ AUTH_USER_MODEL = 'users.User'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # ── Email Configuration ──────────────────────────────────────────
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = os.getenv('MAIL_HOST')
+EMAIL_BACKEND = os.getenv(
+    'EMAIL_BACKEND',
+    'django.core.mail.backends.console.EmailBackend'   # local dev default
+)
+EMAIL_HOST = os.getenv('MAIL_HOST', '')
 EMAIL_PORT = int(os.getenv('MAIL_PORT', 587))
 EMAIL_USE_TLS = os.getenv('MAIL_USE_TLS', 'true').lower() == 'true'
-EMAIL_HOST_USER = os.getenv('MAIL_HOST_USER')
-EMAIL_HOST_PASSWORD = os.getenv('MAIL_HOST_PASSWORD')
-DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+EMAIL_HOST_USER = os.getenv('MAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.getenv('MAIL_HOST_PASSWORD', '')
+EMAIL_TIMEOUT = 5
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER or 'noreply@handyman.com'
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES':(

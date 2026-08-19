@@ -235,19 +235,41 @@ def _get_user_agent(request):
     return request.META.get('HTTP_USER_AGENT', '')[:500]  # Limit length
 
 
-def _check_rate_limit(email):
+def _check_rate_limit(email, ip_address=None):
     """
-    Check if rate limit exceeded for OTP requests.
-    Max 3 OTPs per hour per email.
+    Multi-tier rate limiting for OTP requests.
+    Returns (allowed: bool, error_message: str | None).
     """
-    one_hour_ago = timezone.now() - timedelta(hours=1)
-    recent_otps = PasswordResetOTP.objects.filter(
-        email=email,
-        created_at__gte=one_hour_ago
-    )
+    now = timezone.now()
 
-    if recent_otps.count() >= 3:
-        return False, 'Too many OTP requests. Please try again in 1 hour.'
+    # 1) Resend cooldown — max 1 request per 60s per email
+    if PasswordResetOTP.objects.filter(
+        email=email, created_at__gte=now - timedelta(seconds=60)
+    ).exists():
+        return False, 'Please wait a minute before requesting a new code.'
+
+    # 2) Hourly limit — max 5 per email per hour
+    hourly_count = PasswordResetOTP.objects.filter(
+        email=email, created_at__gte=now - timedelta(hours=1)
+    ).count()
+    if hourly_count >= 5:
+        return False, 'Too many requests. Please try again in 1 hour.'
+
+    # 3) Daily limit — max 10 per email per 24h
+    daily_count = PasswordResetOTP.objects.filter(
+        email=email, created_at__gte=now - timedelta(hours=24)
+    ).count()
+    if daily_count >= 10:
+        return False, 'Too many requests today. Please try again tomorrow.'
+
+    # 4) IP limit — max 5 per IP per hour
+    if ip_address:
+        ip_count = PasswordResetOTP.objects.filter(
+            ip_address=ip_address, created_at__gte=now - timedelta(hours=1)
+        ).count()
+        if ip_count >= 5:
+            return False, 'Too many requests from your network. Please try again later.'
+
     return True, None
 
 
@@ -314,7 +336,8 @@ class PasswordResetRequestView(APIView):
         email = email.strip().lower()
 
         # Check rate limit
-        can_request, error_msg = _check_rate_limit(email)
+        ip_address = _get_client_ip(request)
+        can_request, error_msg = _check_rate_limit(email, ip_address)
         if not can_request:
             return Response({'detail': error_msg}, status=429)
 
@@ -322,7 +345,6 @@ class PasswordResetRequestView(APIView):
         user, user_type = _find_user_by_email(email)
 
         if user:
-            ip_address = _get_client_ip(request)
             user_agent = _get_user_agent(request)
 
             otp = PasswordResetOTP.objects.create(
@@ -339,7 +361,7 @@ class PasswordResetRequestView(APIView):
                     f'Your OTP code is {otp.otp_code}. It expires in 5 minutes.',
                     settings.DEFAULT_FROM_EMAIL,
                     [email],
-                    fail_silently=False,
+                    fail_silently=True,
                     html_message=f"""
                         <div style="font-family: Arial, sans-serif; text-align: center;">
                             <h2 style="color: #6366F1;">Password Reset</h2>
@@ -354,6 +376,34 @@ class PasswordResetRequestView(APIView):
 
         # Always return the same response — never reveal whether email exists
         return Response({'detail': GENERIC_SUCCESS_MSG}, status=200)
+
+
+class PasswordResetVerifyView(APIView):
+    """Verify that an OTP is valid without using it.
+    Accepts: {email, otp_code}
+    Returns 200 if valid, 400 if not."""
+
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        email = request.data.get('email')
+        code = request.data.get('otp_code')
+
+        if not email or not code:
+            return Response({'detail': GENERIC_OTP_ERROR}, status=400)
+
+        email = email.strip().lower()
+
+        otp = PasswordResetOTP.objects.filter(
+            email=email,
+            otp_code=code,
+            is_used=False
+        ).order_by('-created_at').first()
+
+        if not otp or otp.is_expired() or otp.is_locked():
+            return Response({'detail': GENERIC_OTP_ERROR}, status=400)
+
+        return Response({'detail': 'OTP verified successfully'}, status=200)
 
 
 class PasswordResetVerifyAndConfirmView(APIView):
