@@ -21,6 +21,7 @@ from django.conf import settings
 from .models import PasswordResetOTP
 from .serializers import UserSerializer, SignUpSerializer, UserUpdateSerializer
 from handymen.models import Handyman
+import threading
 import logging
 
 logger = logging.getLogger(__name__)
@@ -276,10 +277,11 @@ def _check_rate_limit(email, ip_address=None):
 def _invalidate_user_sessions(user):
     """Blacklist all outstanding refresh tokens for a user after password reset."""
     try:
-        from rest_framework_simplejwt.token_blacklist.models import OutstandingToken
+        from rest_framework_simplejwt.token_blacklist.models import OutstandingToken, BlacklistedToken
+        if isinstance(user, Handyman):
+            return  # Handyman tokens aren't tracked in OutstandingToken
         tokens = OutstandingToken.objects.filter(user=user)
         for token in tokens:
-            from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken
             BlacklistedToken.objects.get_or_create(token=token)
     except Exception as e:
         logger.warning(f"Failed to blacklist tokens for {user}: {e}")
@@ -297,28 +299,35 @@ def _find_user_by_email(email):
 
 
 def _send_password_changed_email(email):
-    """Send notification that password was changed."""
+    """Send notification that password was changed (background thread)."""
     try:
-        print(f"[EMAIL] Sending password-changed notification to {email}...")
-        send_mail(
-            'Your password was changed',
-            'Your password has been successfully changed. '
-            'If you did not request this change, please contact support immediately.',
-            settings.DEFAULT_FROM_EMAIL,
-            [email],
-            fail_silently=True,
-            html_message="""
-                <div style="font-family: Arial, sans-serif; text-align: center;">
-                    <h2 style="color: #6366F1;">Password Changed</h2>
-                    <p>Your password has been successfully changed.</p>
-                    <p style="color: #9ca3af;">If you did not request this change, please contact support immediately.</p>
-                </div>
-            """
+        print(f"[EMAIL] Queuing password-changed notification to {email}...")
+        thread = threading.Thread(
+            target=send_mail,
+            args=(
+                'Your password was changed',
+                'Your password has been successfully changed. '
+                'If you did not request this change, please contact support immediately.',
+                settings.DEFAULT_FROM_EMAIL,
+                [email],
+            ),
+            kwargs={
+                'fail_silently': True,
+                'html_message': """
+                    <div style="font-family: Arial, sans-serif; text-align: center;">
+                        <h2 style="color: #6366F1;">Password Changed</h2>
+                        <p>Your password has been successfully changed.</p>
+                        <p style="color: #9ca3af;">If you did not request this change, please contact support immediately.</p>
+                    </div>
+                """
+            },
+            daemon=True
         )
-        print(f"[EMAIL] Password-changed email sent to {email}")
+        thread.start()
+        print(f"[EMAIL] Password-changed email queued (background thread)")
     except Exception as e:
-        print(f"[EMAIL] FAILED to send password-changed email to {email}: {e}")
-        logger.warning(f"Failed to send password changed email to {email}: {e}")
+        print(f"[EMAIL] FAILED to queue password-changed email to {email}: {e}")
+        logger.warning(f"Failed to queue password changed email to {email}: {e}")
 
 
 GENERIC_SUCCESS_MSG = 'If that email is registered, you will receive an OTP.'
@@ -359,29 +368,37 @@ class PasswordResetRequestView(APIView):
                 user_agent=user_agent
             )
 
-            # Try to send email
+            # Try to send email (background thread — non-blocking)
             try:
-                print(f"[EMAIL] Sending OTP to {email} via Brevo...")
+                print(f"[EMAIL] Queuing OTP to {email} via Brevo...")
                 print(f"[EMAIL] Backend: {settings.EMAIL_BACKEND}")
                 print(f"[EMAIL] From: {settings.DEFAULT_FROM_EMAIL}")
-                send_mail(
-                    'Password Reset OTP',
-                    f'Your OTP code is {otp.otp_code}. It expires in 5 minutes.',
-                    settings.DEFAULT_FROM_EMAIL,
-                    [email],
-                    fail_silently=False,
-                    html_message=f"""
-                        <div style="font-family: Arial, sans-serif; text-align: center;">
-                            <h2 style="color: #6366F1;">Password Reset</h2>
-                            <p>Your OTP code is:</p>
-                            <h1 style="color: #6366F1; font-size: 32px;">{otp.otp_code}</h1>
-                            <p>It expires in 5 minutes.</p>
-                        </div>
-                    """
+                otp_code = otp.otp_code
+                thread = threading.Thread(
+                    target=send_mail,
+                    args=(
+                        'Password Reset OTP',
+                        f'Your OTP code is {otp_code}. It expires in 5 minutes.',
+                        settings.DEFAULT_FROM_EMAIL,
+                        [email],
+                    ),
+                    kwargs={
+                        'fail_silently': True,
+                        'html_message': f"""
+                            <div style="font-family: Arial, sans-serif; text-align: center;">
+                                <h2 style="color: #6366F1;">Password Reset</h2>
+                                <p>Your OTP code is:</p>
+                                <h1 style="color: #6366F1; font-size: 32px;">{otp_code}</h1>
+                                <p>It expires in 5 minutes.</p>
+                            </div>
+                        """
+                    },
+                    daemon=True
                 )
-                print(f"[EMAIL] OTP email sent successfully to {email}")
+                thread.start()
+                print(f"[EMAIL] OTP email queued (background thread)")
             except Exception as e:
-                print(f"[EMAIL] FAILED to send OTP to {email}: {e}")
+                print(f"[EMAIL] FAILED to queue OTP to {email}: {e}")
                 logger.warning(f"Email sending failed for {email}: {e}")
         else:
             print(f"[PASSWORD-RESET] No user found for email: {email}")
