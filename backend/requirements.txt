@@ -33,6 +33,7 @@ django-two-factor-auth==1.18.1
 dj-rest-auth==7.0.1
 pyotp==2.9.0
 google-auth==2.53.0
+django-anymail[brevo]
 
 # === Environment & Config ===
 django-environ==0.13.0

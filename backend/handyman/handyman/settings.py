@@ -84,18 +84,18 @@ DATA_UPLOAD_MAX_MEMORY_SIZE = 25 * 1024 * 1024  # 25 MB
 AUTH_USER_MODEL = 'users.User'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# ── Email Configuration ──────────────────────────────────────────
+# ── Email Configuration (Brevo REST API — HTTPS port 443) ──────────
 EMAIL_BACKEND = os.getenv(
     'EMAIL_BACKEND',
-    'django.core.mail.backends.console.EmailBackend'   # local dev default
+    'anymail.backends.brevo.EmailBackend'   # Brevo REST API (works on Railway)
 )
-EMAIL_HOST = os.getenv('MAIL_HOST', '')
-EMAIL_PORT = int(os.getenv('MAIL_PORT', 587))
-EMAIL_USE_TLS = os.getenv('MAIL_USE_TLS', 'true').lower() == 'true'
-EMAIL_HOST_USER = os.getenv('MAIL_HOST_USER', '')
-EMAIL_HOST_PASSWORD = os.getenv('MAIL_HOST_PASSWORD', '')
-EMAIL_TIMEOUT = 5
-DEFAULT_FROM_EMAIL = EMAIL_HOST_USER or 'noreply@handyman.com'
+
+ANYMAIL = {
+    "BREVO_API_KEY": os.getenv("BREVO_API_KEY", ""),
+}
+
+EMAIL_TIMEOUT = 10
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'ctnarnold@gmail.com')
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES':(
@@ -176,6 +176,7 @@ INSTALLED_APPS = [
     'favorites',
     'django_extensions',
     'reports',
+    'anymail',
 ]
 
 

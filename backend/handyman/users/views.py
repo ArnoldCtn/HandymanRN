@@ -361,7 +361,7 @@ class PasswordResetRequestView(APIView):
                     f'Your OTP code is {otp.otp_code}. It expires in 5 minutes.',
                     settings.DEFAULT_FROM_EMAIL,
                     [email],
-                    fail_silently=True,
+                    fail_silently=False,
                     html_message=f"""
                         <div style="font-family: Arial, sans-serif; text-align: center;">
                             <h2 style="color: #6366F1;">Password Reset</h2>
