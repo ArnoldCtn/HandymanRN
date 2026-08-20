@@ -299,6 +299,7 @@ def _find_user_by_email(email):
 def _send_password_changed_email(email):
     """Send notification that password was changed."""
     try:
+        print(f"[EMAIL] Sending password-changed notification to {email}...")
         send_mail(
             'Your password was changed',
             'Your password has been successfully changed. '
@@ -314,7 +315,9 @@ def _send_password_changed_email(email):
                 </div>
             """
         )
+        print(f"[EMAIL] Password-changed email sent to {email}")
     except Exception as e:
+        print(f"[EMAIL] FAILED to send password-changed email to {email}: {e}")
         logger.warning(f"Failed to send password changed email to {email}: {e}")
 
 
@@ -329,6 +332,7 @@ class PasswordResetRequestView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
+        print(f"[PASSWORD-RESET] Request received. Data: {request.data}")
         email = request.data.get('email')
         if not email:
             return Response({'detail': GENERIC_SUCCESS_MSG}, status=200)
@@ -345,6 +349,7 @@ class PasswordResetRequestView(APIView):
         user, user_type = _find_user_by_email(email)
 
         if user:
+            print(f"[PASSWORD-RESET] User found: {email} (type: {user_type})")
             user_agent = _get_user_agent(request)
 
             otp = PasswordResetOTP.objects.create(
@@ -356,6 +361,9 @@ class PasswordResetRequestView(APIView):
 
             # Try to send email
             try:
+                print(f"[EMAIL] Sending OTP to {email} via Brevo...")
+                print(f"[EMAIL] Backend: {settings.EMAIL_BACKEND}")
+                print(f"[EMAIL] From: {settings.DEFAULT_FROM_EMAIL}")
                 send_mail(
                     'Password Reset OTP',
                     f'Your OTP code is {otp.otp_code}. It expires in 5 minutes.',
@@ -371,8 +379,12 @@ class PasswordResetRequestView(APIView):
                         </div>
                     """
                 )
+                print(f"[EMAIL] OTP email sent successfully to {email}")
             except Exception as e:
+                print(f"[EMAIL] FAILED to send OTP to {email}: {e}")
                 logger.warning(f"Email sending failed for {email}: {e}")
+        else:
+            print(f"[PASSWORD-RESET] No user found for email: {email}")
 
         # Always return the same response — never reveal whether email exists
         return Response({'detail': GENERIC_SUCCESS_MSG}, status=200)
