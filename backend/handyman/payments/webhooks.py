@@ -8,6 +8,45 @@ from bookings.models import Booking
 
 logger = logging.getLogger(__name__)
 
+# Messages that carry no usable reason for users/admins. MeSomb sends our own
+# merchant name ("By HandymanWest") in the webhook `message` field, and older
+# code stored raw Python errors like "TypeError: 'NoneType' ...".
+_JUNK_MESSAGE_MARKERS = ('by handymanwest', 'handymanwest', 'typeerror', 'nonetype')
+_DEFAULT_FAILED_MESSAGE = 'Payment failed. Please check your mobile money account and try again.'
+_DEFAULT_CANCELLED_MESSAGE = 'Transaction cancelled: You cancelled the payment on your phone. Please try again if you want to proceed.'
+_TERMINAL_SUCCESS_STATUSES = ('collected', 'completed', 'split', 'refunded')
+
+
+def _message_is_actionable(message):
+    """True when a failure message carries a usable reason."""
+    if not message or not str(message).strip():
+        return False
+    normalized = str(message).strip().lower()
+    return not any(marker in normalized for marker in _JUNK_MESSAGE_MARKERS)
+
+
+def _failure_details_from_webhook(incoming, current):
+    """
+    Pick the best (message, error_code) pair for a failed payment.
+    Never degrades an existing specific message with generic webhook noise.
+    """
+    if _message_is_actionable(current):
+        return current, None
+
+    incoming_text = (incoming or '').strip()
+    if _message_is_actionable(incoming_text):
+        mapped = None
+        try:
+            from .services import MeSombService
+            mapped = MeSombService()._map_mesomb_error(incoming_text)
+        except Exception as e:
+            logger.warning(f"[WEBHOOK] Could not map webhook message: {e}")
+        if mapped and mapped['code'] != 'UNKNOWN_ERROR':
+            return mapped['message'], mapped['code']
+        return incoming_text, None
+
+    return _DEFAULT_FAILED_MESSAGE, 'UNKNOWN_ERROR'
+
 @csrf_exempt
 def mesomb_webhook(request):
     if request.method != 'POST':
@@ -63,18 +102,41 @@ def mesomb_webhook(request):
                 logger.info(f"[WEBHOOK] Payment {payment.id} marked as collected")
                 
         elif status == 'FAILED':
+            # Never downgrade a terminal success state
+            if payment.status in _TERMINAL_SUCCESS_STATUSES:
+                logger.warning(f"[WEBHOOK] Ignoring FAILED webhook for payment {payment.id}: already '{payment.status}'")
+                return HttpResponse("OK", status=200)
+
+            new_message, new_code = _failure_details_from_webhook(
+                data.get('message'), payment.error_message
+            )
             payment.status = 'failed'
             payment.collect_status = 'FAILED'
-            payment.error_message = data.get('message', 'Payment failed via webhook')
+            payment.error_message = new_message
+            if new_code:
+                payment.error_code = new_code
+            elif not payment.error_code:
+                payment.error_code = 'WEBHOOK_FAILED'
             payment.save()
-            logger.info(f"[WEBHOOK] Payment {payment.id} marked as failed: {payment.error_message}")
-            
+            logger.info(f"[WEBHOOK] Payment {payment.id} marked as failed: {payment.error_message} (code={payment.error_code})")
+
         elif status == 'CANCELLED':
+            # Never downgrade a terminal success state
+            if payment.status in _TERMINAL_SUCCESS_STATUSES:
+                logger.warning(f"[WEBHOOK] Ignoring CANCELLED webhook for payment {payment.id}: already '{payment.status}'")
+                return HttpResponse("OK", status=200)
+
+            incoming_text = (data.get('message') or '').strip()
             payment.status = 'failed'
             payment.collect_status = 'CANCELLED'
-            payment.error_message = data.get('message', 'Payment cancelled by user')
+            if _message_is_actionable(incoming_text):
+                payment.error_message = incoming_text
+            elif not _message_is_actionable(payment.error_message):
+                payment.error_message = _DEFAULT_CANCELLED_MESSAGE
+            # A cancellation event is definitive - always override stale codes
+            payment.error_code = 'CANCELLED_BY_USER'
             payment.save()
-            logger.info(f"[WEBHOOK] Payment {payment.id} marked as cancelled")
+            logger.info(f"[WEBHOOK] Payment {payment.id} marked as cancelled: {payment.error_message}")
         
         # Return 200 OK to MeSomb
         return HttpResponse("OK", status=200)

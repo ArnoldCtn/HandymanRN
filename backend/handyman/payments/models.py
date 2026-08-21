@@ -70,6 +70,7 @@ class Payment(models.Model):
 
     status          = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     error_message   = models.TextField(blank=True, null=True)
+    error_code      = models.CharField(max_length=40, blank=True, null=True)
 
     created_at      = models.DateTimeField(auto_now_add=True)
     updated_at      = models.DateTimeField(auto_now=True)

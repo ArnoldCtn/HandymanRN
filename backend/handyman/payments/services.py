@@ -46,6 +46,9 @@ class MeSombService:
             ('insuffisant', 'INSUFFICIENT_BALANCE', 'Insufficient balance: Your mobile money account does not have enough funds for this payment. Please top up and try again.'),
             ('not enough', 'INSUFFICIENT_BALANCE', 'Insufficient balance: Your mobile money account does not have enough funds for this payment. Please top up and try again.'),
             ('solde insuffisant', 'INSUFFICIENT_BALANCE', 'Insufficient balance: Your mobile money account does not have enough funds for this payment. Please top up and try again.'),
+            # MeSomb/Orange phrasing: "Account does not have sufficient funds with the Service Provider"
+            ('sufficient funds', 'INSUFFICIENT_BALANCE', 'Insufficient balance: Your mobile money account does not have enough funds for this payment. Please top up and try again.'),
+            ('fonds insuffisants', 'INSUFFICIENT_BALANCE', 'Insufficient balance: Your mobile money account does not have enough funds for this payment. Please top up and try again.'),
             
             # Wrong PIN / Authentication
             ('pin', 'WRONG_PIN', 'Wrong PIN: The transaction was cancelled because the wrong PIN was entered. Please try again with the correct PIN.'),
@@ -218,10 +221,23 @@ class MeSombService:
                     'mesomb_error': 'Connection timeout - MeSomb service unavailable'
                 }
             else:
+                # Never leak raw Python errors to users. SDK exceptions sometimes
+                # wrap the real provider message - try mapping it first.
+                technical = f'{type(e).__name__}: {error_msg}'
+                mapped = self._map_mesomb_error(error_msg)
+                if mapped['code'] != 'UNKNOWN_ERROR':
+                    logger.error(f"[MeSombService.collect_payment] EXCEPTION mapped | {mapped['code']} | {technical}")
+                    return {
+                        'success': False,
+                        'error_code': mapped['code'],
+                        'error': mapped['message'],
+                        'mesomb_raw_error': technical
+                    }
                 return {
                     'success': False,
-                    'error_code': 'EXCEPTION',
-                    'error': f'{type(e).__name__}: {error_msg}'
+                    'error_code': 'PAYMENT_EXCEPTION',
+                    'error': 'Payment could not be processed due to a temporary technical issue. Please try again in a few moments.',
+                    'mesomb_raw_error': technical
                 }
     
     def process_automatic_payout(self, payment):
@@ -505,6 +521,7 @@ def _collect_payment_background(payment_id, booking_id, amount, service, payer_n
         try:
             payment.status = 'failed'
             payment.error_message = error_msg
+            payment.error_code = collect_result.get('error_code') or 'UNKNOWN_ERROR'
             payment.save()
             logger.info(f"[_collect_payment_background] Payment FAILED | payment={payment.id} | code={error_code}")
         except Exception as e:

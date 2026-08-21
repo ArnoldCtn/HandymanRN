@@ -234,6 +234,7 @@ class PaymentStatusView(generics.RetrieveAPIView):
                     "payer_number": payment.payer_number or '',
                     "collect_ref": payment.collect_ref or '',
                     "error_message": payment.error_message if payment.status == 'failed' else None,
+                    "error_code": payment.error_code if payment.status == 'failed' else None,
                     "handyman_amount": float(payment.handyman_amount) if payment.handyman_amount else 0.0,
                     "platform_fee": float(payment.platform_fee) if payment.platform_fee else 0.0
                 })
