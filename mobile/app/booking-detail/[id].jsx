@@ -24,6 +24,8 @@ export default function UserBookingDetailScreen() {
   const [phoneError, setPhoneError] = useState('');
   const [paymentLoading, setPaymentLoading] = useState(false);
   const [paymentResult, setPaymentResult] = useState(null);
+  const [cancelModal, setCancelModal] = useState(false);
+  const [cancelReason, setCancelReason] = useState('');
 
   useEffect(() => {
     console.log('[U-BookingDetail] Mount, id:', id);
@@ -47,27 +49,19 @@ export default function UserBookingDetailScreen() {
     fetchBooking();
   }, [id]);
 
-  const handleCancel = () => {
-    Alert.alert(
-      t('bookings.cancel_title', 'Cancel Booking'),
-      t('bookings.cancel_confirm', 'Are you sure you want to cancel this booking?'),
-      [
-        { text: t('common.no', 'No'), style: 'cancel' },
-        {
-          text: t('common.yes', 'Yes'),
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await api.patch(`/bookings/${id}/action/`, { action: 'cancel' });
-              Alert.alert(t('common.success'), t('bookings.cancelled_success', 'Booking cancelled successfully'));
-              router.back();
-            } catch (err) {
-              Alert.alert(t('common.error'), err.response?.data?.detail || t('bookings.cancel_failed', 'Failed to cancel booking'));
-            }
-          }
-        }
-      ]
-    );
+  const handleCancel = () => setCancelModal(true);
+
+  const confirmCancel = async () => {
+    try {
+      await api.patch(`/bookings/${id}/action/`, { action: 'cancel', reason: cancelReason });
+      Alert.alert(t('common.success'), t('bookings.cancelled_success', 'Booking cancelled successfully'));
+      router.back();
+    } catch (err) {
+      Alert.alert(t('common.error'), err.response?.data?.detail || t('bookings.cancel_failed', 'Failed to cancel booking'));
+    } finally {
+      setCancelModal(false);
+      setCancelReason('');
+    }
   };
 
   const validatePhoneNumber = (number, provider) => {
@@ -452,7 +446,7 @@ export default function UserBookingDetailScreen() {
             <Text style={styles.infoValue}>{booking.location_name || 'N/A'}</Text>
           </View>
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>{t('request.feature_book_title')}</Text>
+            <Text style={styles.infoLabel}>{t('bookings.scheduled_date')}</Text>
             <Text style={styles.infoValue}>{new Date(booking.scheduled_date).toLocaleString()}</Text>
           </View>
           <View style={styles.infoRow}>
@@ -460,7 +454,7 @@ export default function UserBookingDetailScreen() {
             <Text style={styles.infoValue}>{booking.total_amount} FCFA</Text>
           </View>
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>{t('bookings.tab_all')}</Text>
+            <Text style={styles.infoLabel}>{t('bookings.status_label')}</Text>
             <Text style={[styles.status, { color: getStatusColor(booking.status) }]}>
               {booking.status.toUpperCase()}
             </Text>
@@ -519,6 +513,34 @@ export default function UserBookingDetailScreen() {
                 <Text style={styles.modalCancelText}>{t('common.cancel')}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.modalConfirm} onPress={handleModifyPrice}>
+                <Text style={styles.modalConfirmText}>{t('common.confirm')}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Cancel Reason Modal */}
+      <Modal visible={cancelModal} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>{t('bookings.cancel_title', 'Cancel Booking')}</Text>
+            <TextInput
+              style={styles.priceInput}
+              multiline
+              numberOfLines={3}
+              value={cancelReason}
+              onChangeText={setCancelReason}
+              placeholder={t('bookings.cancel_reason_placeholder', 'Reason for cancelling (optional)')}
+            />
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={styles.modalCancel}
+                onPress={() => { setCancelModal(false); setCancelReason(''); }}
+              >
+                <Text style={styles.modalCancelText}>{t('common.cancel')}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.modalConfirm} onPress={confirmCancel}>
                 <Text style={styles.modalConfirmText}>{t('common.confirm')}</Text>
               </TouchableOpacity>
             </View>

@@ -139,7 +139,14 @@
     "no_bookings": "Pas encore de réservations",
     "modify_modal_title": "Modifier le prix",
     "modify_modal_subtitle": "Réservation avec {{username}}",
-    "price_placeholder": "Entrer le nouveau prix (FCFA)"
+    "price_placeholder": "Entrer le nouveau prix (FCFA)",
+    "scheduled_date": "Date de réservation",
+    "status_label": "Statut",
+    "cancel_title": "Annuler la réservation",
+    "cancel_confirm": "Êtes-vous sûr de vouloir annuler cette réservation ?",
+    "cancel_reason_placeholder": "Raison de l'annulation (optionnel)",
+    "cancelled_success": "Réservation annulée avec succès",
+    "cancel_failed": "Échec de l'annulation de la réservation"
   },
   "notifications": {
     "title": "Notifications",
@@ -183,7 +190,7 @@
     "no_phone": "Aucun numéro de téléphone fourni pour le moment.",
     "no_bio": "Aucune biographie fournie pour le moment.",
     "location": "Localisation",
-    "rate": "Évaluer",
+    "rate": "Prix",
     "no_reviews": "Aucun avis pour le moment",
     "male": "Homme",
     "female": "Femme",
@@ -228,7 +235,7 @@
     "reviews": "Avis",
     "notifications": "Notifications",
     "messages": "Messages",
-    "wallet": "Portefeuille",
+    "wallet": "Historique des paiements",
     "subscription": "Abonnement",
     "support": "Support",
     "home": "Accueil",

@@ -37,24 +37,16 @@ class ServiceAdmin(admin.ModelAdmin):
 
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
-    list_display = ['name', 'service', 'description_preview', 'image_preview', 'created_at']
+    list_display = ['name', 'service', 'description_preview', 'created_at']
     list_filter = ['service']
     search_fields = ['name', 'description', 'service__name']
-    readonly_fields = ['image_preview', 'created_at']
+    readonly_fields = ['created_at']
     fieldsets = (
         ('Category Info', {
-            'fields': ('service', 'name', 'description')
-        }),
-        ('Image', {
-            'fields': ('image', 'image_preview')
+            'fields': ('service', 'name', 'description', 'price')
         }),
     )
 
     def description_preview(self, obj):
         return (obj.description or '')[:60]
     description_preview.short_description = 'Description'
-
-    def image_preview(self, obj):
-        # Category model no longer has an image field
-        return '—'
-    image_preview.short_description = 'Image'

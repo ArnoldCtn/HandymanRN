@@ -139,7 +139,14 @@
     "no_bookings": "No bookings yet",
     "modify_modal_title": "Modify Price",
     "modify_modal_subtitle": "Booking with {{username}}",
-    "price_placeholder": "Enter new price (FCFA)"
+    "price_placeholder": "Enter new price (FCFA)",
+    "scheduled_date": "Booking Date",
+    "status_label": "Status",
+    "cancel_title": "Cancel Booking",
+    "cancel_confirm": "Are you sure you want to cancel this booking?",
+    "cancel_reason_placeholder": "Reason for cancelling (optional)",
+    "cancelled_success": "Booking cancelled successfully",
+    "cancel_failed": "Failed to cancel booking"
   },
   "notifications": {
     "title": "Notifications",
@@ -183,7 +190,7 @@
     "no_phone": "No Phone number provided yet.",
     "no_bio": "No biography provided yet.",
     "location": "Location",
-    "rate": "Rate",
+    "rate": "Price",
     "no_reviews": "No reviews yet",
     "male": "Male",
     "female": "Female",
@@ -228,7 +235,7 @@
     "reviews": "Reviews",
     "notifications": "Notifications",
     "messages": "Messages",
-    "wallet": "Wallet",
+    "wallet": "Payment History",
     "subscription": "Subscription",
     "support": "Support",
     "home": "Home",

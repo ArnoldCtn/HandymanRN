@@ -50,7 +50,7 @@ export default function Sidebar({ visible, onClose, user, isHandyman, onLogout }
     { label: t('sidebar.my_services', 'My Services'), icon: 'briefcase-outline', route: 'Myservices' },
     { label: t('sidebar.notifications', 'Notifications'), icon: 'notifications-outline', route: 'Notifications' },
     { label: t('sidebar.messages', 'Messages'), icon: 'chatbubbles-outline', route: 'ChatsList' },
-    { label: t('sidebar.wallet', 'Wallet'), icon: 'wallet-outline', route: '/wallet?source=handyman' },
+    { label: t('sidebar.wallet', 'Transactions History'), icon: 'wallet-outline', route: '/wallet?source=handyman' },
     { label: t('sidebar.support', 'Support'), icon: 'help-circle-outline', route: '/chat/support?source=handyman' },
   ] : [
     { label: t('sidebar.home', 'Home'), icon: 'grid-outline', route: 'Request' },
