@@ -1,0 +1,106 @@
+<mxfile host="Electron">
+  <diagram id="sysarch-threetier" name="System Architecture (3-Tier)">
+    <mxGraphModel dx="2289" dy="1409" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1520" pageHeight="1150" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="tt_title" parent="1" style="text;html=1;align=center;verticalAlign=middle;fontSize=14;fontStyle=1;" value="Handyman West — Three-Tier System Architecture" vertex="1">
+          <mxGeometry height="40" width="1420" x="40" y="10" as="geometry" />
+        </mxCell>
+        <mxCell id="tt_tier1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;fontSize=14;fontStyle=1;spacingTop=6;" value="PRESENTATION LAYER — what users see" vertex="1">
+          <mxGeometry height="270" width="1020" x="40" y="70" as="geometry" />
+        </mxCell>
+        <mxCell id="tt_actor_client" parent="tt_tier1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;fontSize=14;fontStyle=1;" value="Clients&#xa;(need repairs)" vertex="1">
+          <mxGeometry height="90" width="50" x="30" y="20" as="geometry" />
+        </mxCell>
+        <mxCell id="tt_actor_handy" parent="tt_tier1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;fontSize=14;fontStyle=1;" value="Handymen&#xa;(offer services)" vertex="1">
+          <mxGeometry height="90" width="50" x="30" y="155" as="geometry" />
+        </mxCell>
+        <mxCell id="tt_app" parent="tt_tier1" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;align=center;verticalAlign=middle;fontSize=14;" value="&lt;b&gt;&lt;font&gt;Handyman West Mobile App&lt;/font&gt;&lt;/b&gt; — works on iPhone &amp;amp; Android&lt;br&gt;&lt;br&gt;• built from reusable interface components grouped by feature&#xa;&lt;br&gt;• tab navigation for the main areas of the app&#xa;&lt;br&gt;• step-by-step screens for flows like creating a booking&lt;br&gt;&lt;font color=&quot;#888888&quot;&gt;(React Native · Expo · Expo Router)&lt;/font&gt;" vertex="1">
+          <mxGeometry height="205" width="860" x="130" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="tt_e_c_app" edge="1" parent="tt_tier1" source="tt_actor_client" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=1;exitY=0.5;entryX=0;entryY=0.25;endArrow=open;endFill=1;strokeWidth=2.5;fontSize=14;" target="tt_app">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="tt_e_h_app" edge="1" parent="tt_tier1" source="tt_actor_handy" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=1;exitY=0.5;entryX=0;entryY=0.75;endArrow=open;endFill=1;strokeWidth=2.5;fontSize=14;" target="tt_app">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="tt_e_t1_t2" edge="1" parent="1" source="tt_tier1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;startArrow=classic;startFill=1;endArrow=classic;endFill=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;strokeWidth=4;fontSize=14;fontStyle=1;labelBackgroundColor=#ffffff;" target="tt_tier2" value="sends requests over the internet">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="tt_tier2" parent="1" style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;fontSize=14;fontStyle=1;spacingTop=6;" value="APPLICATION LAYER — where decisions are made" vertex="1">
+          <mxGeometry height="330" width="1020" x="40" y="430" as="geometry" />
+        </mxCell>
+        <mxCell id="tt_django" parent="tt_tier2" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;align=center;verticalAlign=middle;fontSize=14;" value="&lt;b&gt;&lt;font&gt;Django Server&lt;/font&gt;&lt;/b&gt;&lt;br&gt;models define the data  ·  serializers transform it  ·  views run the business rules&lt;br&gt;&lt;font color=&quot;#888888&quot;&gt;(Django 5 · Django REST Framework)&lt;/font&gt;" vertex="1">
+          <mxGeometry height="120" width="970" x="25" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="tt_chip_users" parent="tt_tier2" style="rounded=1;whiteSpace=wrap;html=1;arcSize=30;fontSize=14;" value="Users" vertex="1">
+          <mxGeometry height="45" width="180" x="25" y="185" as="geometry" />
+        </mxCell>
+        <mxCell id="tt_chip_handymen" parent="tt_tier2" style="rounded=1;whiteSpace=wrap;html=1;arcSize=30;fontSize=14;" value="Handymen" vertex="1">
+          <mxGeometry height="45" width="180" x="220" y="185" as="geometry" />
+        </mxCell>
+        <mxCell id="tt_chip_services" parent="tt_tier2" style="rounded=1;whiteSpace=wrap;html=1;arcSize=30;fontSize=14;" value="Services" vertex="1">
+          <mxGeometry height="45" width="180" x="415" y="185" as="geometry" />
+        </mxCell>
+        <mxCell id="tt_chip_bookings" parent="tt_tier2" style="rounded=1;whiteSpace=wrap;html=1;arcSize=30;fontSize=14;" value="Bookings" vertex="1">
+          <mxGeometry height="45" width="180" x="610" y="185" as="geometry" />
+        </mxCell>
+        <mxCell id="tt_chip_locations" parent="tt_tier2" style="rounded=1;whiteSpace=wrap;html=1;arcSize=30;fontSize=14;" value="Locations" vertex="1">
+          <mxGeometry height="45" width="180" x="805" y="185" as="geometry" />
+        </mxCell>
+        <mxCell id="tt_chip_payments" parent="tt_tier2" style="rounded=1;whiteSpace=wrap;html=1;arcSize=30;fontSize=14;" value="Payments" vertex="1">
+          <mxGeometry height="45" width="180" x="25" y="245" as="geometry" />
+        </mxCell>
+        <mxCell id="tt_chip_chats" parent="tt_tier2" style="rounded=1;whiteSpace=wrap;html=1;arcSize=30;fontSize=14;" value="Chats" vertex="1">
+          <mxGeometry height="45" width="180" x="220" y="245" as="geometry" />
+        </mxCell>
+        <mxCell id="tt_chip_ratings" parent="tt_tier2" style="rounded=1;whiteSpace=wrap;html=1;arcSize=30;fontSize=14;" value="Ratings" vertex="1">
+          <mxGeometry height="45" width="180" x="415" y="245" as="geometry" />
+        </mxCell>
+        <mxCell id="tt_chip_notifications" parent="tt_tier2" style="rounded=1;whiteSpace=wrap;html=1;arcSize=30;fontSize=14;" value="Notifications" vertex="1">
+          <mxGeometry height="45" width="180" x="610" y="245" as="geometry" />
+        </mxCell>
+        <mxCell id="tt_chip_favorites" parent="tt_tier2" style="rounded=1;whiteSpace=wrap;html=1;arcSize=30;fontSize=14;" value="Favorites" vertex="1">
+          <mxGeometry height="45" width="180" x="805" y="245" as="geometry" />
+        </mxCell>
+        <mxCell id="tt_e_t2_t3" edge="1" parent="1" source="tt_tier2" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;startArrow=classic;startFill=1;endArrow=classic;endFill=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;strokeWidth=4;fontSize=14;fontStyle=1;labelBackgroundColor=#ffffff;" target="tt_tier3" value="stores and reads information">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="tt_tier3" parent="1" style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;fontSize=14;fontStyle=1;spacingTop=6;" value="DATA LAYER — where everything is kept" vertex="1">
+          <mxGeometry height="230" width="1020" x="40" y="850" as="geometry" />
+        </mxCell>
+        <mxCell id="tt_pg" parent="tt_tier3" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=14;fontSize=14;verticalAlign=top;spacingTop=18;" value="&lt;b&gt;Main Database&lt;/b&gt;&lt;br&gt;all records kept in organised,&#xa;non-duplicated tables&lt;br&gt;&lt;font color=&quot;#888888&quot;&gt;(PostgreSQL)&lt;/font&gt;" vertex="1">
+          <mxGeometry height="150" width="380" x="70" y="50" as="geometry" />
+        </mxCell>
+        <mxCell id="tt_media" parent="tt_tier3" style="shape=folder;tabWidth=60;tabHeight=20;tabPosition=left;whiteSpace=wrap;html=1;fontSize=14;verticalAlign=top;spacingTop=22;" value="&lt;b&gt;Media Files&lt;/b&gt;&lt;br&gt;ID photos, job pictures,&lt;br&gt;chat images and voice notes&lt;br&gt;&lt;font color=&quot;#888888&quot;&gt;(media folder served by the app server)&lt;/font&gt;" vertex="1">
+          <mxGeometry height="145" width="380" x="560" y="55" as="geometry" />
+        </mxCell>
+        <mxCell id="tt_ext" parent="1" style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;fontSize=14;fontStyle=1;spacingTop=6;" value="EXTERNAL SERVICES" vertex="1">
+          <mxGeometry height="650" width="360" x="1100" y="430" as="geometry" />
+        </mxCell>
+        <mxCell id="tt_mail" parent="tt_ext" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;align=center;verticalAlign=middle;fontSize=14;" value="&lt;b&gt;Email Sender&lt;/b&gt;&lt;br&gt;sends password-reset codes to users&lt;br&gt;&lt;font color=&quot;#888888&quot;&gt;(SMTP )&lt;/font&gt;" vertex="1">
+          <mxGeometry height="120" width="310" x="25" y="60" as="geometry" />
+        </mxCell>
+        <mxCell id="tt_inbox" parent="tt_ext" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;align=center;verticalAlign=middle;fontSize=14;" value="Your Email Inbox" vertex="1">
+          <mxGeometry height="70" width="310" x="25" y="240" as="geometry" />
+        </mxCell>
+        <mxCell id="tt_money" parent="tt_ext" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;align=center;verticalAlign=middle;fontSize=14;" value="&lt;b&gt;Mobile Money (MeSomb)&lt;/b&gt;&lt;br&gt;pays handymen safely via&lt;br&gt;MTN / Orange accounts" vertex="1">
+          <mxGeometry height="130" width="310" x="25" y="400" as="geometry" />
+        </mxCell>
+        <mxCell id="tt_e_mail_inbox" edge="1" parent="tt_ext" source="tt_mail" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;strokeWidth=2.5;fontSize=14;labelBackgroundColor=#ffffff;" target="tt_inbox" value="delivers the code">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="tt_e_srv_mail" edge="1" parent="1" source="tt_django" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=1;exitY=0.35;entryX=0;entryY=0.5;endArrow=open;endFill=1;strokeWidth=2.5;fontSize=14;labelBackgroundColor=#ffffff;" target="tt_mail" value="asks it to send password emails">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="tt_e_srv_money" edge="1" parent="1" source="tt_django" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=1;exitY=0.85;entryX=0;entryY=0.35;endArrow=open;endFill=1;strokeWidth=2.5;fontSize=14;labelBackgroundColor=#ffffff;" target="tt_money" value="sends payment requests">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="tt_e_money_srv" edge="1" parent="1" source="tt_money" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;dashed=1;exitX=0;exitY=0.75;entryX=1;entryY=0.95;strokeWidth=2;fontSize=14;labelBackgroundColor=#ffffff;" target="tt_django" value="confirms payment received">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

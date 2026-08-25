@@ -1,0 +1,108 @@
+<mxfile host="Electron">
+  <diagram id="deployment-handyman" name="Deployment Diagram">
+    <mxGraphModel dx="1717" dy="1057" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1750" pageHeight="950" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="dp_title" parent="1" style="text;html=1;align=center;verticalAlign=middle;fontSize=14;fontStyle=1;" value="Deployment Diagram — Handyman West" vertex="1">
+          <mxGeometry height="30" width="1650" x="40" y="20" as="geometry" />
+        </mxCell>
+        <mxCell id="dp_phone" parent="1" style="shape=cube;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=20;darkOpacity=0.05;darkOpacity2=0.1;verticalAlign=top;fontStyle=1;fontSize=14;spacingTop=6;" value="«device»&#xa;Smartphone (Android · iOS)" vertex="1">
+          <mxGeometry height="300" width="300" x="60" y="110" as="geometry" />
+        </mxCell>
+        <mxCell id="art_app" parent="dp_phone" style="rounded=0;whiteSpace=wrap;html=1;fontSize=14;" value="«artifact»&#xa;Handyman West app&#xa;(Expo RN bundle — client &amp;amp; handyman roles)" vertex="1">
+          <mxGeometry height="90" width="240" x="30" y="70" as="geometry" />
+        </mxCell>
+        <mxCell id="art_store" parent="dp_phone" style="rounded=0;whiteSpace=wrap;html=1;fontSize=14;" value="«artifact»&#xa;SecureStore · AsyncStorage&#xa;(JWT tokens · device PIN)" vertex="1">
+          <mxGeometry height="80" width="240" x="30" y="190" as="geometry" />
+        </mxCell>
+        <mxCell id="dp_railway" parent="1" style="shape=cube;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=24;darkOpacity=0.05;darkOpacity2=0.1;verticalAlign=top;fontStyle=1;fontSize=14;spacingTop=6;" value="«cloud» Railway PaaS" vertex="1">
+          <mxGeometry height="760" width="720" x="480" y="50" as="geometry" />
+        </mxCell>
+        <mxCell id="dp_pg" parent="dp_railway" style="shape=cube;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=14;darkOpacity=0.05;darkOpacity2=0.1;verticalAlign=top;fontStyle=1;fontSize=14;spacingTop=4;" value="«executionEnvironment»&lt;br&gt;PostgreSQL&amp;nbsp;" vertex="1">
+          <mxGeometry height="260" width="250" x="440" y="70" as="geometry" />
+        </mxCell>
+        <mxCell id="art_db" parent="dp_pg" style="rounded=0;whiteSpace=wrap;html=1;fontSize=14;" value="«artifact» handyman_db&lt;br&gt;users · handymen · bookings · chats&lt;br&gt;wallets · transactions · otp codes&lt;br&gt;ratings&amp;nbsp;" vertex="1">
+          <mxGeometry height="105" width="210" x="20" y="75" as="geometry" />
+        </mxCell>
+        <mxCell id="dp_volume" parent="dp_railway" style="shape=cube;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=14;darkOpacity=0.05;darkOpacity2=0.1;verticalAlign=top;fontStyle=1;fontSize=14;spacingTop=4;" value="«executionEnvironment»&#xa;Persistent Volume" vertex="1">
+          <mxGeometry height="150" width="380" x="30" y="440" as="geometry" />
+        </mxCell>
+        <mxCell id="art_media" parent="dp_volume" style="rounded=0;whiteSpace=wrap;html=1;fontSize=14;" value="«artifact» /media/ files&#xa;ID cards · job pictures · chat images · voice notes" vertex="1">
+          <mxGeometry height="70" width="330" x="25" y="60" as="geometry" />
+        </mxCell>
+        <mxCell id="8KNQbw1HO7Jzqx7Rqfad-1" parent="dp_railway" style="shape=cube;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=12;darkOpacity=0.05;darkOpacity2=0.1;verticalAlign=top;fontStyle=1;fontSize=14;spacingTop=4;" value="«executionEnvironment»&#xa;Daphne ASGI Server" vertex="1">
+          <mxGeometry height="250" width="330" x="45" y="70" as="geometry" />
+        </mxCell>
+        <mxCell id="8KNQbw1HO7Jzqx7Rqfad-2" parent="8KNQbw1HO7Jzqx7Rqfad-1" style="rounded=0;whiteSpace=wrap;html=1;fontSize=14;" value="«artifact» Django 5.2 application&#xa;(handyman.asgi · settings · admin)" vertex="1">
+          <mxGeometry height="50" width="300" x="15" y="60" as="geometry" />
+        </mxCell>
+        <mxCell id="8KNQbw1HO7Jzqx7Rqfad-3" parent="8KNQbw1HO7Jzqx7Rqfad-1" style="rounded=0;whiteSpace=wrap;html=1;fontSize=14;" value="«artifact» DRF REST API&#xa;(users · bookings · payments …)" vertex="1">
+          <mxGeometry height="50" width="300" x="15" y="120" as="geometry" />
+        </mxCell>
+        <mxCell id="8KNQbw1HO7Jzqx7Rqfad-4" parent="8KNQbw1HO7Jzqx7Rqfad-1" style="rounded=0;whiteSpace=wrap;html=1;fontSize=14;" value="«artifact» Channels consumers&lt;br&gt;(booking chat · support over Websockets)" vertex="1">
+          <mxGeometry height="50" width="300" x="15" y="180" as="geometry" />
+        </mxCell>
+        <mxCell id="c5" edge="1" parent="dp_railway" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=none;exitX=1;exitY=0.75;entryX=-0.003;entryY=0.612;strokeWidth=2;fontSize=14;fontColor=#333333;labelBackgroundColor=#ffffff;entryDx=0;entryDy=0;entryPerimeter=0;" target="dp_mesomb" value="HTTPS API calls (pymesomb)">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="365" y="338" />
+              <mxPoint x="586" y="338" />
+              <mxPoint x="586" y="563" />
+              <mxPoint x="859" y="563" />
+            </Array>
+            <mxPoint x="365" y="330" as="sourcePoint" />
+            <mxPoint x="805" y="562.5" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="8KNQbw1HO7Jzqx7Rqfad-8" edge="1" parent="dp_railway" source="8KNQbw1HO7Jzqx7Rqfad-1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0;entryDx=0;entryDy=123;entryPerimeter=0;fontSize=14;" target="dp_pg">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="8KNQbw1HO7Jzqx7Rqfad-13" parent="dp_railway" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontSize=14;" value="Django ORM" vertex="1">
+          <mxGeometry height="30" width="60" x="380" y="160" as="geometry" />
+        </mxCell>
+        <mxCell id="dp_smtp" parent="1" style="shape=cube;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=18;darkOpacity=0.05;darkOpacity2=0.1;verticalAlign=top;fontStyle=1;fontSize=14;spacingTop=6;" value="«device» SMTP Mail Server" vertex="1">
+          <mxGeometry height="240" width="300" x="1340" y="110" as="geometry" />
+        </mxCell>
+        <mxCell id="art_mta" parent="dp_smtp" style="rounded=0;whiteSpace=wrap;html=1;fontSize=14;fontStyle=1;" value="«artifact» Mail Transfer Agent&lt;br&gt;accepts submissions over TLS :587&lt;br&gt;(AUTH LOGIN) · relays to recipients&lt;div&gt;&lt;br&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="120" width="250" x="25" y="65" as="geometry" />
+        </mxCell>
+        <mxCell id="dp_mesomb" parent="1" style="shape=cube;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=18;darkOpacity=0.05;darkOpacity2=0.1;verticalAlign=top;fontStyle=1;fontSize=14;spacingTop=6;" value="«cloud» MeSomb Payment Platform" vertex="1">
+          <mxGeometry height="290" width="300" x="1340" y="430" as="geometry" />
+        </mxCell>
+        <mxCell id="art_api" parent="dp_mesomb" style="rounded=0;whiteSpace=wrap;html=1;fontSize=14;" value="«artifact» Mobile Money API&#xa;MTN MoMo · Orange Money (XAF)&#xa;collect · status check" vertex="1">
+          <mxGeometry height="85" width="250" x="25" y="65" as="geometry" />
+        </mxCell>
+        <mxCell id="art_hook" parent="dp_mesomb" style="rounded=0;whiteSpace=wrap;html=1;fontSize=14;" value="«artifact» Webhook dispatcher&#xa;transaction status events" vertex="1">
+          <mxGeometry height="75" width="250" x="25" y="175" as="geometry" />
+        </mxCell>
+        <mxCell id="c1" edge="1" parent="1" source="dp_phone" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=none;exitX=1;exitY=0.5;entryX=0;entryY=0.35;strokeWidth=2;fontSize=14;fontColor=#333333;labelBackgroundColor=#ffffff;" target="dp_railway" value="HTTPS REST · WSS&#xa;JSON · Bearer JWT">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="c3" edge="1" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=none;exitX=0.5;exitY=1;entryX=0.5;entryY=0;strokeWidth=2;fontSize=14;fontColor=#333333;labelBackgroundColor=#ffffff;" target="dp_volume" value="read / write /media/">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="735" y="350" />
+              <mxPoint x="735" y="350" />
+            </Array>
+            <mxPoint x="735" y="405" as="sourcePoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c4" edge="1" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=none;entryX=0;entryY=0.5;strokeWidth=2.5;fontSize=14;fontStyle=1;fontColor=#B46504;labelBackgroundColor=#ffffff;" target="dp_smtp" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="860" y="290" />
+              <mxPoint x="860" y="300" />
+              <mxPoint x="1250" y="300" />
+              <mxPoint x="1250" y="230" />
+            </Array>
+            <mxPoint x="850" y="290" as="sourcePoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c6" edge="1" parent="1" source="dp_mesomb" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;dashed=1;endArrow=open;exitX=0;exitY=0.25;entryX=1;entryY=0.85;strokeWidth=2;fontSize=14;fontColor=#333333;labelBackgroundColor=#ffffff;" target="dp_railway" value="POST /payments/webhook">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
