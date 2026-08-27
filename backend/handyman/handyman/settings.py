@@ -132,7 +132,7 @@ _raw_origins = os.environ.get('CORS_ALLOWED_ORIGINS', '')
 CORS_ALLOWED_ORIGINS = [o.strip() for o in _raw_origins.split(',') if o.strip() and o.strip() != '*'] if _raw_origins else []
 
 CSRF_TRUSTED_ORIGINS = [
-    'https://handymanrn-production.up.railway.app',
+    'https://handymanrn-production-8598.up.railway.app',
     'http://localhost:8000',
     'http://127.0.0.1:8000',
     'https://sharpie-carless-rimless.ngrok-free.dev'
