@@ -35,12 +35,12 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 # ── MeSomb Configuration ───────────────────────────────────────────
 # Load from environment variables for security
-MESOMB_ACCESS_KEY = os.getenv('MESOMB_ACCESS_KEY', 'e3c418a5-043f-4a2b-aeb4-4c8207384932')
-MESOMB_SECRET_KEY = os.getenv('MESOMB_SECRET_KEY', '9733680c-1139-4901-9fd3-59802a786af6')
-MESOMB_APPLICATION_KEY = os.getenv('MESOMB_APPLICATION_KEY', 'e96d73249360397e619946b8913a87763658bc3d')
+MESOMB_ACCESS_KEY = os.getenv('MESOMB_ACCESS_KEY')
+MESOMB_SECRET_KEY = os.getenv('MESOMB_SECRET_KEY')
+MESOMB_APPLICATION_KEY = os.getenv('MESOMB_APPLICATION_KEY')
 
 # Webhook security (optional but recommended)
-MESOMB_WEBHOOK_SECRET = os.getenv('MESOMB_WEBHOOK_SECRET', 'your_webhook_secret_here')
+MESOMB_WEBHOOK_SECRET = os.getenv('MESOMB_WEBHOOK_SECRET', '')
 
 # Environment settings
 MESOMB_ENVIRONMENT = os.getenv('MESOMB_ENVIRONMENT', 'sandbox')  # Change to 'production' when ready
@@ -64,8 +64,7 @@ HANDYMAN_CUT_PERCENT  = 0.70   # 70% goes to handyman
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-+1-rgp&271)w)qu%guby%7c9dw!*(($1lnfc5b2r+eq&6favh7'
-SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'django-insecure-+1-rgp&271)w)qu%guby%7c9dw!*(($1lnfc5b2r+eq&6favh7')  # Override with env var if available
+SECRET_KEY = os.getenv('DJANGO_SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 # DEBUG = True
