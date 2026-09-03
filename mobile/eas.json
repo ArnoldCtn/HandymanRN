@@ -1,0 +1,28 @@
+{
+  "cli": {
+    "version": ">= 20.2.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal"
+    },
+    "preview": {
+      "distribution": "internal"
+    },
+    "production": {
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://handymanrn-production-8598.up.railway.app",
+        "NGROK_URL": "https://sharpie-carless-rimless.ngrok-free.dev"
+      },
+      "autoIncrement": true
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}
